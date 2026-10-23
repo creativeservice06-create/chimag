@@ -65,7 +65,8 @@ Cloudflare → **R2 Object Storage → Create bucket** → nume `chimag-media`.
 
 ### 4. Conectează GitHub la Cloudflare
 1. Cloudflare → **Workers & Pages → Create → Import a repository** → alege `chimag`.
-2. Build command: gol. Deploy command: `npx wrangler deploy`. Save and Deploy.
+2. Build command: gol. Deploy command: `npx wrangler d1 migrations apply chimag-db --remote && npx wrangler deploy`. Save and Deploy.
+   Astfel, la fiecare publicare se aplică automat și modificările de structură a bazei de date (folderul `migrations/`); datele existente rămân neatinse.
 3. De acum, la fiecare `git push` site-ul se actualizează singur în ~30 de secunde.
 
 ### 5. Setează parolele și cheile (secrete)

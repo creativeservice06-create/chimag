@@ -301,14 +301,6 @@ export function productPage({ settings, product: p, reviews, related = [], siteU
       </section>`)}
     </div>` : ''}
 
-    <section class="worry-free">
-      <h2>Cumperi fără griji</h2>
-      <div class="worry-grid">
-        <div>${icons.cash(28)}<strong>Plătești la livrare</strong><span>Nu plătești nimic în avans. Dai banii doar când primești coletul.</span></div>
-        <div>${icons.back(28)}<strong>Retur în ${settings.return_days || 14} zile</strong><span>Nu ți-a plăcut? Îl trimiți înapoi și îți returnăm banii.</span></div>
-        <div>${icons.truck(28)}<strong>Livrare rapidă</strong><span>${settings.delivery_text}, cu AWB pe email pentru urmărire.</span></div>
-      </div>
-    </section>
 
     <div class="pdp-details">
       ${p.description && !(p.sections || []).length ? html`<section class="prose"><h2>Despre produs</h2>${paragraphs(p.description)}</section>` : ''}

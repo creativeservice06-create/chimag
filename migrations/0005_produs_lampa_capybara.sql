@@ -12,7 +12,7 @@ Se încarcă prin cablul USB inclus, de la încărcătorul de telefon, laptop sa
 
 Siliconul e moale, plăcut la atingere și nu se sparge dacă e scăpată pe jos. E și un cadou drăguț pentru copii, prieteni sau colegi.',
  7000, 0, 2033, 'CHI-LCP-01', 50, 1, 300,
- '["/img/lampa-capybara-1.jpg","/img/lampa-capybara-2.jpg","/img/lampa-capybara-3.jpg","/img/lampa-capybara-4.jpg"]',
+ '["/img/lampa-capybara-1.jpg","/img/lampa-capybara-2.jpg","/img/lampa-capybara-3.jpg"]',
  '["Silicon moale, sigur pentru copii, nu se sparge","Mai multe culori și intensitate reglabilă","Temporizator: se stinge singură după ce adoarme copilul","Reîncărcabilă prin USB, fără cablu în priză","Compactă, 14 × 8 cm, bună și pentru călătorii"]',
  '[{"q":"Cum schimb culoarea și intensitatea?","a":"Lampa are comenzi simple, la atingere. Instrucțiunile din cutie arată exact pașii."},{"q":"Cum funcționează temporizatorul?","a":"Îl pornești înainte de culcare, iar lampa se stinge singură după timpul ales, ca să nu stea aprinsă toată noaptea."},{"q":"Cum se încarcă?","a":"Prin cablul USB inclus, de la un încărcător de telefon, de la laptop sau de la o baterie externă."},{"q":"Ce primesc în colet?","a":"Lampa, cablul USB de încărcare și instrucțiunile, într-o cutie de prezentare potrivită pentru cadou."},{"q":"Cât durează livrarea?","a":"24–48 de ore lucrătoare de la confirmarea comenzii. Plătești la livrare."}]',
  '[{"qty":1,"pct":0,"label":""},{"qty":2,"pct":10,"label":"Cel mai ales"},{"qty":3,"pct":15,"label":"Cea mai bună ofertă"}]',

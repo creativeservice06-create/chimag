@@ -279,7 +279,6 @@ export function productPage({ settings, product: p, reviews, related = [], siteU
         ${s.image ? html`<div class="story-media"><img src="${s.image}" alt="${s.title || p.title}" width="800" height="800" loading="lazy"></div>` : ''}
         <div class="story-text">${s.title ? html`<h2>${s.title}</h2>` : ''}${paragraphs(s.text || '')}</div>
       </section>`)}
-      ${outOfStock ? '' : html`<div class="story-cta"><strong>${money(p.price)}</strong><a href="#cumpara" class="btn btn-primary btn-xl">Comandă acum – plătești la livrare</a></div>`}
     </div>` : ''}
 
     <div class="pdp-details">

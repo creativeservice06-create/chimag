@@ -212,7 +212,8 @@ p { margin: 0 0 1em; }
 
 .sticky-buy { display: none; }
 @media (max-width: 860px) {
-  .pdp-grid { grid-template-columns: 1fr; gap: 22px; }
+  .pdp-grid { grid-template-columns: minmax(0, 1fr); gap: 22px; }
+  .pdp-grid > * { min-width: 0; }
   .gallery { position: static; margin: 0 calc(var(--gutter) * -1); }
   .gallery-main { border-radius: 0; }
   .gallery-main img { aspect-ratio: auto; height: min(100vw, 52vh); object-fit: cover; }
@@ -717,7 +718,8 @@ html.drawer-open { overflow: hidden; }
 .consent-actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
 
 /* ---------- Prezentare produs (secțiuni cu poze) ---------- */
-.story { margin: 64px 0 8px; display: grid; gap: 56px; }
+.story { margin: 64px 0 8px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 56px; }
+.story > *, .story-row > * { min-width: 0; }
 .story-intro { max-width: 720px; margin: 0 auto; text-align: center; }
 .story-intro h2 { font: 800 clamp(1.6rem, 3vw, 2.1rem)/1.15 var(--font-display); letter-spacing: -0.02em; margin: 0 0 14px; }
 .story-intro p { color: var(--muted); font-size: 1.08rem; }
@@ -727,12 +729,14 @@ html.drawer-open { overflow: hidden; }
 .story-media img { display: block; width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; }
 .story-text h2 { font: 800 clamp(1.45rem, 2.6vw, 1.9rem)/1.2 var(--font-display); letter-spacing: -0.02em; margin: 0 0 14px; }
 .story-text p { color: var(--muted); font-size: 1.06rem; margin: 0 0 12px; }
-.story-cta { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 14px 22px; padding: 28px 20px; border-radius: var(--radius-l); background: var(--brand-tint); }
-.story-cta strong { font: 800 1.8rem/1 var(--font-display); }
 @media (max-width: 820px) {
   .story { margin-top: 40px; gap: 36px; }
-  .story-row { grid-template-columns: 1fr; gap: 18px; }
+  .story-row { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .story-media img { aspect-ratio: 4 / 3; }
   .story-row.rev .story-media { order: 0; }
   .story-intro { text-align: left; }
-  .story-cta .btn { width: 100%; }
+  }
+@media (max-width: 380px) {
+  .header-actions .cart-btn, .header-actions .wheel-btn, .header-actions .account-btn, .search-toggle { width: 40px; height: 40px; }
+  .header-inner .logo { font-size: 1.2rem; }
 }

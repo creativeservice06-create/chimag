@@ -273,8 +273,17 @@ export function productPage({ settings, product: p, reviews, related = [], siteU
       </div>
     </div>
 
+    ${(p.sections || []).length ? html`<div class="story">
+      ${p.description ? html`<section class="story-intro"><h2>Despre produs</h2>${paragraphs(p.description)}</section>` : ''}
+      ${p.sections.map((s, i) => html`<section class="story-row ${i % 2 ? 'rev' : ''}">
+        ${s.image ? html`<div class="story-media"><img src="${s.image}" alt="${s.title || p.title}" width="800" height="800" loading="lazy"></div>` : ''}
+        <div class="story-text">${s.title ? html`<h2>${s.title}</h2>` : ''}${paragraphs(s.text || '')}</div>
+      </section>`)}
+      ${outOfStock ? '' : html`<div class="story-cta"><strong>${money(p.price)}</strong><a href="#cumpara" class="btn btn-primary btn-xl">Comandă acum – plătești la livrare</a></div>`}
+    </div>` : ''}
+
     <div class="pdp-details">
-      ${p.description ? html`<section class="prose"><h2>Despre produs</h2>${paragraphs(p.description)}</section>` : ''}
+      ${p.description && !(p.sections || []).length ? html`<section class="prose"><h2>Despre produs</h2>${paragraphs(p.description)}</section>` : ''}
       ${p.benefits.length > 4 ? html`<section><h2>Pe scurt</h2><ul class="benefits">${p.benefits.map((b) => html`<li>${icons.check(18)}<span>${b}</span></li>`)}</ul></section>` : ''}
       ${p.faq.length ? html`<section class="faq"><h2>Întrebări frecvente</h2>${p.faq.map((f) => html`<details><summary>${f.q}</summary><div>${paragraphs(f.a)}</div></details>`)}</section>` : ''}
       ${reviews.length ? html`<section id="recenzii" class="reviews">

@@ -504,6 +504,17 @@ function parseBundles(s) {
   return out.sort((a, b) => a.qty - b.qty);
 }
 
+function parseSections(text) {
+  return String(text || '').replace(/\r/g, '').split(/\n\s*---\s*\n/).map((block) => {
+    const lines = block.split('\n');
+    const title = (lines.shift() || '').trim().slice(0, 150);
+    let image = '';
+    if (/^(https?:\/\/|\/)\S+$/.test((lines[0] || '').trim())) image = lines.shift().trim().slice(0, 500);
+    const t = lines.join('\n').trim().slice(0, 4000);
+    return title || image || t ? { title, image, text: t } : null;
+  }).filter(Boolean).slice(0, 12);
+}
+
 async function saveProduct(request, env, id) {
   const form = await readForm(request);
   const title = String(form.get('title') || '').trim();
@@ -536,6 +547,7 @@ async function saveProduct(request, env, id) {
     track_stock: form.get('track_stock') ? 1 : 0, weight_g: Math.max(1, Math.floor(Number(form.get('weight_g')) || 500)),
     images: JSON.stringify(images.slice(0, 20)), benefits: JSON.stringify(parseLines(form.get('benefits')).slice(0, 20)),
     faq: JSON.stringify(parseFaq(form.get('faq')).slice(0, 30)), bundles: JSON.stringify(parseBundles(form.get('bundles'))),
+    sections: JSON.stringify(parseSections(form.get('sections'))),
     badge: String(form.get('badge') || '').trim().slice(0, 30), category: String(form.get('category') || '').trim().slice(0, 60),
     active: form.get('active') ? 1 : 0, featured: form.get('featured') ? 1 : 0, sort: Math.floor(Number(form.get('sort')) || 0),
   };

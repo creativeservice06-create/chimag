@@ -36,6 +36,7 @@ export function hydrateProduct(p) {
     benefits: parseJSON(p.benefits, []),
     faq: parseJSON(p.faq, []),
     bundles: parseJSON(p.bundles, []),
+    sections: parseJSON(p.sections, []),
   };
 }
 

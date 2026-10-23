@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 900" width="900" height="900">
+  <rect width="900" height="900" fill="#eef3fa"/>
+  <ellipse cx="450" cy="770" rx="250" ry="30" fill="#000" opacity=".07"/>
+  <!-- corp -->
+  <rect x="300" y="440" width="300" height="330" rx="46" fill="#ffffff" stroke="#cfdcf0" stroke-width="6"/>
+  <rect x="300" y="700" width="300" height="70" rx="0" fill="#e6edf7"/>
+  <rect x="300" y="740" width="300" height="30" rx="15" fill="#d5e0ef"/>
+  <!-- recipient suc (transparent) -->
+  <rect x="330" y="470" width="240" height="210" rx="30" fill="#f6b73c" opacity=".55"/>
+  <rect x="330" y="470" width="240" height="70" rx="30" fill="#f6b73c" opacity=".25"/>
+  <rect x="345" y="490" width="20" height="160" rx="10" fill="#fff" opacity=".6"/>
+  <!-- cioc de turnare -->
+  <path d="M600 520 h40 a14 14 0 0 1 0 28 h-40 z" fill="#ffffff" stroke="#cfdcf0" stroke-width="6"/>
+  <!-- con de stoarcere -->
+  <ellipse cx="450" cy="440" rx="170" ry="34" fill="#ffffff" stroke="#cfdcf0" stroke-width="6"/>
+  <path d="M370 435 Q450 250 530 435 Z" fill="#155ecc"/>
+  <path d="M410 432 Q450 300 450 432" stroke="#ffffff" stroke-width="6" fill="none" opacity=".5"/>
+  <path d="M490 432 Q450 300 450 432" stroke="#ffffff" stroke-width="6" fill="none" opacity=".5"/>
+  <!-- buton + led -->
+  <circle cx="450" cy="725" r="16" fill="#155ecc"/>
+  <!-- jumătate de portocală -->
+  <circle cx="700" cy="330" r="92" fill="#f6b73c"/>
+  <circle cx="700" cy="330" r="74" fill="#ffd27a"/>
+  <g stroke="#f6b73c" stroke-width="6">
+    <line x1="700" y1="256" x2="700" y2="404"/><line x1="626" y1="330" x2="774" y2="330"/>
+    <line x1="648" y1="278" x2="752" y2="382"/><line x1="752" y1="278" x2="648" y2="382"/>
+  </g>
+  <circle cx="700" cy="330" r="10" fill="#fff4dc"/>
+  <!-- cablu USB -->
+  <path d="M300 730 C200 740 170 800 120 790" stroke="#112b4d" stroke-width="10" fill="none" stroke-linecap="round"/>
+  <rect x="90" y="772" width="44" height="30" rx="6" fill="#112b4d"/>
+</svg>

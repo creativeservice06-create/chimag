@@ -1,7 +1,7 @@
 import { html, jsonScript } from '../lib/html.js';
 import { icons } from './icons.js';
 
-const ASSET_V = '1';
+const ASSET_V = '2';
 
 export function layout({ settings, title, description = '', canonical = '', ogImage = '', body, bodyClass = '', jsonLd = null, pageData = null, siteUrl = '' }) {
   const storeName = settings.store_name || 'Chimag';
@@ -25,11 +25,11 @@ ${canonical ? html`<link rel="canonical" href="${canonical}">` : ''}
 <meta property="og:title" content="${title || storeName}">
 <meta property="og:description" content="${description || settings.tagline}">
 ${ogImage ? html`<meta property="og:image" content="${ogImage.startsWith('http') ? ogImage : siteUrl + ogImage}">` : ''}
-<meta name="theme-color" content="#0E4F4A">
+<meta name="theme-color" content="#0E192A">
 <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/styles.css?v=${ASSET_V}">
 ${jsonLd ? html`<script type="application/ld+json">${jsonScript(jsonLd)}</script>` : ''}
 <script>window.CHIMAG=${jsonScript(config)};${pageData ? html`window.PAGE=${jsonScript(pageData)};` : ''}</script>
@@ -63,7 +63,7 @@ ${footer(settings)}
 }
 
 export function logoMark() {
-  return html`<svg class="logo-mark" width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="#0E4F4A"/><path d="M21.5 11.2A7 7 0 1 0 21.5 20.8" fill="none" stroke="#F2B33D" stroke-width="3.4" stroke-linecap="round"/></svg>`;
+  return html`<svg class="logo-mark" width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="#155ECC"/><path d="M21.5 11.2A7 7 0 1 0 21.5 20.8" fill="none" stroke="#FFFFFF" stroke-width="3.4" stroke-linecap="round"/></svg>`;
 }
 
 function footer(s) {
@@ -82,6 +82,7 @@ function footer(s) {
       <ul>
         <li><a href="/pagina/livrare">Livrare și plată</a></li>
         <li><a href="/pagina/retur">Retur și garanție</a></li>
+        <li><a href="/pagina/formular-retragere">Formular de retragere</a></li>
         <li><a href="/pagina/contact">Contact</a></li>
       </ul>
     </div>

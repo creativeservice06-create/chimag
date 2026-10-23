@@ -17,7 +17,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0 }) {
 <meta name="robots" content="noindex">
 <title>${title} · Admin Chimag</title>
 <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/assets/admin.css?v=1">
+<link rel="stylesheet" href="/assets/admin.css?v=2">
 <script src="/assets/admin.js?v=1" defer></script>
 </head><body>
 <div class="shell">
@@ -40,7 +40,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0 }) {
 
 export function loginView(error) {
   return html`<html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex"><title>Autentificare · Admin</title><link rel="stylesheet" href="/assets/admin.css?v=1"></head>
+<meta name="robots" content="noindex"><title>Autentificare · Admin</title><link rel="stylesheet" href="/assets/admin.css?v=2"></head>
 <body class="login-body"><form class="login" method="post" action="/admin/login">
   <div class="brand">${logoMark()}<span>chimag</span></div>
   <h1>Administrare</h1>

@@ -1,6 +1,6 @@
 :root {
-  --bg: #f4f6f6; --panel: #fff; --line: #dfe5e4; --ink: #17292a; --muted: #5f7270;
-  --brand: #0e4f4a; --brand-tint: #e3efed; --saffron: #f2b33d; --saffron-soft: #fdf1d6; --saffron-ink: #5e3f00;
+  --bg: #f5f8fc; --panel: #fff; --line: #dfe5ed; --ink: #101d30; --muted: #56657a;
+  --brand: #155ecc; --brand-tint: #eaf2fd; --saffron: #f6b73c; --saffron-soft: #fff4dc; --saffron-ink: #5c3c00;
   --danger: #b3261e; --ok: #1d7a4f; --blue: #1f4a9a;
 }
 * { box-sizing: border-box; }
@@ -14,8 +14,8 @@ h2 { font-size: 1rem; margin: 0 0 12px; }
 .err-txt { color: var(--danger); font-weight: 600; }
 :focus-visible { outline: 3px solid var(--saffron); outline-offset: 2px; }
 
-.shell { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; background: linear-gradient(90deg, var(--ink) 220px, var(--bg) 220px); }
-.side { background: var(--ink); color: #cfdbd9; padding: 20px 14px; display: flex; flex-direction: column; gap: 22px; position: sticky; top: 0; height: 100vh; }
+.shell { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; background: linear-gradient(90deg, #0e192a 220px, var(--bg) 220px); }
+.side { background: #0e192a; color: #cfdbd9; padding: 20px 14px; display: flex; flex-direction: column; gap: 22px; position: sticky; top: 0; height: 100vh; }
 .brand { display: flex; align-items: center; gap: 9px; color: #fff; text-decoration: none; font-weight: 800; font-size: 1.3rem; padding: 0 8px; }
 .side nav { display: grid; gap: 2px; }
 .side nav a { color: #cfdbd9; text-decoration: none; padding: 9px 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; font-weight: 500; }
@@ -43,7 +43,7 @@ h2 { font-size: 1rem; margin: 0 0 12px; }
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 14px; border: 1px solid var(--line); background: #fff; color: var(--ink); border-radius: 8px; font: 600 14px/1.2 inherit; font-family: inherit; cursor: pointer; text-decoration: none; white-space: nowrap; }
 .btn:hover { border-color: var(--ink); }
 .btn.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
-.btn.primary:hover { background: #0a3d39; }
+.btn.primary:hover { background: #0f4aa6; }
 .btn.danger { color: var(--danger); border-color: #efc9c6; }
 .btn.danger:hover { background: #fbeceb; }
 .btn.ghost { background: transparent; }

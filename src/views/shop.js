@@ -36,53 +36,131 @@ function productCard(p) {
 
 // ---------------- Pagina principală ----------------
 export function homePage({ settings, products }) {
-  const hero = products.find((p) => p.featured) || products[0];
-  const rest = products;
+  const featured = products.filter((p) => p.featured);
+  const hero = featured[0] || products[0];
+  const spotlight = featured.find((p) => p !== hero) || null;
   const threshold = Number(settings.free_shipping_threshold) || 0;
+  const returnDays = settings.return_days || 14;
+  const phone = settings.phone || '';
+  const tel = phone.replace(/\s/g, '');
+
+  const faq = [
+    ['Cum plătesc?', `Plătești curierului, la livrare, după ce primești coletul${settings.card_enabled === '1' ? ', sau online cu cardul, la finalizarea comenzii' : ''}. Nu ai nimic de plătit în avans.`],
+    ['În cât timp primesc comanda?', `${settings.delivery_text || 'Livrăm prin curier în 24–48 de ore lucrătoare'}. Curierul te sună înainte să ajungă.`],
+    ['Cât costă transportul?', threshold ? `${money(settings.shipping_cost)} pe comandă, iar peste ${money(threshold)} transportul este gratuit.` : `${money(settings.shipping_cost)} pe comandă.`],
+    ['Pot returna un produs?', `Da. Ai ${returnDays} zile de la primire să te răzgândești, fără să ne spui motivul. Detaliile sunt în pagina Retur și garanție.`],
+    ['Trebuie să îmi fac cont?', 'Nu. Completezi doar numele, telefonul și adresa de livrare. Durează mai puțin de două minute.'],
+  ];
+
   return html`
-  ${hero ? html`<section class="hero">
-    <div class="wrap hero-inner">
-      <div class="hero-copy">
-        <h1>${settings.tagline || 'Lucruri bune pentru acasă'}</h1>
-        <p class="hero-lead">Produse alese cu grijă, la prețuri corecte. Comanzi în două minute, fără cont, și plătești abia când primești coletul.</p>
-        <div class="hero-actions">
+  <section class="home-hero">
+    <div class="wrap home-hero-inner">
+      <div class="home-hero-copy">
+        <p class="eyebrow-light">Magazin online cu livrare în toată țara</p>
+        <h1>${settings.tagline || 'Lucruri bune pentru acasă, livrate rapid'}</h1>
+        <p class="home-hero-lead">Alegem puține produse, dar bune, și le trimitem repede. Comanzi în două minute, fără cont, și plătești abia când ai coletul în mână.</p>
+        <div class="home-hero-actions">
           <a class="btn btn-primary btn-lg" href="#produse">Vezi produsele</a>
-          ${threshold ? html`<span class="hero-note">${icons.truck(18)} Transport gratuit peste ${money(threshold)}</span>` : ''}
+          <a class="btn btn-outline-light btn-lg" href="#cum-comanzi">Cum comanzi</a>
         </div>
+        <ul class="hero-checks">
+          <li>${icons.check(18)} Plata la livrare</li>
+          <li>${icons.check(18)} Livrare în 24–48h</li>
+          <li>${icons.check(18)} Retur în ${returnDays} zile</li>
+        </ul>
       </div>
-      <a class="hero-product" href="/p/${hero.slug}">
-        <img src="${img(hero)}" alt="${hero.title}" width="720" height="720" fetchpriority="high">
-        <span class="price-sticker">
-          <small>${hero.title}</small>
-          <strong>${money(hero.price)}</strong>
-          ${pctOff(hero) ? html`<em>economisești ${money(hero.compare_at_price - hero.price)}</em>` : ''}
-        </span>
-      </a>
+      ${hero ? html`<a class="hero-card" href="/p/${hero.slug}">
+        <div class="hero-card-media">
+          <img src="${img(hero)}" alt="${hero.title}" width="640" height="640" fetchpriority="high">
+          ${pctOff(hero) ? html`<span class="tag-save tag-lg">−${pctOff(hero)}%</span>` : ''}
+          ${hero.badge ? html`<span class="tag-badge">${hero.badge}</span>` : ''}
+        </div>
+        <div class="hero-card-body">
+          <h2>${hero.title}</h2>
+          ${hero.subtitle ? html`<p>${hero.subtitle}</p>` : ''}
+          <div class="hero-card-foot">
+            <span class="hero-card-price"><strong>${money(hero.price)}</strong>${hero.compare_at_price > hero.price ? html`<s>${money(hero.compare_at_price)}</s>` : ''}</span>
+            <span class="btn btn-primary btn-sm">Comandă acum</span>
+          </div>
+        </div>
+      </a>` : ''}
     </div>
-  </section>` : ''}
+  </section>
 
   <section class="wrap">${trustRow(settings)}</section>
 
   <section class="wrap section" id="produse">
-    <div class="section-head">
-      <h2>Produsele noastre</h2>
-      <p>${settings.delivery_text || 'Livrare rapidă prin curier'}. Plătești când primești coletul.</p>
+    <div class="section-head section-head-row">
+      <div>
+        <p class="eyebrow">Produse</p>
+        <h2>Alese pentru casa ta</h2>
+      </div>
+      ${threshold ? html`<p class="section-note">${icons.truck(18)} Transport gratuit la comenzile peste ${money(threshold)}</p>` : ''}
     </div>
-    ${rest.length
-      ? html`<div class="pgrid">${rest.map(productCard)}</div>`
+    ${products.length
+      ? html`<div class="pgrid">${products.map(productCard)}</div>`
       : html`<p class="empty">Adaugă primul produs din panoul de administrare.</p>`}
   </section>
 
-  <section class="section steps-section">
+  ${spotlight ? html`<section class="spotlight">
+    <div class="wrap spotlight-inner">
+      <a class="spotlight-media" href="/p/${spotlight.slug}"><img src="${img(spotlight)}" alt="${spotlight.title}" width="640" height="640" loading="lazy"></a>
+      <div class="spotlight-copy">
+        <p class="eyebrow">Recomandarea noastră</p>
+        <h2>${spotlight.title}</h2>
+        ${spotlight.subtitle ? html`<p class="spotlight-sub">${spotlight.subtitle}</p>` : ''}
+        ${spotlight.benefits.length ? html`<ul class="benefits">${spotlight.benefits.slice(0, 4).map((b) => html`<li>${icons.check(18)}<span>${b}</span></li>`)}</ul>` : ''}
+        <div class="spotlight-buy">
+          <span class="hero-card-price"><strong>${money(spotlight.price)}</strong>${spotlight.compare_at_price > spotlight.price ? html`<s>${money(spotlight.compare_at_price)}</s>` : ''}</span>
+          ${spotlight.compare_at_price > spotlight.price ? html`<span class="price-save">Economisești ${money(spotlight.compare_at_price - spotlight.price)}</span>` : ''}
+        </div>
+        <a class="btn btn-primary btn-lg" href="/p/${spotlight.slug}">Vezi produsul</a>
+      </div>
+    </div>
+  </section>` : ''}
+
+  <section class="wrap section">
+    <div class="section-head">
+      <p class="eyebrow">De ce Chimag</p>
+      <h2>Cumperi fără grijă</h2>
+    </div>
+    <div class="reasons">
+      <article class="reason">${icons.cash(26)}<h3>Plătești la livrare</h3><p>Nu dai niciun ban în avans. Plătești curierului când ai coletul.</p></article>
+      <article class="reason">${icons.truck(26)}<h3>Livrare rapidă</h3><p>${settings.delivery_text || 'Livrăm prin curier în 24–48 de ore'}, în toată țara.</p></article>
+      <article class="reason">${icons.back(26)}<h3>Retur simplu</h3><p>Ai ${returnDays} zile să te răzgândești, fără să ne explici de ce.</p></article>
+      <article class="reason">${icons.phone(26)}<h3>Vorbești cu un om</h3><p>${phone ? html`Ne suni la <a href="tel:${tel}">${phone}</a> și primești un răspuns clar.` : 'Ne scrii și primești un răspuns clar, de la un om.'}</p></article>
+    </div>
+  </section>
+
+  <section class="section steps-section" id="cum-comanzi">
     <div class="wrap">
-      <div class="section-head"><h2>Cum comanzi</h2></div>
+      <div class="section-head"><p class="eyebrow">Cum comanzi</p><h2>Trei pași, două minute</h2></div>
       <ol class="steps">
-        <li><span class="step-n">1</span><h3>Alegi produsul</h3><p>Vezi detaliile, pozele și ofertele de pachet.</p></li>
+        <li><span class="step-n">1</span><h3>Alegi produsul</h3><p>Vezi pozele, detaliile și ofertele de pachet.</p></li>
         <li><span class="step-n">2</span><h3>Completezi adresa</h3><p>Nume, telefon și adresă. Fără cont, fără parole.</p></li>
-        <li><span class="step-n">3</span><h3>Plătești la livrare</h3><p>Curierul îți aduce coletul în 24–48h, iar tu plătești atunci.</p></li>
+        <li><span class="step-n">3</span><h3>Plătești la livrare</h3><p>Curierul îți aduce coletul, iar tu plătești atunci.</p></li>
       </ol>
     </div>
-  </section>`;
+  </section>
+
+  <section class="wrap section faq-home">
+    <div class="faq-home-head">
+      <p class="eyebrow">Întrebări frecvente</p>
+      <h2>Ce e bine să știi înainte să comanzi</h2>
+      <p class="muted">Nu ai găsit răspunsul? ${phone ? html`Sună-ne la <a href="tel:${tel}">${phone}</a>.` : html`<a href="/pagina/contact">Scrie-ne</a>.`}</p>
+    </div>
+    <div class="faq">${faq.map(([q, a]) => html`<details><summary>${q}</summary><div><p>${a}</p></div></details>`)}</div>
+  </section>
+
+  ${phone ? html`<section class="cta-band">
+    <div class="wrap cta-band-inner">
+      <div>
+        <h2>Ai o întrebare înainte să comanzi?</h2>
+        <p>${settings.hours ? `Te ajutăm ${settings.hours.charAt(0).toLowerCase() + settings.hours.slice(1)}.` : 'Te ajutăm cu drag.'}</p>
+      </div>
+      <a class="btn btn-primary btn-lg" href="tel:${tel}">${icons.phone(20)} Sună la ${phone}</a>
+    </div>
+  </section>` : ''}`;
 }
 
 // ---------------- Pagina de produs ----------------

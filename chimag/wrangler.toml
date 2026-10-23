@@ -12,7 +12,7 @@ binding = "ASSETS"
 [[d1_databases]]
 binding = "DB"
 database_name = "chimag-db"
-database_id = "PUNE-AICI-ID-UL-DIN-WRANGLER-D1-CREATE"
+database_id = "d5b9fdac-398c-4dbb-b076-ab75d71168b7"
 migrations_dir = "migrations"
 
 # Pozele produselor (Cloudflare R2)

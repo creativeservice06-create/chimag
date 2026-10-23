@@ -1,8 +1,9 @@
-import { html, jsonScript } from '../lib/html.js';
+import { html, raw, jsonScript } from '../lib/html.js';
+import { waLink } from './pages.js';
 import { icons } from './icons.js';
 import { wheelConfig } from '../lib/coupons.js';
 
-const ASSET_V = '4';
+const ASSET_V = '6';
 
 export function layout({ settings, title, description = '', canonical = '', ogImage = '', body, bodyClass = '', jsonLd = null, pageData = null, siteUrl = '' }) {
   const storeName = settings.store_name || 'Chimag';
@@ -47,7 +48,8 @@ ${settings.announcement ? html`<div class="announce">${settings.announcement}</d
     <a href="/" class="logo" aria-label="${storeName} – pagina principală">${logoMark()}<span>${storeName.toLowerCase()}</span></a>
     <nav class="main-nav" aria-label="Meniu">
       <a href="/#produse">Produse</a>
-      <a href="/pagina/livrare">Livrare</a>
+      <a href="/pagina/despre">Despre noi</a>
+      <a href="/comanda">Comanda mea</a>
       <a href="/pagina/contact">Contact</a>
     </nav>
     ${wheel.enabled ? html`<button type="button" class="wheel-btn" data-wheel-open aria-label="Roata norocului – câștigă o reducere"><span aria-hidden="true">🎁</span><span class="wheel-dot" data-wheel-dot></span></button>` : ''}
@@ -57,6 +59,7 @@ ${settings.announcement ? html`<div class="announce">${settings.announcement}</d
 <div class="promo-bar" data-promo-bar hidden></div>
 <main id="continut">${body}</main>
 ${footer(settings)}
+${waLink(settings.whatsapp) && !String(bodyClass).includes('no-wa') ? html`<a class="wa-float" href="${waLink(settings.whatsapp)}" target="_blank" rel="noopener" aria-label="Scrie-ne pe WhatsApp">${raw('<svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.8-1.4.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.6-.3z"/></svg>')}</a>` : ''}
 <div class="toast" role="status" aria-live="polite" data-toast></div>
 ${wheel.enabled ? html`<div class="wheel-modal" data-wheel-modal hidden role="dialog" aria-modal="true" aria-labelledby="wheel-title">
   <div class="wheel-backdrop" data-wheel-close></div>
@@ -69,7 +72,7 @@ ${wheel.enabled ? html`<div class="wheel-modal" data-wheel-modal hidden role="di
     </div>
     <div class="wheel-copy" data-wheel-copy>
       <h2 id="wheel-title">${wheel.title}</h2>
-      <p>O singură învârtire, premiu garantat. Reducerea se aplică automat la comandă și e valabilă ${wheel.hours} de ore.</p>
+      <p>${wheel.hasNothing ? 'Ai o singură învârtire.' : 'O singură învârtire, premiu garantat.'} Dacă câștigi, reducerea se aplică automat la comandă și e valabilă ${wheel.hours} de ore.</p>
       <button type="button" class="btn btn-primary btn-lg btn-block" data-wheel-spin>Învârte roata</button>
       <p class="wheel-legal"><a href="/pagina/regulament-roata">Regulament și șanse</a></p>
     </div>
@@ -93,6 +96,11 @@ export function logoMark() {
 
 function footer(s) {
   const year = new Date().getFullYear();
+  const socials = [
+    ['facebook_url', 'Facebook', '<path d="M14 8h3V4h-3a4 4 0 0 0-4 4v3H7v4h3v6h4v-6h3l1-4h-4V8z"/>'],
+    ['instagram_url', 'Instagram', '<rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r=".8" fill="currentColor"/>'],
+    ['tiktok_url', 'TikTok', '<path d="M14 3v11.5a3.5 3.5 0 1 1-3.5-3.5"/><path d="M14 3c.5 2.6 2.4 4.4 5 4.6"/>'],
+  ].filter(([k]) => s[k]);
   return html`<footer class="site-footer">
   <div class="wrap footer-grid">
     <div class="footer-brand">
@@ -101,30 +109,42 @@ function footer(s) {
       ${s.phone ? html`<p class="footer-contact">${icons.phone(18)} <a href="tel:${s.phone.replace(/\s/g, '')}">${s.phone}</a></p>` : ''}
       ${s.email ? html`<p class="footer-contact">${icons.mail(18)} <a href="mailto:${s.email}">${s.email}</a></p>` : ''}
       ${s.hours ? html`<p class="footer-contact">${icons.clock(18)} ${s.hours}</p>` : ''}
+      ${socials.length ? html`<div class="socials">${socials.map(([k, name, d]) => html`<a href="${s[k]}" target="_blank" rel="noopener" aria-label="${name}">${raw(`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`)}</a>`)}</div>` : ''}
     </div>
     <div>
-      <h3>Comenzi</h3>
+      <h3>Magazin</h3>
       <ul>
-        <li><a href="/pagina/livrare">Livrare și plată</a></li>
-        <li><a href="/pagina/retur">Retur și garanție</a></li>
-        <li><a href="/pagina/formular-retragere">Formular de retragere</a></li>
+        <li><a href="/#produse">Produse</a></li>
+        <li><a href="/pagina/despre">Despre noi</a></li>
+        <li><a href="/comanda">Unde e comanda mea?</a></li>
         <li><a href="/pagina/contact">Contact</a></li>
       </ul>
     </div>
     <div>
-      <h3>Informații legale</h3>
+      <h3>Ajutor</h3>
+      <ul>
+        <li><a href="/pagina/livrare">Livrare și plată</a></li>
+        <li><a href="/pagina/retur">Retur și garanție</a></li>
+        <li><a href="/pagina/formular-retragere">Formular de retragere</a></li>
+        ${wheelConfig(s).enabled ? html`<li><a href="/pagina/regulament-roata">Regulament roata norocului</a></li>` : ''}
+      </ul>
+    </div>
+    <div>
+      <h3>Legal</h3>
       <ul>
         <li><a href="/pagina/termeni">Termeni și condiții</a></li>
         <li><a href="/pagina/confidentialitate">Confidențialitate (GDPR)</a></li>
         <li><a href="/pagina/cookies">Politica de cookie-uri</a></li>
-        ${wheelConfig(s).enabled ? html`<li><a href="/pagina/regulament-roata">Regulament roata norocului</a></li>` : ''}
-        <li><a href="https://anpc.ro/ce-este-sal/" target="_blank" rel="noopener">ANPC – SAL</a></li>
-        <li><a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener">Soluționarea online a litigiilor</a></li>
+        <li><a href="https://anpc.ro" target="_blank" rel="noopener">ANPC</a></li>
       </ul>
     </div>
   </div>
+  <div class="wrap footer-badges">
+    <a class="anpc-badge" href="https://anpc.ro/ce-este-sal/" target="_blank" rel="noopener"><small>Soluționarea alternativă a litigiilor</small><strong>ANPC · SAL</strong></a>
+    <a class="anpc-badge" href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener"><small>Soluționarea online a litigiilor</small><strong>SOL · Comisia Europeană</strong></a>
+  </div>
   <div class="wrap footer-legal">
-    <p>© ${year} ${s.company_name || s.store_name}${s.company_cui ? ` · CUI ${s.company_cui}` : ''}${s.company_reg ? ` · ${s.company_reg}` : ''}</p>
+    <p>© ${year} ${s.company_name || s.store_name}${s.company_cui ? ` · CUI ${s.company_cui}` : ''}${s.company_reg ? ` · ${s.company_reg}` : ''}${s.company_address ? ` · ${s.company_address}` : ''}</p>
     ${s.card_enabled === '1'
       ? html`<p class="pay-methods">Plata la livrare sau cu cardul <span class="pill">Visa</span><span class="pill">Mastercard</span><span class="pill">Apple Pay</span></p>`
       : html`<p class="pay-methods">Plata ramburs, la livrare</p>`}

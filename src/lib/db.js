@@ -10,6 +10,7 @@ const DEFAULTS = {
   shipping_provider: 'test', auto_awb_on_confirm: '0', card_enabled: '0',
   sender_name: '', sender_phone: '', sender_county: '', sender_city: '', sender_address: '',
   parcel_contents: 'Produse diverse',
+  contact_email: '', notify_orders: '1', whatsapp: '', facebook_url: '', instagram_url: '', tiktok_url: '',
 };
 
 export async function getSettings(env) {

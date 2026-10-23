@@ -164,7 +164,7 @@ export function homePage({ settings, products }) {
 }
 
 // ---------------- Pagina de produs ----------------
-export function productPage({ settings, product: p, reviews, siteUrl }) {
+export function productPage({ settings, product: p, reviews, related = [], siteUrl }) {
   const off = pctOff(p);
   const avg = reviews.length ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : 0;
   const bundles = (p.bundles || []).filter((b) => Number(b.qty) >= 1).sort((a, b) => a.qty - b.qty);
@@ -258,6 +258,11 @@ export function productPage({ settings, product: p, reviews, siteUrl }) {
       </section>` : ''}
     </div>
   </div>
+
+  ${related.length ? html`<section class="wrap related">
+    <h2>Te-ar mai putea interesa</h2>
+    <div class="pgrid">${related.map(productCard)}</div>
+  </section>` : ''}
 
   ${outOfStock ? '' : html`<div class="sticky-buy" data-sticky-buy>
     <div class="sticky-info"><strong>${money(p.price)}</strong>${p.compare_at_price > p.price ? html`<s>${money(p.compare_at_price)}</s>` : ''}</div>
@@ -439,6 +444,22 @@ export function thankYouPage({ settings, order, items, payment }) {
 
     <p class="center"><a class="btn btn-ghost" href="/">Înapoi la magazin</a></p>
     ${settings.phone ? html`<p class="center muted">Ai o întrebare? Sună-ne la <a href="tel:${settings.phone.replace(/\s/g, '')}">${settings.phone}</a>.</p>` : ''}
+  </div>`;
+}
+
+export function trackOrderPage({ settings, error }) {
+  return html`<div class="wrap narrow page track-page">
+    <h1>Unde e comanda mea?</h1>
+    <p class="page-lead">Scrie numărul comenzii și telefonul folosit la comandă. Îți arătăm statusul și, după expediere, numărul AWB cu link de urmărire.</p>
+    <form method="post" action="/comanda" class="card track-form">
+      ${error ? html`<p class="form-error">${error}</p>` : ''}
+      <div class="field-row">
+        <div class="field"><label for="t-number">Număr comandă</label><input id="t-number" name="number" required placeholder="ex: CHI-1024" autocapitalize="characters"></div>
+        <div class="field"><label for="t-phone">Telefon</label><input id="t-phone" name="phone" type="tel" inputmode="tel" required placeholder="07xx xxx xxx" autocomplete="tel"></div>
+      </div>
+      <button class="btn btn-primary btn-lg btn-block">Vezi comanda</button>
+    </form>
+    <p class="muted center">Numărul comenzii îl găsești pe pagina de confirmare${settings.phone ? html`. Nu-l mai ai? Sună-ne la <a href="tel:${settings.phone.replace(/\s/g, '')}">${settings.phone}</a>` : ''}.</p>
   </div>`;
 }
 

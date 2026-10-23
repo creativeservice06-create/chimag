@@ -8,9 +8,10 @@ import { setStatus, generateAwb, cancelAwb, setManualAwb } from './lib/orders.js
 import { getProvider } from './shipping/providers.js';
 import { JUDETE } from './lib/judete.js';
 import {
-  adminLayout, loginView, dashboardView, ordersView, orderView, labelView, productsView, productFormView, settingsView, couponsView,
+  adminLayout, loginView, dashboardView, ordersView, orderView, labelView, productsView, productFormView, settingsView, couponsView, messagesView,
 } from './views/admin-views.js';
-import { COUPON_TYPES, normalizeCode } from './lib/coupons.js';
+import { COUPON_TYPES, CODE_TYPES, normalizeCode } from './lib/coupons.js';
+import { emailStatus, sendEmail } from './lib/email.js';
 
 // Formular gol sau fără content-type nu trebuie să dea eroare
 const readForm = (request) => request.formData().catch(() => new FormData());
@@ -19,7 +20,8 @@ const withFlash = (path, type, msg) => `${path}${path.includes('?') ? '&' : '?'}
 
 async function render(env, url, { title, active, body }) {
   const n = await env.DB.prepare("SELECT COUNT(*) AS n FROM orders WHERE status = 'noua'").first();
-  return htmlResponse(adminLayout({ title, active, body, flash: flashFrom(url), newCount: n?.n || 0 }), 200, {
+  const msg = await env.DB.prepare('SELECT COUNT(*) AS n FROM messages WHERE is_read = 0').first().catch(() => ({ n: 0 }));
+  return htmlResponse(adminLayout({ title, active, body, flash: flashFrom(url), newCount: n?.n || 0, msgCount: msg?.n || 0 }), 200, {
     'cache-control': 'no-store', 'x-robots-tag': 'noindex', 'x-frame-options': 'DENY',
   });
 }
@@ -206,10 +208,26 @@ export async function handleAdmin(request, env, ctx, path) {
     return redirect(withFlash(`/admin/produse/${m[1]}`, 'ok', 'Recenzie ștearsă.'));
   }
 
+  // ---------- Mesaje ----------
+  if (path === '/admin/mesaje' && method === 'GET') {
+    const { results } = await env.DB.prepare('SELECT * FROM messages ORDER BY id DESC LIMIT 200').all();
+    return render(env, url, { title: 'Mesaje', active: 'mesaje', body: messagesView({ messages: results || [], email: emailStatus(env), settings }) });
+  }
+  if ((m = path.match(/^\/admin\/mesaje\/(\d+)\/(citit|necitit|sterge)$/)) && method === 'POST') {
+    const id = Number(m[1]);
+    if (m[2] === 'sterge') await env.DB.prepare('DELETE FROM messages WHERE id = ?').bind(id).run();
+    else await env.DB.prepare('UPDATE messages SET is_read = ? WHERE id = ?').bind(m[2] === 'citit' ? 1 : 0, id).run();
+    return redirect('/admin/mesaje');
+  }
+  if (path === '/admin/mesaje/test-email' && method === 'POST') {
+    const r = await sendEmail(env, settings, { subject: 'Test email din magazinul Chimag', text: 'Dacă primești acest email, notificările pentru comenzi și mesaje funcționează.' });
+    return redirect(withFlash('/admin/mesaje', r.ok ? 'ok' : 'err', r.ok ? `Email de test trimis la ${settings.contact_email}. Verifică și folderul Spam.` : `Emailul nu a plecat: ${r.error}`));
+  }
+
   // ---------- Roată și coduri ----------
   if (path === '/admin/coduri' && method === 'GET') {
     const filter = ['manual', 'roata', 'folosite'].includes(url.searchParams.get('f')) ? url.searchParams.get('f') : 'manual';
-    const where = filter === 'folosite' ? 'WHERE used_count > 0' : 'WHERE source = ?';
+    const where = filter === 'folosite' ? "WHERE used_count > 0 AND type != 'nimic'" : "WHERE source = ? AND type != 'nimic'";
     const stmt = env.DB.prepare(`SELECT * FROM coupons ${where} ORDER BY id DESC LIMIT 200`);
     const { results: coupons } = await (filter === 'folosite' ? stmt : stmt.bind(filter)).all();
     const spins = await env.DB.prepare("SELECT COUNT(*) AS n, COALESCE(SUM(CASE WHEN used_count > 0 THEN 1 ELSE 0 END),0) AS used FROM coupons WHERE source = 'roata' AND created_at > datetime('now','-30 days')").first();
@@ -248,7 +266,7 @@ export async function handleAdmin(request, env, ctx, path) {
   if (path === '/admin/coduri/nou' && method === 'POST') {
     const form = await readForm(request);
     const code = normalizeCode(form.get('code'));
-    const type = COUPON_TYPES[form.get('type')] ? form.get('type') : 'procent';
+    const type = CODE_TYPES.includes(form.get('type')) ? form.get('type') : 'procent';
     if (code.length < 3) return redirect(withFlash('/admin/coduri', 'err', 'Codul trebuie să aibă cel puțin 3 caractere (litere, cifre sau cratimă).'));
     let value = 0;
     if (type === 'procent') value = Math.min(90, Math.max(0, Math.round(Number(String(form.get('value') || '').replace(',', '.')) || 0)));
@@ -280,11 +298,13 @@ export async function handleAdmin(request, env, ctx, path) {
       warehouse: !!env.WAREHOUSE_API_KEY, stripe: !!env.STRIPE_SECRET_KEY, stripeWebhook: !!env.STRIPE_WEBHOOK_SECRET,
       fbCapi: !!env.FB_CAPI_TOKEN, ttEvents: !!env.TIKTOK_EVENTS_TOKEN,
     };
+    secrets.email = emailStatus(env);
     return render(env, url, { title: 'Setări', active: 'setari', body: settingsView({ settings, products, secrets, siteUrl: (env.SITE_URL || url.origin).replace(/\/$/, '') }) });
   }
   if (path === '/admin/setari' && method === 'POST') {
     const form = await readForm(request);
     const text = ['store_name', 'tagline', 'announcement', 'phone', 'email', 'hours', 'company_name', 'company_cui', 'company_reg', 'company_address',
+      'contact_email', 'whatsapp', 'facebook_url', 'instagram_url', 'tiktok_url',
       'delivery_text', 'bump_product_id', 'fb_pixel_id', 'tiktok_pixel_id', 'shipping_provider', 'sender_name', 'sender_phone', 'sender_county',
       'sender_city', 'sender_address', 'parcel_contents'];
     const values = {};
@@ -294,6 +314,8 @@ export async function handleAdmin(request, env, ctx, path) {
     values.bump_discount_pct = String(Math.min(90, Math.max(0, Number(form.get('bump_discount_pct')) || 0)));
     values.auto_awb_on_confirm = form.get('auto_awb_on_confirm') ? '1' : '0';
     values.card_enabled = form.get('card_enabled') ? '1' : '0';
+    values.notify_orders = form.get('notify_orders') ? '1' : '0';
+    for (const k of ['facebook_url', 'instagram_url', 'tiktok_url']) if (values[k] && !/^https:\/\//.test(values[k])) values[k] = '';
     values.fb_pixel_id = values.fb_pixel_id.replace(/\D/g, '');
     values.tiktok_pixel_id = values.tiktok_pixel_id.replace(/[^A-Za-z0-9]/g, '');
     await saveSettings(env, values);

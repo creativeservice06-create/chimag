@@ -74,6 +74,7 @@ Worker-ul `chimag` → **Settings → Variables and Secrets → Add** (tip **Sec
 |---|---|
 | `ADMIN_PASSWORD` | parola ta pentru /admin (lungă!) |
 | `SESSION_SECRET` | un șir aleator de minim 32 de caractere |
+| `RESEND_API_KEY` | opțional, doar dacă nu folosești Email Routing |
 | `ADMIN_PATH` | adresa secretă a panoului, ex. `intrare-k7m2p9` (vezi mai jos) |
 | `WAREHOUSE_API_KEY` | cheie aleatoare, o dai depozitului (Helpship) |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | doar pentru plata cu cardul |
@@ -118,6 +119,17 @@ Dacă ei preferă să le trimiți tu comenzile (push), setezi `HELPSHIP_API_URL`
 Fluxul cu Helpship: comanda intră → o confirmi (telefonic, dacă vrei) → apare în API → Helpship o ambalează și trimite AWB-ul → statusul se actualizează singur.
 
 ---
+
+## Emailuri (formular de contact și comenzi noi)
+Mesajele din formularul de contact se salvează mereu în **Admin → Mesaje**. Ca să le primești și pe email (plus un email la fiecare comandă nouă), nu ai nevoie de parola Yahoo – folosim **Cloudflare Email Routing**, gratuit:
+
+1. Domeniul `chimag.ro` trebuie să fie pe Cloudflare (pasul 6).
+2. Cloudflare → `chimag.ro` → **Email → Email Routing → Get started**. Acceptă înregistrările DNS propuse.
+3. La **Destination addresses** adaugă `chirilasadrian@yahoo.com` și apasă linkul de confirmare primit pe Yahoo.
+4. În `wrangler.toml` scoate `# ` din fața celor 3 rânduri `[[send_email]]`, apoi commit.
+5. Admin → Mesaje → **Trimite un email de test**. Dacă nu apare în Inbox, verifică Spam și marchează „Nu e spam".
+
+Alternativă fără domeniu pe Cloudflare: cont gratuit pe resend.com, iar cheia API o pui ca secret `RESEND_API_KEY` (cu varianta gratuită, emailurile pleacă doar spre adresa cu care ți-ai făcut contul Resend).
 
 ## Panoul de admin ascuns
 Dacă setezi secretul `ADMIN_PATH` (ex. `intrare-k7m2p9`), `/admin` arată ca o pagină inexistentă pentru oricine.

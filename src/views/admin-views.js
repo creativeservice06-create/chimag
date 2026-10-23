@@ -4,15 +4,16 @@ import { ORDER_STATUSES, PAYMENT_STATUSES } from '../lib/db.js';
 import { PROVIDERS } from '../shipping/providers.js';
 import { JUDETE } from '../lib/judete.js';
 import { logoMark } from './layout.js';
-import { COUPON_TYPES, wheelConfig, prizeOdds, describeCoupon } from '../lib/coupons.js';
+import { COUPON_TYPES, CODE_TYPES, wheelConfig, prizeOdds, describeCoupon } from '../lib/coupons.js';
 import { parseJSON } from '../lib/util.js';
 
-export function adminLayout({ title, active, body, flash, newCount = 0 }) {
+export function adminLayout({ title, active, body, flash, newCount = 0, msgCount = 0 }) {
   const nav = [
     ['/admin', 'panou', 'Panou'],
     ['/admin/comenzi', 'comenzi', 'Comenzi'],
     ['/admin/produse', 'produse', 'Produse'],
     ['/admin/coduri', 'coduri', 'Roată și coduri'],
+    ['/admin/mesaje', 'mesaje', 'Mesaje'],
     ['/admin/setari', 'setari', 'Setări'],
   ];
   return html`<html lang="ro"><head>
@@ -20,13 +21,13 @@ export function adminLayout({ title, active, body, flash, newCount = 0 }) {
 <meta name="robots" content="noindex">
 <title>${title} · Admin Chimag</title>
 <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/assets/admin.css?v=3">
+<link rel="stylesheet" href="/assets/admin.css?v=4">
 <script src="/assets/admin.js?v=1" defer></script>
 </head><body>
 <div class="shell">
   <aside class="side">
     <a class="brand" href="/admin">${logoMark()}<span>chimag</span></a>
-    <nav>${nav.map(([href, key, label]) => html`<a href="${href}" class="${active === key ? 'on' : ''}">${label}${key === 'comenzi' && newCount ? html`<b class="count">${newCount}</b>` : ''}</a>`)}</nav>
+    <nav>${nav.map(([href, key, label]) => html`<a href="${href}" class="${active === key ? 'on' : ''}">${label}${key === 'comenzi' && newCount ? html`<b class="count">${newCount}</b>` : ''}${key === 'mesaje' && msgCount ? html`<b class="count">${msgCount}</b>` : ''}</a>`)}</nav>
     <div class="side-foot">
       <a href="/" target="_blank">Vezi magazinul</a>
       <form method="post" action="/admin/logout"><button class="linklike">Ieșire</button></form>
@@ -43,7 +44,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0 }) {
 
 export function loginView(error) {
   return html`<html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex"><title>Autentificare · Admin</title><link rel="stylesheet" href="/assets/admin.css?v=3"></head>
+<meta name="robots" content="noindex"><title>Autentificare · Admin</title><link rel="stylesheet" href="/assets/admin.css?v=4"></head>
 <body class="login-body"><form class="login" method="post" action="/admin/login">
   <div class="brand">${logoMark()}<span>chimag</span></div>
   <h1>Administrare</h1>
@@ -393,6 +394,19 @@ export function settingsView({ settings: s, products, secrets, siteUrl }) {
       ${f('phone', 'Telefon')}
       ${f('email', 'Email')}
       ${f('hours', 'Program')}
+      ${f('whatsapp', 'WhatsApp (număr de telefon)', { placeholder: 'ex: 0740 231 358 – gol = fără buton WhatsApp' })}
+    </section>
+    <section class="panel form-grid">
+      <h2 class="span2">Notificări pe email</h2>
+      ${f('contact_email', 'Unde primești mesajele și comenzile', { placeholder: 'ex: chirilasadrian@yahoo.com' })}
+      <label class="check"><input type="checkbox" name="notify_orders" value="1" ${s.notify_orders === '1' ? 'checked' : ''}> Trimite-mi email la fiecare comandă nouă</label>
+      <p class="hint span2">Trimitere email: ${secrets.email?.ok ? html`<span class="chip st-livrata">activă (${secrets.email.via})</span>` : html`<span class="chip">neconfigurată</span> – mesajele se salvează oricum la <a href="/admin/mesaje">Mesaje</a>. Vezi README → „Emailuri”.`}</p>
+    </section>
+    <section class="panel form-grid">
+      <h2 class="span2">Rețele sociale (apar în subsolul site-ului)</h2>
+      ${f('facebook_url', 'Facebook', { placeholder: 'https://facebook.com/…' })}
+      ${f('instagram_url', 'Instagram', { placeholder: 'https://instagram.com/…' })}
+      ${f('tiktok_url', 'TikTok', { placeholder: 'https://tiktok.com/@…' })}
     </section>
     <section class="panel form-grid">
       <h2 class="span2">Date firmă (apar în subsol și în paginile legale)</h2>
@@ -483,7 +497,7 @@ export function couponsView({ settings: s, coupons, stats, filter }) {
         <td class="r nowrap">${r.label && odds[i] ? `${String(odds[i]).replace('.', ',')}%` : '–'}</td>
         <td><input name="p_min" value="${r.min ? moneyNum(r.min) : ''}" inputmode="decimal" placeholder="0"></td>
       </tr>`)}</tbody></table></div>
-    <p class="hint">La „Reducere %" scrii procentul (ex: 10), la „Reducere în lei" suma (ex: 15). Pentru „Transport gratuit" și „1+1 gratis" valoarea nu contează. Șansele apar public în <a href="/pagina/regulament-roata" target="_blank">regulament</a>.</p>
+    <p class="hint">La „Reducere %" scrii procentul (ex: 10), la „Reducere în lei" suma (ex: 15). Pentru „Transport gratuit", „1+1 gratis" și „Fără premiu" valoarea nu contează. „Fără premiu" înseamnă că acea felie a roții nu câștigă nimic. Șansele apar public în <a href="/pagina/regulament-roata" target="_blank">regulament</a>.</p>
     <div class="btn-row mt"><button class="btn primary">Salvează roata</button><a class="btn" href="/?roata=test" target="_blank">Vezi pe site</a></div>
   </form>
 
@@ -492,7 +506,7 @@ export function couponsView({ settings: s, coupons, stats, filter }) {
     <p class="hint">Pentru reclame, influenceri sau clienți fideli, de exemplu TIKTOK10. Clientul îl scrie la finalizarea comenzii.</p>
     <form method="post" action="/admin/coduri/nou" class="form-grid">
       <label>Cod<input name="code" required maxlength="30" placeholder="ex: TIKTOK10" style="text-transform:uppercase"></label>
-      <label>Tip<select name="type">${Object.entries(COUPON_TYPES).map(([k, v]) => html`<option value="${k}">${v}</option>`)}</select></label>
+      <label>Tip<select name="type">${CODE_TYPES.map((k) => html`<option value="${k}">${COUPON_TYPES[k]}</option>`)}</select></label>
       <label>Valoare (% sau lei)<input name="value" inputmode="decimal" placeholder="ex: 10"></label>
       <label>Comandă minimă (lei)<input name="min_order" inputmode="decimal" placeholder="0"></label>
       <label>Număr maxim de folosiri (0 = nelimitat)<input name="max_uses" type="number" min="0" value="0"></label>
@@ -519,4 +533,28 @@ export function couponsView({ settings: s, coupons, stats, filter }) {
         </td>
       </tr>`)}</tbody></table></div>` : html`<p class="muted">Niciun cod aici încă.</p>`}
   </section>`;
+}
+
+// ---------------- Mesaje ----------------
+export function messagesView({ messages, email, settings: s }) {
+  return html`
+  <header class="page-head"><h1>Mesaje</h1>
+    <form method="post" action="/admin/mesaje/test-email"><button class="btn" ${email.ok ? '' : 'disabled'}>Trimite un email de test</button></form>
+  </header>
+  <p class="hint">${email.ok
+    ? html`Mesajele noi și comenzile se trimit pe email la <b>${s.contact_email || '(nesetat)'}</b> prin ${email.via}.`
+    : html`Trimiterea pe email nu e configurată încă, dar toate mesajele apar aici. Configurarea e descrisă în README → „Emailuri”.`}</p>
+  ${messages.length ? html`<div class="msg-list">${messages.map((m) => html`<article class="panel msg ${m.is_read ? '' : 'unread'}">
+    <header class="msg-head">
+      <div><b>${m.name}</b> ${m.is_read ? '' : html`<span class="chip st-noua">nou</span>`}<br>
+        <span class="muted">${formatDate(m.created_at)} · ${m.subject || 'Fără subiect'}${m.order_number ? ` · comanda ${m.order_number}` : ''}</span></div>
+      <div class="btn-row">
+        ${m.phone ? html`<a class="btn sm" href="tel:${m.phone}">Sună ${m.phone}</a>` : ''}
+        ${m.email ? html`<a class="btn sm" href="mailto:${m.email}?subject=${encodeURIComponent('Re: ' + (m.subject || 'mesajul tău'))}">Răspunde pe email</a>` : ''}
+        <form method="post" action="/admin/mesaje/${m.id}/${m.is_read ? 'necitit' : 'citit'}" class="inline-form"><button class="btn sm">${m.is_read ? 'Marchează necitit' : 'Marchează citit'}</button></form>
+        <form method="post" action="/admin/mesaje/${m.id}/sterge" class="inline-form"><button class="btn sm danger" data-confirm="Ștergi mesajul?">Șterge</button></form>
+      </div>
+    </header>
+    <p class="msg-body">${m.message}</p>
+  </article>`)}</div>` : html`<p class="muted">Niciun mesaj încă. Formularul e pe pagina <a href="/pagina/contact" target="_blank">Contact</a>.</p>`}`;
 }

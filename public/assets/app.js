@@ -495,7 +495,18 @@
       disc.style.transform = 'rotate(' + target + 'deg)';
     }
 
+    function showLost() {
+      var hub = $('.wheel-hub', modal); if (hub) { hub.textContent = '🙂'; hub.disabled = true; hub.setAttribute('aria-label', 'Roata a fost învârtită'); }
+      copy.innerHTML = '<p class="wheel-lost">De data asta nu ai câștigat</p>' +
+        '<h2 id="wheel-title">Mai mult noroc data viitoare!</h2>' +
+        '<p>Poți comanda oricum, cu plata la livrare și retur în 14 zile.</p>' +
+        '<a class="btn btn-primary btn-lg btn-block" href="/#produse" data-wheel-go>Vezi produsele</a>' +
+        '<p class="wheel-legal"><a href="/pagina/regulament-roata">Regulament și șanse</a></p>';
+      var go = $('[data-wheel-go]', copy);
+      if (go) go.addEventListener('click', close);
+    }
     function showResult(w, fresh) {
+      if (w.nothing) return showLost();
       var hub = $('.wheel-hub', modal); if (hub) { hub.textContent = '🎉'; hub.disabled = true; hub.setAttribute('aria-label', 'Roata a fost învârtită'); }
       var exp = Date.parse(w.expiresAt);
       var cartN = getCart().length;
@@ -512,17 +523,26 @@
       if (go) go.addEventListener('click', close);
     }
 
+    var scrollY = 0;
+    function lockScroll(on) {
+      var b = document.body, h = document.documentElement;
+      if (on) { scrollY = window.scrollY; b.style.top = -scrollY + 'px'; b.classList.add('no-scroll'); h.classList.add('no-scroll'); }
+      else { b.classList.remove('no-scroll'); h.classList.remove('no-scroll'); b.style.top = ''; window.scrollTo(0, scrollY); }
+    }
+    // fereastra nu se derulează și nu lasă pagina din spate să se miște (mouse, touchpad, deget)
+    ['wheel', 'touchmove'].forEach(function (ev) { modal.addEventListener(ev, function (e) { e.preventDefault(); }, { passive: false }); });
+
     function open() {
       var w = store.get('chimag_wheel', null);
       modal.hidden = false;
-      document.body.classList.add('no-scroll');
+      lockScroll(true);
       if (w) { rotateTo(w.index, false); showResult(w, false); }
       setTimeout(function () { var b = $('[data-wheel-spin]', modal) || $('[data-wheel-close]', modal); if (b) b.focus(); }, 50);
     }
     function close() {
       if (spinning) return;
       modal.hidden = true;
-      document.body.classList.remove('no-scroll');
+      lockScroll(false);
       if (!store.get('chimag_wheel', null)) store.set('chimag_wheel_later', Date.now());
     }
 
@@ -538,9 +558,10 @@
           setTimeout(function () {
             spinning = false;
             store.set('chimag_wheel', w);
+            updateDot();
+            if (w.nothing) { showLost(); return; }
             store.set('chimag_coupon', w.code);
             updatePromoBar();
-            updateDot();
             confetti();
             showResult(w, true);
           }, 5800);
@@ -567,6 +588,32 @@
     if (W.autoOpen && !skip && !store.get('chimag_wheel', null) && Date.now() - later > 24 * 3600e3) {
       setTimeout(function () { if (modal.hidden) open(); }, W.delay * 1000);
     }
+  })();
+
+  /* ---------------- Formular de contact ---------------- */
+  (function contact() {
+    var form = $('[data-contact-form]');
+    if (!form) return;
+    var err = $('[data-contact-error]', form), ok = $('[data-contact-ok]', form), btn = $('[data-contact-submit]', form);
+    var q = new URLSearchParams(location.search);
+    function done() { $$('h2, .field, .field-row, .hint-small, [data-contact-submit], [data-contact-error]', form).forEach(function (el) { if (!ok.contains(el)) el.hidden = true; }); ok.hidden = false; }
+    if (q.get('trimis')) done();
+    if (q.get('eroare')) { err.textContent = q.get('eroare'); err.hidden = false; }
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      err.hidden = true;
+      var data = {};
+      ['name', 'phone', 'email', 'order_number', 'subject', 'message', 'website'].forEach(function (k) { data[k] = (form.elements[k] && form.elements[k].value || '').trim(); });
+      var problem = data.name.length < 2 ? 'Scrie-ne numele tău.' :
+        (!data.phone && !data.email) ? 'Lasă-ne un telefon sau un email, ca să-ți putem răspunde.' :
+        data.message.length < 10 ? 'Mesajul e prea scurt. Spune-ne puțin mai mult.' : '';
+      if (problem) { err.textContent = problem; err.hidden = false; return; }
+      btn.disabled = true; var old = btn.textContent; btn.textContent = 'Se trimite…';
+      fetch('/api/contact', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(data) })
+        .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+        .then(function (res) { if (!res.ok) throw new Error(res.j.error || 'Mesajul nu a putut fi trimis.'); done(); })
+        .catch(function (x) { err.textContent = x.message; err.hidden = false; btn.disabled = false; btn.textContent = old; });
+    });
   })();
 
   /* ---------------- Mulțumim: eveniment Purchase (o singură dată) ---------------- */

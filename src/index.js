@@ -14,6 +14,8 @@ import { syncTracking } from './cron.js';
 import { hmac, timingSafeEqual } from './lib/auth.js';
 import { getCookie } from './lib/util.js';
 import { spinWheel } from './lib/coupons.js';
+import { sendEmail } from './lib/email.js';
+import { trackOrderPage } from './views/shop.js';
 
 const siteUrl = (env, request) => (env.SITE_URL || new URL(request.url).origin).replace(/\/$/, '');
 
@@ -84,6 +86,7 @@ async function route(request, env, ctx) {
     if (!product) return notFound(env, request);
     const settings = await getSettings(env);
     const reviews = await getReviews(env, product.id);
+    const related = (await listProducts(env)).filter((p) => p.id !== product.id).slice(0, 4);
     const base = siteUrl(env, request);
     return page(env, request, {
       settings,
@@ -93,7 +96,7 @@ async function route(request, env, ctx) {
       ogImage: product.images[0],
       jsonLd: productJsonLd(product, reviews, base),
       pageData: { product: { id: product.id, price: product.price, title: product.title } },
-      body: productPage({ settings, product, reviews, siteUrl: base }),
+      body: productPage({ settings, product, reviews, related, siteUrl: base }),
     });
   }
 
@@ -114,6 +117,21 @@ async function route(request, env, ctx) {
       settings, siteUrl: siteUrl(env, request), title: `Comanda ${order.number}`,
       body: thankYouPage({ settings, order, items, payment: url.searchParams.get('plata') }),
     }), 200, { 'cache-control': 'no-store', 'x-robots-tag': 'noindex' });
+  }
+
+  if (path === '/comanda' && (method === 'GET' || method === 'POST')) {
+    const settings = await getSettings(env);
+    let error = '';
+    if (method === 'POST') {
+      const form = await request.formData().catch(() => new FormData());
+      const num = String(form.get('number') || '').trim().toUpperCase().replace(/\s/g, '');
+      const phone = normalizePhone(form.get('phone'));
+      const number = /^\d+$/.test(num) ? `CHI-${num}` : num;
+      const o = phone && number ? await env.DB.prepare('SELECT token FROM orders WHERE number = ? AND phone = ?').bind(number, phone).first() : null;
+      if (o) return redirect(`/multumim/${o.token}`);
+      error = 'Nu am găsit nicio comandă cu acest număr și acest telefon. Verifică datele sau sună-ne.';
+    }
+    return page(env, request, { settings, title: 'Unde e comanda mea?', body: trackOrderPage({ settings, error }) });
   }
 
   if (method === 'GET' && (m = path.match(/^\/pagina\/([a-z-]+)$/))) {
@@ -165,6 +183,8 @@ async function route(request, env, ctx) {
 
   if (method === 'POST' && path === '/api/comanda') return placeOrder(request, env, ctx);
 
+  if (method === 'POST' && path === '/api/contact') return contactMessage(request, env, ctx);
+
   if (method === 'POST' && path === '/api/roata') {
     const settings = await getSettings(env);
     const r = await spinWheel(env, settings, request.headers.get('cf-connecting-ip') || '');
@@ -203,7 +223,11 @@ async function route(request, env, ctx) {
         if (before && before.payment_status !== 'platita') {
           const order = await markPaid(env, orderId, s.id);
           const settings = await getSettings(env);
-          ctx.waitUntil(sendServerPurchase(env, settings, order, await getOrderItems(env, orderId), siteUrl(env, request)));
+          const items = await getOrderItems(env, orderId);
+          ctx.waitUntil(Promise.allSettled([
+            sendServerPurchase(env, settings, order, items, siteUrl(env, request)),
+            notifyNewOrder(env, settings, order, items, siteUrl(env, request)),
+          ]));
         }
       }
     }
@@ -277,7 +301,9 @@ async function placeOrder(request, env, ctx) {
 
   ctx.waitUntil((async () => {
     const order = await getOrder(env, created.id);
-    await sendServerPurchase(env, settings, order, await getOrderItems(env, created.id), base);
+    const items = await getOrderItems(env, created.id);
+    await sendServerPurchase(env, settings, order, items, base);
+    await notifyNewOrder(env, settings, order, items, base);
   })());
   return json({ redirect: `/multumim/${created.token}` });
 }
@@ -300,4 +326,65 @@ function adminDoor(env) {
       return !!v && timingSafeEqual(v, await sign());
     },
   };
+}
+
+// ---------- Formular de contact ----------
+async function contactMessage(request, env, ctx) {
+  const isJson = (request.headers.get('content-type') || '').includes('application/json');
+  const body = isJson ? await request.json().catch(() => ({})) : Object.fromEntries((await request.formData().catch(() => new FormData())).entries());
+  const reply = (ok, error, status = 400) => (isJson
+    ? json(ok ? { ok: true } : { error }, ok ? 200 : status)
+    : redirect(ok ? '/pagina/contact?trimis=1' : `/pagina/contact?eroare=${encodeURIComponent(error)}`));
+  const clean = (v, n) => String(v || '').replace(/\s+/g, ' ').trim().slice(0, n);
+  if (body.website) return reply(true); // câmp capcană completat doar de roboți: ignorăm în liniște
+  const msg = {
+    name: clean(body.name, 80), email: clean(body.email, 120).toLowerCase(), phone: clean(body.phone, 30),
+    order_number: clean(body.order_number, 20).toUpperCase(), subject: clean(body.subject, 60),
+    message: String(body.message || '').trim().slice(0, 4000),
+  };
+  if (msg.name.length < 2) return reply(false, 'Scrie-ne numele tău.');
+  if (msg.email && !isEmail(msg.email)) return reply(false, 'Adresa de email nu pare corectă.');
+  const phone = msg.phone ? normalizePhone(msg.phone) : '';
+  if (msg.phone && !phone) return reply(false, 'Numărul de telefon nu pare corect.');
+  if (!msg.email && !phone) return reply(false, 'Lasă-ne un telefon sau un email, ca să-ți putem răspunde.');
+  if (msg.message.length < 10) return reply(false, 'Mesajul e prea scurt. Spune-ne puțin mai mult.');
+  const ip = request.headers.get('cf-connecting-ip') || '';
+  if (ip) {
+    const r = await env.DB.prepare("SELECT COUNT(*) AS n FROM messages WHERE ip = ? AND created_at > datetime('now', '-1 hour')").bind(ip).first();
+    if (r.n >= 5) return reply(false, 'Ai trimis deja mai multe mesaje. Te rugăm să ne suni.', 429);
+  }
+  const row = await env.DB.prepare(`INSERT INTO messages (name, email, phone, order_number, subject, message, ip) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id`)
+    .bind(msg.name, msg.email, phone || '', msg.order_number, msg.subject, msg.message, ip).first();
+  ctx.waitUntil((async () => {
+    const settings = await getSettings(env);
+    const r = await sendEmail(env, settings, {
+      subject: `Mesaj nou pe ${settings.store_name || 'Chimag'}: ${msg.subject || 'contact'} – ${msg.name}`,
+      replyTo: msg.email || undefined,
+      text: [
+        `Ai primit un mesaj nou din formularul de contact.`, '',
+        `Nume: ${msg.name}`, `Telefon: ${phone || '-'}`, `Email: ${msg.email || '-'}`,
+        `Comandă: ${msg.order_number || '-'}`, `Subiect: ${msg.subject || '-'}`, '', msg.message, '',
+        `Toate mesajele sunt și în panoul de administrare, la Mesaje.`,
+      ].join('\n'),
+    });
+    if (r.ok) await env.DB.prepare('UPDATE messages SET emailed = 1 WHERE id = ?').bind(row.id).run();
+  })());
+  return reply(true);
+}
+
+async function notifyNewOrder(env, settings, order, items, base) {
+  if (settings.notify_orders !== '1') return;
+  const lei = (b) => `${(b / 100).toFixed(2).replace('.', ',')} lei`;
+  await sendEmail(env, settings, {
+    subject: `Comandă nouă ${order.number} – ${lei(order.total)}`,
+    text: [
+      `Comandă nouă pe ${settings.store_name || 'Chimag'}: ${order.number}`, '',
+      ...items.map((i) => `${i.qty} x ${i.title} – ${lei(i.total)}`), '',
+      `Total: ${lei(order.total)} (${order.payment_method === 'card' ? 'plătită cu cardul' : 'ramburs'})`,
+      order.coupon_code ? `Cod folosit: ${order.coupon_code}` : '', '',
+      `Client: ${order.customer_name}, ${order.phone}`, `Adresa: ${order.address}, ${order.city}, ${order.county}`,
+      order.notes ? `Observații: ${order.notes}` : '', '',
+      `Deschide comanda în panoul de administrare: ${base}/admin/comenzi/${order.id}`,
+    ].filter((l, i, a) => l !== '' || a[i - 1] !== '').join('\n'),
+  });
 }

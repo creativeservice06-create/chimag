@@ -26,4 +26,4 @@ INSERT OR IGNORE INTO settings(key, value) VALUES
  ('wheel_delay', '5'),
  ('wheel_hours', '48'),
  ('wheel_title', 'Învârte roata și câștigă o reducere'),
- ('wheel_prizes', '[{"label":"Transport gratuit","type":"transport","value":0,"weight":35,"min":0},{"label":"10% reducere","type":"procent","value":10,"weight":25,"min":0},{"label":"15 lei reducere","type":"lei","value":1500,"weight":20,"min":10000},{"label":"1+1 gratis","type":"1plus1","value":0,"weight":5,"min":0},{"label":"15% reducere","type":"procent","value":15,"weight":10,"min":0},{"label":"20% reducere","type":"procent","value":20,"weight":5,"min":0}]');
+ ('wheel_prizes', '[{"label":"Transport gratuit","type":"transport","value":0,"weight":28,"min":0},{"label":"10% reducere","type":"procent","value":10,"weight":20,"min":0},{"label":"Mai încearcă","type":"nimic","value":0,"weight":22,"min":0},{"label":"15 lei reducere","type":"lei","value":1500,"weight":15,"min":10000},{"label":"1+1 gratis","type":"1plus1","value":0,"weight":4,"min":0},{"label":"15% reducere","type":"procent","value":15,"weight":8,"min":0},{"label":"20% reducere","type":"procent","value":20,"weight":3,"min":0}]');

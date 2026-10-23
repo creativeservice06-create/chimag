@@ -6,7 +6,9 @@ export const COUPON_TYPES = {
   procent: 'Reducere %',
   lei: 'Reducere în lei',
   '1plus1': '1+1 gratis',
+  nimic: 'Fără premiu (doar pe roată)',
 };
+export const CODE_TYPES = ['transport', 'procent', 'lei', '1plus1']; // tipurile care se pot folosi la coduri
 
 export function describeCoupon(c) {
   switch (c.type) {
@@ -14,6 +16,7 @@ export function describeCoupon(c) {
     case 'procent': return `${c.value}% reducere`;
     case 'lei': return `${money(c.value)} reducere`;
     case '1plus1': return '1+1 gratis (a doua bucată din fiecare produs e gratuită)';
+    case 'nimic': return 'Fără premiu';
     default: return c.label || c.code;
   }
 }
@@ -29,7 +32,7 @@ export async function findCoupon(env, code) {
 
 // Verifică dacă un cod se poate folosi acum. Returnează un mesaj de eroare sau null.
 export function couponProblem(c, base) {
-  if (!c || !c.active) return 'Codul nu există sau nu mai este activ.';
+  if (!c || !c.active || c.type === 'nimic') return 'Codul nu există sau nu mai este activ.';
   if (c.expires_at && c.expires_at < nowSql()) return 'Codul a expirat.';
   if (c.max_uses > 0 && c.used_count >= c.max_uses) return 'Codul a fost deja folosit.';
   if (c.min_order > 0 && base < c.min_order) return `Codul se aplică la comenzi de minim ${money(c.min_order)}. Mai adaugă ${money(c.min_order - base)}.`;
@@ -55,6 +58,7 @@ export function wheelConfig(settings) {
     hours: clamp(Number(settings.wheel_hours) || 48, 1, 24 * 30),
     title: settings.wheel_title || 'Învârte roata și câștigă o reducere',
     prizes,
+    hasNothing: prizes.some((p) => p.type === 'nimic'),
   };
 }
 
@@ -93,6 +97,12 @@ export async function spinWheel(env, settings, ip) {
   }
   const index = pickWeighted(cfg.prizes);
   const prize = cfg.prizes[index];
+  if (prize.type === 'nimic') {
+    // nu se creează niciun cod; păstrăm doar evidența învârtirii (pentru limită și statistici)
+    await env.DB.prepare(`INSERT INTO coupons (code, label, type, value, active, source, ip) VALUES (?, ?, 'nimic', 0, 0, 'roata', ?)`)
+      .bind('NIMIC-' + randomCode().slice(6) + Date.now().toString(36).toUpperCase(), prize.label, ip || '').run();
+    return { index, nothing: true, label: prize.label };
+  }
   const expires = new Date(Date.now() + cfg.hours * 3600e3).toISOString().slice(0, 19).replace('T', ' ');
   let code;
   for (let i = 0; i < 5; i++) {

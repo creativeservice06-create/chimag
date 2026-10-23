@@ -21,8 +21,16 @@ migrations_dir = "migrations"
 # binding = "MEDIA"
 # bucket_name = "chimag-media"
 
+# Emailuri (formular de contact + notificare la comandă nouă) prin Cloudflare Email Routing.
+# Se activează DUPĂ ce chimag.ro e pe Cloudflare și ai pornit Email Routing (vezi README → „Emailuri"):
+# scoate „# " din fața celor 3 rânduri de mai jos.
+# [[send_email]]
+# name = "EMAIL"
+# destination_address = "chirilasadrian@yahoo.com"
+
 [vars]
 SITE_URL = "https://www.chimag.ro"
+MAIL_FROM = "formular@chimag.ro"
 
 # La fiecare 30 de minute: actualizează statusul livrărilor (tracking AWB)
 [triggers]

@@ -99,7 +99,7 @@ export const PAGES = {
       <h2>1. Cine participă</h2>
       <p>Orice persoană fizică cu vârsta de cel puțin 18 ani care vizitează site-ul. Participarea este gratuită și nu este condiționată de o cumpărare.</p>
       <h2>2. Cum funcționează</h2>
-      <p>Fiecare vizitator poate învârti roata o singură dată. Fiecare învârtire câștigă unul dintre premiile de mai jos, ales automat și aleatoriu pe serverul nostru, cu șansele indicate. Premiul este un cod de reducere personal, de unică folosință, care se aplică automat la comandă și este valabil ${w.hours} de ore de la câștigare.</p>
+      <p>Fiecare vizitator poate învârti roata o singură dată. Rezultatul fiecărei învârtiri este unul dintre cele de mai jos, ales automat și aleatoriu pe serverul nostru, cu șansele indicate${w.hasNothing ? ', inclusiv varianta „fără premiu"' : ''}. Premiul câștigat este un cod de reducere personal, de unică folosință, care se aplică automat la comandă și este valabil ${w.hours} de ore de la câștigare.</p>
       <h2>3. Premii și șanse de câștig</h2>
       ${w.prizes.length ? html`<table class="odds"><thead><tr><th>Premiu</th><th>Condiții</th><th>Șansă</th></tr></thead><tbody>
         ${w.prizes.map((p, i) => html`<tr><td>${p.label}</td><td>${describeCoupon(p)}${p.min ? ` la comenzi de minim ${money(p.min)}` : ''}</td><td>${String(odds[i]).replace('.', ',')}%</td></tr>`)}
@@ -120,18 +120,76 @@ export const PAGES = {
 
   contact: {
     title: 'Contact',
+    wide: true,
+    body: (s) => {
+      const tel = (s.phone || '').replace(/\s/g, '');
+      const wa = waLink(s.whatsapp);
+      return html`
+      <p class="page-lead">Ai o întrebare despre un produs sau despre comanda ta? Scrie-ne sau sună-ne și te ajutăm.</p>
+      <div class="contact-grid">
+        <form class="contact-form card" data-contact-form method="post" action="/api/contact" novalidate>
+          <h2>Trimite-ne un mesaj</h2>
+          <div class="field-row">
+            <div class="field"><label for="c-name">Nume</label><input id="c-name" name="name" autocomplete="name" required minlength="2"></div>
+            <div class="field"><label for="c-phone">Telefon</label><input id="c-phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="07xx xxx xxx"></div>
+          </div>
+          <div class="field-row">
+            <div class="field"><label for="c-email">Email</label><input id="c-email" name="email" type="email" autocomplete="email" placeholder="pentru răspuns"></div>
+            <div class="field"><label for="c-order">Număr comandă <span class="opt">(opțional)</span></label><input id="c-order" name="order_number" placeholder="ex: CHI-1024"></div>
+          </div>
+          <div class="field"><label for="c-subject">Despre ce e vorba?</label>
+            <select id="c-subject" name="subject">
+              <option>Întrebare despre un produs</option>
+              <option>Comanda mea</option>
+              <option>Retur sau garanție</option>
+              <option>Colaborare</option>
+              <option>Altceva</option>
+            </select>
+          </div>
+          <div class="field"><label for="c-message">Mesaj</label><textarea id="c-message" name="message" rows="5" required minlength="10" placeholder="Scrie-ne cu ce te putem ajuta"></textarea></div>
+          <div class="hp" aria-hidden="true"><label>Nu completa acest câmp<input name="website" tabindex="-1" autocomplete="off"></label></div>
+          <p class="hint-small">Lasă-ne cel puțin un telefon sau un email, ca să-ți putem răspunde. Datele sunt folosite doar pentru a-ți răspunde (<a href="/pagina/confidentialitate">confidențialitate</a>).</p>
+          <p class="form-error" data-contact-error hidden></p>
+          <button class="btn btn-primary btn-lg btn-block" data-contact-submit>Trimite mesajul</button>
+          <div class="contact-ok" data-contact-ok hidden>
+            <span class="thanks-icon">${icons.check(30)}</span>
+            <h2>Mesaj trimis</h2>
+            <p>Mulțumim! Îți răspundem cât mai repede${s.hours ? `, în programul ${s.hours.charAt(0).toLowerCase() + s.hours.slice(1)}` : ''}.</p>
+          </div>
+        </form>
+
+        <aside class="contact-side">
+          ${s.phone ? html`<a class="contact-card" href="tel:${tel}">${icons.phone(26)}<span><strong>Sună-ne</strong>${s.phone}${s.hours ? html`<small>${s.hours}</small>` : ''}</span></a>` : ''}
+          ${wa ? html`<a class="contact-card" href="${wa}" target="_blank" rel="noopener">${icons.chat(26)}<span><strong>WhatsApp</strong>Scrie-ne direct pe WhatsApp<small>Răspundem în timpul programului</small></span></a>` : ''}
+          ${s.email ? html`<a class="contact-card" href="mailto:${s.email}">${icons.mail(26)}<span><strong>Email</strong>${s.email}</span></a>` : ''}
+          <a class="contact-card" href="/comanda">${icons.box(26)}<span><strong>Unde e comanda mea?</strong>Vezi statusul și AWB-ul<small>cu numărul comenzii și telefonul</small></span></a>
+          <a class="contact-card" href="/pagina/retur">${icons.back(26)}<span><strong>Retur în ${returnDays(s)} zile</strong>Vezi cum returnezi un produs</span></a>
+          <div class="contact-company">
+            <h3>Date de identificare</h3>
+            ${companyLine(s)}
+          </div>
+        </aside>
+      </div>`;
+    },
+  },
+
+  despre: {
+    title: 'Despre noi',
     body: (s) => html`
-      <ul class="contact-list">
-        ${s.phone ? html`<li>${icons.phone(20)} <a href="tel:${s.phone.replace(/\s/g, '')}">${s.phone}</a></li>` : ''}
-        ${s.email ? html`<li>${icons.mail(20)} <a href="mailto:${s.email}">${s.email}</a></li>` : ''}
-        ${s.hours ? html`<li>${icons.clock(20)} ${s.hours}</li>` : ''}
+      <p class="page-lead">${shop(s)} e un magazin online românesc cu o idee simplă: puține produse, alese atent, livrate repede și cu plata la livrare.</p>
+      <h2>Ce ne propunem</h2>
+      <p>Nu vrem să avem de toate. Alegem produsele atent și păstrăm doar ce ne-am cumpăra și noi. Fiecare produs are descriere clară și prețul final afișat de la început, cu transportul calculat înainte să comanzi.</p>
+      <h2>Cum lucrăm</h2>
+      <ul>
+        <li><strong>Plătești la livrare.</strong> Nu dai niciun ban în avans; plătești curierului când ai coletul.</li>
+        <li><strong>Livrare rapidă.</strong> ${s.delivery_text || 'Livrăm prin curier în toată țara'}.</li>
+        <li><strong>Retur simplu.</strong> Ai ${returnDays(s)} zile să te răzgândești, fără explicații.</li>
+        <li><strong>Vorbești cu oameni.</strong> ${s.phone ? html`Ne găsești la <a href="tel:${(s.phone || '').replace(/\s/g, '')}">${s.phone}</a>.` : html`Ne scrii din pagina de <a href="/pagina/contact">contact</a>.`}</li>
       </ul>
-      <p>Pentru o comandă deja plasată, ai la îndemână numărul comenzii (de forma CHI-1234); te ajutăm mai repede.</p>
-      <h2>Date de identificare</h2>
-      <p>Magazinul online ${site} este operat de:</p>
+      <h2>Cine suntem</h2>
+      <p>Magazinul ${site} este operat de:</p>
       ${companyLine(s)}
-      <h2>Soluționarea reclamațiilor</h2>
-      <p>Ne poți contacta oricând pentru orice nemulțumire și îți răspundem în cel mult 3 zile lucrătoare. Poți apela și la Autoritatea Națională pentru Protecția Consumatorilor (<a href="https://anpc.ro" target="_blank" rel="noopener">anpc.ro</a>).</p>`,
+      <p><a class="btn btn-primary" href="/#produse">Vezi produsele</a></p>`,
   },
 
   termeni: {
@@ -225,5 +283,13 @@ export const PAGES = {
 export function staticPage(slug, settings) {
   const p = PAGES[slug];
   if (!p) return null;
-  return { title: p.title, body: html`<div class="wrap narrow prose page"><h1>${p.title}</h1>${p.body(settings)}</div>` };
+  return { title: p.title, body: html`<div class="wrap ${p.wide ? '' : 'narrow'} prose page"><h1>${p.title}</h1>${p.body(settings)}</div>` };
+}
+
+// Link WhatsApp din numărul setat în admin (07xx… -> 407xx…)
+export function waLink(n) {
+  let d = String(n || '').replace(/\D/g, '');
+  if (!d) return '';
+  if (d.startsWith('0')) d = '4' + d;
+  return `https://wa.me/${d}`;
 }

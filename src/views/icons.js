@@ -14,6 +14,7 @@ export const icons = {
   clock: (s) => svg('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', s),
   box: (s) => svg('<path d="m12 3 8.5 4.5v9L12 21l-8.5-4.5v-9z"/><path d="m3.5 7.5 8.5 4.5 8.5-4.5M12 12v9"/>', s),
   lock: (s) => svg('<rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>', s),
+  chat: (s) => svg('<path d="M20 12a8 8 0 0 1-11.6 7.1L4 20l1-4.2A8 8 0 1 1 20 12z"/><path d="M9 10.5c.4 1.6 2 3.2 3.6 3.6l1.2-1.2 1.7.7v1.5"/>', s),
   minus: (s) => svg('<path d="M5 12h14"/>', s),
   plus: (s) => svg('<path d="M12 5v14M5 12h14"/>', s),
   close: (s) => svg('<path d="M6 6l12 12M18 6 6 18"/>', s),

@@ -515,6 +515,11 @@ function parseSections(text) {
   }).filter(Boolean).slice(0, 12);
 }
 
+function parseSpecs(text) {
+  return parseLines(text).map((l) => { const i = l.indexOf(':'); return i > 0 ? { k: l.slice(0, i).trim().slice(0, 60), v: l.slice(i + 1).trim().slice(0, 300) } : null; })
+    .filter((x) => x && x.k && x.v).slice(0, 30);
+}
+
 async function saveProduct(request, env, id) {
   const form = await readForm(request);
   const title = String(form.get('title') || '').trim();
@@ -548,6 +553,7 @@ async function saveProduct(request, env, id) {
     images: JSON.stringify(images.slice(0, 20)), benefits: JSON.stringify(parseLines(form.get('benefits')).slice(0, 20)),
     faq: JSON.stringify(parseFaq(form.get('faq')).slice(0, 30)), bundles: JSON.stringify(parseBundles(form.get('bundles'))),
     sections: JSON.stringify(parseSections(form.get('sections'))),
+    specs: JSON.stringify(parseSpecs(form.get('specs'))),
     badge: String(form.get('badge') || '').trim().slice(0, 30), category: String(form.get('category') || '').trim().slice(0, 60),
     active: form.get('active') ? 1 : 0, featured: form.get('featured') ? 1 : 0, sort: Math.floor(Number(form.get('sort')) || 0),
   };

@@ -263,7 +263,10 @@
       var addBiz = function (d, n) { d = new Date(d); while (n > 0) { d.setDate(d.getDate() + 1); if (d.getDay() % 6 !== 0) n--; } return d; };
       var now = new Date();
       var f = new Intl.DateTimeFormat('ro-RO', { weekday: 'long', day: 'numeric', month: 'long' });
-      dd.textContent = 'Primești între ' + f.format(addBiz(now, 1)) + ' și ' + f.format(addBiz(now, 2));
+      if (dd.hasAttribute('data-short')) {
+        var a = addBiz(now, 1), b = addBiz(now, 2), m = new Intl.DateTimeFormat('ro-RO', { month: 'short' });
+        dd.textContent = 'Ajunge ' + (a.getMonth() === b.getMonth() ? a.getDate() + '–' + b.getDate() + ' ' + m.format(b) : a.getDate() + ' ' + m.format(a) + ' – ' + b.getDate() + ' ' + m.format(b));
+      } else dd.textContent = 'Primești între ' + f.format(addBiz(now, 1)) + ' și ' + f.format(addBiz(now, 2));
     }
 
     // Bara „Comandă acum" lipită jos pe mobil, când butonul principal nu se vede

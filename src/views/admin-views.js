@@ -309,6 +309,7 @@ export function productFormView({ product: p, reviews = [], hasR2 }) {
   const isNew = !p.id;
   const faqText = (p.faq || []).map((f) => `${f.q}\n${f.a}`).join('\n\n');
   const sectionsText = (p.sections || []).map((x) => `${x.title || ''}\n${x.image || ''}\n${x.text || ''}`).join('\n---\n');
+  const specsText = (p.specs || []).map((x) => `${x.k}: ${x.v}`).join('\n');
   const bundlesText = (p.bundles || []).map((b) => `${b.qty} | ${b.pct} | ${b.label || ''}`.trim()).join('\n');
   return html`
   <header class="page-head"><div><a class="back" href="/admin/produse">Produse</a><h1>${isNew ? 'Produs nou' : p.title}</h1></div>
@@ -322,6 +323,7 @@ export function productFormView({ product: p, reviews = [], hasR2 }) {
           <label class="span2">Descriere <small>(rând gol = paragraf nou)</small><textarea name="description" rows="8">${p.description || ''}</textarea></label>
           <label class="span2">Beneficii <small>(unul pe rând; primele 4 apar lângă butonul de comandă)</small><textarea name="benefits" rows="5">${(p.benefits || []).join('\n')}</textarea></label>
           <label class="span2">Întrebări frecvente <small>(întrebarea pe primul rând, răspunsul dedesubt, rând gol între ele)</small><textarea name="faq" rows="6">${faqText}</textarea></label>
+          <label class="span2">Specificații <small>(una pe rând, sub forma <b>Nume: valoare</b>, ex: Material: Silicon)</small><textarea name="specs" rows="6" placeholder="Material: Silicon moale&#10;Dimensiuni: 14 × 8 cm">${specsText}</textarea></label>
           <label class="span2">Secțiuni de prezentare <small>(apar sub butonul de comandă, cu poza alternând stânga–dreapta. Pentru fiecare secțiune: titlul pe primul rând, linkul pozei pe al doilea, apoi textul. Separă secțiunile cu un rând care conține doar <b>---</b>)</small><textarea name="sections" rows="10" placeholder="Somn liniștit, fără teamă de întuneric&#10;/img/poza.jpg&#10;Textul secțiunii...&#10;---&#10;Următorul titlu&#10;...">${sectionsText}</textarea></label>
         </section>
 

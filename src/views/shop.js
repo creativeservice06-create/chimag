@@ -199,6 +199,12 @@ export function productPage({ settings, product: p, reviews, related = [], siteU
   const bundles = (p.bundles || []).filter((b) => Number(b.qty) >= 1).sort((a, b) => a.qty - b.qty);
   const lowStock = p.track_stock && p.stock > 0 && p.stock <= 10;
   const outOfStock = p.track_stock && p.stock <= 0;
+  const threshold = Number(settings.free_shipping_threshold) || 0;
+  const freeQty = threshold && p.price > 0 ? Math.ceil(threshold / p.price) : 0;
+  const shipNote = !threshold ? '' : p.price >= threshold ? '<strong>Transport gratuit</strong> pentru acest produs'
+    : freeQty <= 5 ? `<strong>Transport gratuit</strong> dacă iei ${freeQty} bucăți sau comanzi peste ${money(threshold)}`
+    : `<strong>Transport gratuit</strong> la comenzile peste ${money(threshold)}`;
+  const specs = (p.specs || []).filter((x) => x.k && x.v);
 
   return html`
   <div class="wrap pdp">
@@ -227,6 +233,8 @@ export function productPage({ settings, product: p, reviews, related = [], siteU
             <div class="price-was"><s>${money(p.compare_at_price)}</s></div>
             <div class="price-save">Economisești ${money(p.compare_at_price - p.price)}</div>` : ''}
         </div>
+
+        ${shipNote ? html`<p class="ship-note">${icons.truck(18)}<span>${raw(shipNote)}</span></p>` : ''}
 
         ${p.benefits.length ? html`<ul class="benefits">${p.benefits.slice(0, 4).map((b) => html`<li>${icons.check(18)}<span>${b}</span></li>`)}</ul>` : ''}
 
@@ -266,10 +274,22 @@ export function productPage({ settings, product: p, reviews, related = [], siteU
         </form>
 
         <ul class="assurance">
-          <li>${icons.truck(20)}<span><strong data-delivery-date>Livrare în 24–48h</strong><br><small>${settings.delivery_text}</small></span></li>
-          <li>${icons.cash(20)}<span><strong>Plata la livrare</strong><br><small>Deschizi coletul, plătești curierului</small></span></li>
-          <li>${icons.back(20)}<span><strong>Retur ${settings.return_days || 14} zile</strong><br><small>Fără să ne spui motivul</small></span></li>
+          <li>${icons.truck(22)}<strong>Livrare rapidă</strong><small data-delivery-date data-short>În 24–48h</small></li>
+          <li>${icons.cash(22)}<strong>Plata la livrare</strong><small>Plătești curierului</small></li>
+          <li>${icons.back(22)}<strong>Retur ${settings.return_days || 14} zile</strong><small>Fără explicații</small></li>
         </ul>
+
+        <div class="pdp-acc">
+          ${specs.length ? html`<details><summary>Specificații</summary><dl class="specs">${specs.map((x) => html`<div><dt>${x.k}</dt><dd>${x.v}</dd></div>`)}</dl></details>` : ''}
+          <details><summary>Livrare și plată</summary><div>
+            <p>${settings.delivery_text}. Primești pe email numărul AWB ca să urmărești coletul.</p>
+            <p>Plătești la livrare, curierului${settings.card_enabled === '1' ? ', sau online cu cardul' : ''}. Transportul costă ${money(settings.shipping_cost)}${threshold ? html`, iar peste ${money(threshold)} este gratuit` : ''}.</p>
+          </div></details>
+          <details><summary>Retur și garanție</summary><div>
+            <p>Ai ${settings.return_days || 14} zile să returnezi produsul, fără să ne spui motivul. Îți dăm banii înapoi după ce primim coletul.</p>
+            <p><a href="/pagina/retur">Vezi condițiile de retur</a></p>
+          </div></details>
+        </div>
       </div>
     </div>
 
@@ -281,9 +301,18 @@ export function productPage({ settings, product: p, reviews, related = [], siteU
       </section>`)}
     </div>` : ''}
 
+    <section class="worry-free">
+      <h2>Cumperi fără griji</h2>
+      <div class="worry-grid">
+        <div>${icons.cash(28)}<strong>Plătești la livrare</strong><span>Nu plătești nimic în avans. Dai banii doar când primești coletul.</span></div>
+        <div>${icons.back(28)}<strong>Retur în ${settings.return_days || 14} zile</strong><span>Nu ți-a plăcut? Îl trimiți înapoi și îți returnăm banii.</span></div>
+        <div>${icons.truck(28)}<strong>Livrare rapidă</strong><span>${settings.delivery_text}, cu AWB pe email pentru urmărire.</span></div>
+        <div>${icons.chat(28)}<strong>Suntem aici</strong><span>Ai o întrebare? <a href="/pagina/contact">Scrie-ne</a> și îți răspundem repede.</span></div>
+      </div>
+    </section>
+
     <div class="pdp-details">
       ${p.description && !(p.sections || []).length ? html`<section class="prose"><h2>Despre produs</h2>${paragraphs(p.description)}</section>` : ''}
-      ${p.benefits.length > 4 ? html`<section><h2>Pe scurt</h2><ul class="benefits">${p.benefits.map((b) => html`<li>${icons.check(18)}<span>${b}</span></li>`)}</ul></section>` : ''}
       ${p.faq.length ? html`<section class="faq"><h2>Întrebări frecvente</h2>${p.faq.map((f) => html`<details><summary>${f.q}</summary><div>${paragraphs(f.a)}</div></details>`)}</section>` : ''}
       ${reviews.length ? html`<section id="recenzii" class="reviews">
         <h2>Ce spun clienții</h2>

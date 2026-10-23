@@ -11,6 +11,8 @@ import { staticPage, PAGES } from './views/pages.js';
 import { handleAdmin } from './admin.js';
 import { handleFulfillmentApi } from './fulfillment-api.js';
 import { syncTracking } from './cron.js';
+import { hmac, timingSafeEqual } from './lib/auth.js';
+import { getCookie } from './lib/util.js';
 import { spinWheel } from './lib/coupons.js';
 
 const siteUrl = (env, request) => (env.SITE_URL || new URL(request.url).origin).replace(/\/$/, '');
@@ -56,7 +58,17 @@ async function route(request, env, ctx) {
     }
   }
 
-  if (path === '/admin' || path.startsWith('/admin/')) return handleAdmin(request, env, ctx, path);
+  // ---------- Panoul de admin, ascuns ----------
+  // Dacă ADMIN_PATH e setat (ex: "intrare-k7m2p9"), /admin pare o pagină inexistentă pentru oricine
+  // nu a deschis întâi adresa secretă /intrare-k7m2p9 pe acel dispozitiv.
+  const door = adminDoor(env);
+  if (door && path === door.path) {
+    return redirect('/admin/login', 303, { 'set-cookie': await door.cookie(url.protocol === 'https:'), 'cache-control': 'no-store', 'x-robots-tag': 'noindex' });
+  }
+  if (path === '/admin' || path.startsWith('/admin/')) {
+    if (door && !(await door.check(request))) return notFound(env, request);
+    return handleAdmin(request, env, ctx, path);
+  }
   if (path.startsWith('/api/fulfillment')) return handleFulfillmentApi(request, env, path);
 
   // ---------- Pagini magazin ----------
@@ -126,7 +138,7 @@ async function route(request, env, ctx) {
 
   // ---------- SEO ----------
   if (path === '/robots.txt') {
-    return new Response(`User-agent: *\nDisallow: /admin\nDisallow: /api/\nDisallow: /multumim/\nDisallow: /finalizare\nSitemap: ${siteUrl(env, request)}/sitemap.xml\n`, { headers: { 'content-type': 'text/plain' } });
+    return new Response(`User-agent: *\nDisallow: /api/\nDisallow: /multumim/\nDisallow: /finalizare\nSitemap: ${siteUrl(env, request)}/sitemap.xml\n`, { headers: { 'content-type': 'text/plain' } });
   }
   if (path === '/sitemap.xml') {
     const base = siteUrl(env, request);
@@ -270,3 +282,22 @@ async function placeOrder(request, env, ctx) {
   return json({ redirect: `/multumim/${created.token}` });
 }
 
+
+// ---------- „Ușa" secretă spre admin ----------
+function adminDoor(env) {
+  const slug = String(env.ADMIN_PATH || '').trim().replace(/^\/+|\/+$/g, '');
+  if (!slug || !env.SESSION_SECRET) return null;
+  const COOKIE = 'chimag_door';
+  const MAX_AGE = 60 * 60 * 24 * 365;
+  const sign = () => hmac(env.SESSION_SECRET, `door:${slug}`); // schimbi ADMIN_PATH => toate cheile vechi devin invalide
+  return {
+    path: `/${slug}`,
+    async cookie(secure) {
+      return `${COOKIE}=${await sign()}; Path=/admin; HttpOnly; SameSite=Lax; Max-Age=${MAX_AGE}${secure ? '; Secure' : ''}`;
+    },
+    async check(request) {
+      const v = getCookie(request, COOKIE);
+      return !!v && timingSafeEqual(v, await sign());
+    },
+  };
+}

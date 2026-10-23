@@ -74,6 +74,7 @@ Worker-ul `chimag` → **Settings → Variables and Secrets → Add** (tip **Sec
 |---|---|
 | `ADMIN_PASSWORD` | parola ta pentru /admin (lungă!) |
 | `SESSION_SECRET` | un șir aleator de minim 32 de caractere |
+| `ADMIN_PATH` | adresa secretă a panoului, ex. `intrare-k7m2p9` (vezi mai jos) |
 | `WAREHOUSE_API_KEY` | cheie aleatoare, o dai depozitului (Helpship) |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | doar pentru plata cu cardul |
 | `SMARTSHIP_API_URL`, `SMARTSHIP_API_KEY` | când le primești de la SmartShip |
@@ -117,6 +118,11 @@ Dacă ei preferă să le trimiți tu comenzile (push), setezi `HELPSHIP_API_URL`
 Fluxul cu Helpship: comanda intră → o confirmi (telefonic, dacă vrei) → apare în API → Helpship o ambalează și trimite AWB-ul → statusul se actualizează singur.
 
 ---
+
+## Panoul de admin ascuns
+Dacă setezi secretul `ADMIN_PATH` (ex. `intrare-k7m2p9`), `/admin` arată ca o pagină inexistentă pentru oricine.
+Pe fiecare dispozitiv de pe care lucrezi deschizi o dată `https://www.chimag.ro/intrare-k7m2p9`: primești o cheie în browser valabilă un an, apoi `/admin` merge normal.
+Dacă schimbi `ADMIN_PATH`, toate cheile vechi devin invalide. Dacă ștergi `ADMIN_PATH`, `/admin` devine din nou vizibil (tot cu parolă).
 
 ## Roata norocului și coduri de reducere
 Din **Admin → Roată și coduri**:

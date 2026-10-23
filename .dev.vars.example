@@ -3,6 +3,8 @@
 
 # Parola pentru /admin
 ADMIN_PASSWORD=schimba-ma
+# Adresa secretă a panoului (opțional): /admin devine invizibil până deschizi /<ADMIN_PATH>
+ADMIN_PATH=intrare-test
 # Șir lung aleator (min. 32 caractere) pentru semnarea sesiunii de admin
 SESSION_SECRET=un-sir-foarte-lung-si-aleator-de-minim-32-caractere
 

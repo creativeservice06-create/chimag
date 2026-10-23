@@ -1,7 +1,8 @@
 import { html, jsonScript } from '../lib/html.js';
 import { icons } from './icons.js';
+import { wheelConfig } from '../lib/coupons.js';
 
-const ASSET_V = '2';
+const ASSET_V = '4';
 
 export function layout({ settings, title, description = '', canonical = '', ogImage = '', body, bodyClass = '', jsonLd = null, pageData = null, siteUrl = '' }) {
   const storeName = settings.store_name || 'Chimag';
@@ -13,6 +14,10 @@ export function layout({ settings, title, description = '', canonical = '', ogIm
     freeShippingThreshold: Number(settings.free_shipping_threshold) || 0,
     shippingCost: Number(settings.shipping_cost) || 0,
   };
+  const wheel = wheelConfig(settings);
+  if (wheel.enabled) {
+    config.wheel = { autoOpen: wheel.autoOpen, delay: wheel.delay, title: wheel.title, hours: wheel.hours, segments: wheel.prizes.map((p) => p.label) };
+  }
   return html`<html lang="ro">
 <head>
 <meta charset="utf-8">
@@ -45,12 +50,32 @@ ${settings.announcement ? html`<div class="announce">${settings.announcement}</d
       <a href="/pagina/livrare">Livrare</a>
       <a href="/pagina/contact">Contact</a>
     </nav>
+    ${wheel.enabled ? html`<button type="button" class="wheel-btn" data-wheel-open aria-label="Roata norocului – câștigă o reducere"><span aria-hidden="true">🎁</span><span class="wheel-dot" data-wheel-dot></span></button>` : ''}
     <a href="/cos" class="cart-btn" aria-label="Coșul de cumpărături">${icons.cart(22)}<span class="cart-count" data-cart-count hidden>0</span></a>
   </div>
 </header>
+<div class="promo-bar" data-promo-bar hidden></div>
 <main id="continut">${body}</main>
 ${footer(settings)}
 <div class="toast" role="status" aria-live="polite" data-toast></div>
+${wheel.enabled ? html`<div class="wheel-modal" data-wheel-modal hidden role="dialog" aria-modal="true" aria-labelledby="wheel-title">
+  <div class="wheel-backdrop" data-wheel-close></div>
+  <div class="wheel-panel">
+    <button type="button" class="wheel-x" data-wheel-close aria-label="Închide">${icons.close(22)}</button>
+    <div class="wheel-stage">
+      <div class="wheel-pointer" aria-hidden="true"></div>
+      <div class="wheel-disc" data-wheel-disc></div>
+      <button type="button" class="wheel-hub" data-wheel-spin aria-label="Învârte roata">Învârte</button>
+    </div>
+    <div class="wheel-copy" data-wheel-copy>
+      <h2 id="wheel-title">${wheel.title}</h2>
+      <p>O singură învârtire, premiu garantat. Reducerea se aplică automat la comandă și e valabilă ${wheel.hours} de ore.</p>
+      <button type="button" class="btn btn-primary btn-lg btn-block" data-wheel-spin>Învârte roata</button>
+      <p class="wheel-legal"><a href="/pagina/regulament-roata">Regulament și șanse</a></p>
+    </div>
+  </div>
+</div>
+<canvas class="confetti" data-confetti aria-hidden="true"></canvas>` : ''}
 <div class="consent" data-consent hidden>
   <p>Folosim cookie-uri pentru ca magazinul să funcționeze și, cu acordul tău, pentru a măsura reclamele (Facebook, TikTok). <a href="/pagina/cookies">Detalii</a></p>
   <div class="consent-actions">
@@ -92,6 +117,7 @@ function footer(s) {
         <li><a href="/pagina/termeni">Termeni și condiții</a></li>
         <li><a href="/pagina/confidentialitate">Confidențialitate (GDPR)</a></li>
         <li><a href="/pagina/cookies">Politica de cookie-uri</a></li>
+        ${wheelConfig(s).enabled ? html`<li><a href="/pagina/regulament-roata">Regulament roata norocului</a></li>` : ''}
         <li><a href="https://anpc.ro/ce-este-sal/" target="_blank" rel="noopener">ANPC – SAL</a></li>
         <li><a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener">Soluționarea online a litigiilor</a></li>
       </ul>

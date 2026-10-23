@@ -1,6 +1,7 @@
 import { html } from '../lib/html.js';
 import { money } from '../lib/util.js';
 import { icons } from './icons.js';
+import { wheelConfig, prizeOdds, describeCoupon } from '../lib/coupons.js';
 
 // Pagini legale, completate automat cu datele firmei din Admin → Setări.
 // Sunt un punct de plecare solid, dar merită citite de un jurist înainte de lansare.
@@ -85,6 +86,36 @@ export const PAGES = {
         <p>Data: ....................</p>
       </div>
       <p><button type="button" class="btn btn-ghost" onclick="window.print()">Tipărește formularul</button></p>`,
+  },
+
+  'regulament-roata': {
+    title: 'Regulamentul „Roata norocului"',
+    body: (s) => {
+      const w = wheelConfig(s);
+      const odds = prizeOdds(w.prizes);
+      return html`
+      <p>Campania promoțională „Roata norocului" este organizată de ${s.company_name || shop(s)}${s.company_cui ? `, CUI ${s.company_cui}` : ''}, pe site-ul ${site}.</p>
+      ${w.enabled ? '' : html`<p><strong>Campania nu este activă în acest moment.</strong></p>`}
+      <h2>1. Cine participă</h2>
+      <p>Orice persoană fizică cu vârsta de cel puțin 18 ani care vizitează site-ul. Participarea este gratuită și nu este condiționată de o cumpărare.</p>
+      <h2>2. Cum funcționează</h2>
+      <p>Fiecare vizitator poate învârti roata o singură dată. Fiecare învârtire câștigă unul dintre premiile de mai jos, ales automat și aleatoriu pe serverul nostru, cu șansele indicate. Premiul este un cod de reducere personal, de unică folosință, care se aplică automat la comandă și este valabil ${w.hours} de ore de la câștigare.</p>
+      <h2>3. Premii și șanse de câștig</h2>
+      ${w.prizes.length ? html`<table class="odds"><thead><tr><th>Premiu</th><th>Condiții</th><th>Șansă</th></tr></thead><tbody>
+        ${w.prizes.map((p, i) => html`<tr><td>${p.label}</td><td>${describeCoupon(p)}${p.min ? ` la comenzi de minim ${money(p.min)}` : ''}</td><td>${String(odds[i]).replace('.', ',')}%</td></tr>`)}
+      </tbody></table>` : html`<p>Nu există premii configurate.</p>`}
+      <h2>4. Condiții de utilizare</h2>
+      <ul>
+        <li>Codul se poate folosi la o singură comandă și nu se poate transforma în bani.</li>
+        <li>Codul nu se cumulează cu alte coduri de reducere. Reducerea „1+1 gratis" nu se cumulează cu reducerea de pachet pentru același produs; se aplică cea mai avantajoasă.</li>
+        <li>Dacă returnezi produsele, se rambursează suma efectiv plătită.</li>
+        <li>Ne rezervăm dreptul de a anula codurile obținute prin metode automate sau abuzive (de exemplu, învârtiri repetate de pe aceleași dispozitive).</li>
+      </ul>
+      <h2>5. Durata și modificări</h2>
+      <p>Campania se desfășoară până la oprirea ei de către organizator, anunțată prin dispariția roții de pe site. Codurile deja câștigate rămân valabile până la expirarea lor.</p>
+      <h2>6. Date personale</h2>
+      <p>Pentru campanie nu cerem date personale. Adresa IP este folosită doar pentru prevenirea abuzurilor, conform <a href="/pagina/confidentialitate">Politicii de confidențialitate</a>.</p>`;
+    },
   },
 
   contact: {

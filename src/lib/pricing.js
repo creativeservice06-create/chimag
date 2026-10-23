@@ -1,5 +1,6 @@
 import { getProductsByIds } from './db.js';
 import { clamp } from './util.js';
+import { findCoupon, couponProblem, describeCoupon, normalizeCode } from './coupons.js';
 
 // Reducerea de pachet pentru o cantitate: cel mai mare prag atins.
 export function bundlePct(product, qty) {
@@ -58,11 +59,46 @@ export async function priceCart(env, settings, items, opts = {}) {
 
   const subtotal = lines.reduce((s, l) => s + l.unitPrice * l.qty, 0);
   const discount = lines.reduce((s, l) => s + l.lineDiscount, 0);
-  const afterDiscount = subtotal - discount;
+  const afterBundles = subtotal - discount;
+
+  // ---- cod de reducere (roata norocului sau cod creat din admin) ----
+  let coupon = null;
+  let couponDiscount = 0;
+  let freeShipByCoupon = false;
+  const code = normalizeCode(opts.coupon);
+  if (code && lines.length) {
+    const c = await findCoupon(env, code);
+    const problem = couponProblem(c, afterBundles);
+    if (problem) {
+      coupon = { code, ok: false, error: problem };
+    } else {
+      if (c.type === 'transport') freeShipByCoupon = true;
+      else if (c.type === 'procent') couponDiscount = Math.round(afterBundles * clamp(c.value, 0, 90) / 100);
+      else if (c.type === 'lei') couponDiscount = Math.min(c.value, afterBundles);
+      else if (c.type === '1plus1') {
+        // a doua bucată din fiecare produs e gratuită; nu se cumulează cu reducerea de pachet (se ia cea mai mare)
+        for (const l of lines) {
+          const free = Math.floor(l.qty / 2) * l.unitPrice;
+          couponDiscount += Math.max(0, free - l.lineDiscount);
+        }
+      }
+      coupon = {
+        code: c.code, ok: true, type: c.type, label: c.label || describeCoupon(c), description: describeCoupon(c),
+        expiresAt: c.expires_at ? c.expires_at.replace(' ', 'T') + 'Z' : '',
+        hint: c.type === '1plus1' && couponDiscount === 0 ? 'Adaugă 2 bucăți din același produs ca să primești una gratis.' : '',
+      };
+    }
+  }
+
+  const afterDiscount = afterBundles - couponDiscount;
   const threshold = Number(settings.free_shipping_threshold) || 0;
-  const shipping = lines.length === 0 ? 0 : (threshold > 0 && afterDiscount >= threshold ? 0 : Number(settings.shipping_cost) || 0);
+  // pragul de transport gratuit se verifică pe valoarea DINAINTEA codului, ca un premiu să nu scumpească niciodată comanda
+  const shipping = lines.length === 0 || freeShipByCoupon ? 0 : (threshold > 0 && afterBundles >= threshold ? 0 : Number(settings.shipping_cost) || 0);
   const codFee = opts.paymentMethod === 'ramburs' && lines.length ? Number(settings.cod_fee) || 0 : 0;
   const total = afterDiscount + shipping + codFee;
 
-  return { lines, subtotal, discount, shipping, codFee, total, errors, freeShippingLeft: threshold > afterDiscount ? threshold - afterDiscount : 0 };
+  return {
+    lines, subtotal, discount, couponDiscount, coupon, shipping, codFee, total, errors,
+    freeShippingLeft: freeShipByCoupon || !threshold || threshold <= afterBundles ? 0 : threshold - afterBundles,
+  };
 }

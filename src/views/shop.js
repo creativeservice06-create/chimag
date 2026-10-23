@@ -370,6 +370,7 @@ export function checkoutPage({ settings, bump }) {
       <aside class="summary" data-summary>
         <h2>Comanda ta</h2>
         <div data-summary-lines><p class="muted">Se încarcă…</p></div>
+        <div data-summary-coupon></div>
         <dl class="totals" data-summary-totals></dl>
         ${trustMini()}
       </aside>
@@ -423,7 +424,8 @@ export function thankYouPage({ settings, order, items, payment }) {
       <ul class="order-lines">${items.map((i) => html`<li><span>${i.qty} × ${i.title}</span><strong>${money(i.total)}</strong></li>`)}</ul>
       <dl class="totals">
         <div><dt>Subtotal</dt><dd>${money(order.subtotal)}</dd></div>
-        ${order.discount ? html`<div class="save"><dt>Reducere</dt><dd>−${money(order.discount)}</dd></div>` : ''}
+        ${order.discount ? html`<div class="save"><dt>Reducere pachet</dt><dd>−${money(order.discount)}</dd></div>` : ''}
+        ${order.coupon_discount ? html`<div class="save"><dt>Cod ${order.coupon_code}</dt><dd>−${money(order.coupon_discount)}</dd></div>` : ''}
         <div><dt>Transport</dt><dd>${order.shipping ? money(order.shipping) : 'Gratuit'}</dd></div>
         ${order.cod_fee ? html`<div><dt>Taxă ramburs</dt><dd>${money(order.cod_fee)}</dd></div>` : ''}
         <div class="grand"><dt>Total ${isCard && paid ? 'plătit' : 'de plată la livrare'}</dt><dd>${money(order.total)}</dd></div>

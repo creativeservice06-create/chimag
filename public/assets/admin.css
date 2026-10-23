@@ -143,3 +143,10 @@ code { background: #edf1f0; padding: 1px 5px; border-radius: 4px; font-size: 12p
 .login .brand { color: var(--ink); padding: 0; }
 .login label { display: grid; gap: 6px; font-weight: 600; }
 .login .btn { padding: 11px; }
+
+.mt { margin-top: 16px; }
+h3.mt { font-size: .95rem; margin-bottom: 4px; }
+.prizes input, .prizes select { min-width: 90px; }
+.prizes td:first-child input { min-width: 170px; }
+.inline-form { display: inline; }
+.tabs.small { border: 0; margin: 0; }

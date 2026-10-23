@@ -124,17 +124,44 @@
   function priceCart(items, opts) {
     return fetch('/api/cart', {
       method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ items: items, payment: (opts && opts.payment) || 'ramburs', bump: !!(opts && opts.bump) }),
+      body: JSON.stringify({ items: items, payment: (opts && opts.payment) || 'ramburs', bump: !!(opts && opts.bump), coupon: store.get('chimag_coupon', '') }),
     }).then(function (r) { return r.json(); });
   }
 
   function totalsHtml(p, opts) {
     var rows = '<div><dt>Subtotal</dt><dd>' + money(p.subtotal) + '</dd></div>';
-    if (p.discount) rows += '<div class="save"><dt>Reducere</dt><dd>−' + money(p.discount) + '</dd></div>';
-    rows += '<div><dt>Transport</dt><dd>' + (p.shipping ? money(p.shipping) : 'Gratuit') + '</dd></div>';
+    if (p.discount) rows += '<div class="save"><dt>Reducere pachet</dt><dd>−' + money(p.discount) + '</dd></div>';
+    var cOk = p.coupon && p.coupon.ok;
+    if (cOk && p.couponDiscount) rows += '<div class="save"><dt>Cod ' + esc(p.coupon.code) + '</dt><dd>−' + money(p.couponDiscount) + '</dd></div>';
+    rows += '<div><dt>Transport</dt><dd>' + (p.shipping ? money(p.shipping) : (cOk && p.coupon.type === 'transport' ? 'Gratuit (cod)' : 'Gratuit')) + '</dd></div>';
     if (p.codFee) rows += '<div><dt>Taxă ramburs</dt><dd>' + money(p.codFee) + '</dd></div>';
     rows += '<div class="grand"><dt>Total</dt><dd>' + money(p.total) + '</dd></div>';
     return rows;
+  }
+
+  function couponHtml(p) {
+    var c = p.coupon;
+    if (c && c.ok) {
+      return '<div class="coupon-applied"><span>🎁 <strong>' + esc(c.label) + '</strong> aplicat' + (c.hint ? '<br><small>' + esc(c.hint) + '</small>' : '') +
+        '</span><button type="button" class="link-btn" data-coupon-remove>Scoate codul</button></div>';
+    }
+    return (c && !c.ok ? '<p class="coupon-error">' + esc(c.code) + ': ' + esc(c.error) + ' <button type="button" class="link-btn" data-coupon-remove>Scoate codul</button></p>' : '') +
+      '<details class="coupon-box"' + (c && !c.ok ? ' open' : '') + '><summary>Ai un cod de reducere?</summary>' +
+      '<div class="coupon-form"><input type="text" data-coupon-input placeholder="Scrie codul" autocomplete="off" autocapitalize="characters" aria-label="Cod de reducere">' +
+      '<button type="button" class="btn btn-ghost" data-coupon-apply>Aplică</button></div></details>';
+  }
+  function bindCoupon(root, refresh) {
+    root.addEventListener('click', function (e) {
+      if (e.target.closest('[data-coupon-remove]')) { store.del('chimag_coupon'); updatePromoBar(); refresh(); }
+      if (e.target.closest('[data-coupon-apply]')) {
+        var inp = root.querySelector('[data-coupon-input]');
+        var v = (inp && inp.value || '').trim().toUpperCase();
+        if (v) { store.set('chimag_coupon', v); refresh(); }
+      }
+    });
+    root.addEventListener('keydown', function (e) {
+      if (e.target.matches && e.target.matches('[data-coupon-input]') && e.key === 'Enter') { e.preventDefault(); root.querySelector('[data-coupon-apply]').click(); }
+    });
   }
 
   function shipProgress(p) {
@@ -239,12 +266,13 @@
             '<div class="line-total">' + money(l.total) + '</div></li>';
         }).join('');
         view.innerHTML = (p.errors.length ? '<p class="form-error">' + p.errors.map(esc).join('<br>') + '</p>' : '') +
-          shipProgress(p) + '<ul class="cart-lines">' + lines + '</ul><dl class="totals">' + totalsHtml(p) + '</dl>' +
+          shipProgress(p) + '<ul class="cart-lines">' + lines + '</ul>' + couponHtml(p) + '<dl class="totals">' + totalsHtml(p) + '</dl>' +
           '<div class="cart-actions"><a class="btn btn-primary btn-xl btn-block" href="/finalizare">Finalizează comanda</a><a class="btn btn-ghost btn-block" href="/#produse">Continuă cumpărăturile</a></div>';
       });
     }
+    bindCoupon(view, render);
     view.addEventListener('click', function (e) {
-      var t = e.target.closest('button'); if (!t) return;
+      var t = e.target.closest('button'); if (!t || t.hasAttribute('data-coupon-remove') || t.hasAttribute('data-coupon-apply')) return;
       var c = getCart();
       if (t.hasAttribute('data-remove')) {
         var rid = Number(t.getAttribute('data-remove'));
@@ -269,6 +297,7 @@
     var fromCart = !buy;
     var items = fromCart ? getCart() : buy.split(',').map(function (s) { var p = s.split(':'); return { id: Number(p[0]), qty: Number(p[1]) || 1 }; });
     var linesEl = $('[data-summary-lines]');
+    var couponEl = $('[data-summary-coupon]');
     var totalsEl = $('[data-summary-totals]');
     var errEl = $('[data-form-error]');
     var submitBtn = $('[data-submit]');
@@ -300,6 +329,8 @@
               '<div class="q">' + l.qty + ' buc.' + (l.pct ? ' · −' + l.pct + '%' : '') + '</div></div><strong>' + money(l.total) + '</strong></div>';
           }).join('');
         totalsEl.innerHTML = totalsHtml(p);
+        if (couponEl) couponEl.innerHTML = couponHtml(p);
+        if (p.coupon && p.coupon.ok) updatePromoBar(p.coupon);
         submitBtn.textContent = (opts().payment === 'card' ? 'Plătește ' : 'Plasează comanda · ') + money(p.total);
         if (!tracked && p.lines.length) {
           tracked = true;
@@ -310,6 +341,7 @@
     form.addEventListener('change', function (e) {
       if (e.target.name === 'payment' || e.target.name === 'bump') refresh();
     });
+    if (couponEl) bindCoupon(couponEl, refresh);
     refresh();
 
     function setErr(name, msg) {
@@ -349,11 +381,13 @@
       submitBtn.textContent = 'Se trimite comanda…';
       fetch('/api/comanda', {
         method: 'POST', headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ items: items, customer: data, payment: o.payment, bump: o.bump, attribution: attribution() }),
+        body: JSON.stringify({ items: items, customer: data, payment: o.payment, bump: o.bump, attribution: attribution(), coupon: store.get('chimag_coupon', '') }),
       }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
         .then(function (res) {
+          if (res.j && res.j.couponError) refresh();
           if (!res.ok || !res.j.redirect) throw new Error(res.j.error || 'Comanda nu a putut fi trimisă.');
           if (fromCart) setCart([]);
+          if (store.get('chimag_coupon', '')) { store.del('chimag_coupon'); var w = store.get('chimag_wheel', null); if (w) { w.used = true; store.set('chimag_wheel', w); } }
           location.href = res.j.redirect;
         })
         .catch(function (err) {
@@ -363,6 +397,176 @@
           submitBtn.textContent = oldText;
         });
     });
+  })();
+
+  /* ---------------- Bară promoție (cod activ + cronometru) ---------------- */
+  var promoTimer = null;
+  function updatePromoBar(fromServer) {
+    var bar = $('[data-promo-bar]');
+    if (!bar) return;
+    var code = store.get('chimag_coupon', '');
+    var w = store.get('chimag_wheel', null);
+    var info = fromServer || (w && w.code === code ? w : null);
+    clearInterval(promoTimer);
+    if (!code || !info) { bar.hidden = true; return; }
+    var exp = info.expiresAt ? Date.parse(info.expiresAt) : 0;
+    function tick() {
+      var left = exp ? exp - Date.now() : 0;
+      if (exp && left <= 0) { bar.hidden = true; store.del('chimag_coupon'); clearInterval(promoTimer); return; }
+      var t = '';
+      if (exp) {
+        var h = Math.floor(left / 3600e3), m = Math.floor(left / 60e3) % 60, sec = Math.floor(left / 1e3) % 60;
+        t = ' · expiră în <b>' + h + ':' + (m < 10 ? '0' : '') + m + ':' + (sec < 10 ? '0' : '') + sec + '</b>';
+      }
+      bar.innerHTML = '<div class="wrap">🎁 <strong>' + esc(info.label) + '</strong> se aplică automat la comandă' + t + '</div>';
+      bar.hidden = false;
+    }
+    tick();
+    if (exp) promoTimer = setInterval(tick, 1000);
+  }
+  updatePromoBar();
+
+  /* ---------------- Confeti (fără biblioteci) ---------------- */
+  function confetti() {
+    if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var c = $('[data-confetti]'); if (!c) return;
+    var ctx = c.getContext('2d');
+    var dpr = window.devicePixelRatio || 1;
+    c.width = innerWidth * dpr; c.height = innerHeight * dpr; c.style.display = 'block';
+    ctx.scale(dpr, dpr);
+    var colors = ['#155ecc', '#78aae9', '#f6b73c', '#ffffff', '#112b4d', '#ff6b6b'];
+    var parts = [];
+    for (var i = 0; i < 180; i++) {
+      parts.push({
+        x: innerWidth / 2 + (Math.random() - 0.5) * 120, y: innerHeight * 0.45,
+        vx: (Math.random() - 0.5) * 16, vy: -Math.random() * 15 - 6,
+        w: 6 + Math.random() * 6, h: 8 + Math.random() * 8, r: Math.random() * 6, vr: (Math.random() - 0.5) * 0.4,
+        color: colors[i % colors.length],
+      });
+    }
+    var start = performance.now();
+    (function frame(now) {
+      var t = now - start;
+      ctx.clearRect(0, 0, innerWidth, innerHeight);
+      parts.forEach(function (p) {
+        p.vy += 0.42; p.vx *= 0.99; p.x += p.vx; p.y += p.vy; p.r += p.vr;
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.r);
+        ctx.globalAlpha = Math.max(0, 1 - t / 3200);
+        ctx.fillStyle = p.color; ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h * Math.abs(Math.cos(p.r)));
+        ctx.restore();
+      });
+      if (t < 3200) requestAnimationFrame(frame); else { ctx.clearRect(0, 0, innerWidth, innerHeight); c.style.display = 'none'; }
+    })(start);
+  }
+
+  /* ---------------- Roata norocului ---------------- */
+  (function wheel() {
+    var W = CFG.wheel;
+    var modal = $('[data-wheel-modal]');
+    if (!W || !modal) return;
+    var disc = $('[data-wheel-disc]', modal);
+    var copy = $('[data-wheel-copy]', modal);
+    var segs = W.segments;
+    var n = segs.length, a = 360 / n;
+    var palette = ['#155ecc', '#0e192a', '#2f7be6', '#112b4d'];
+    var spinning = false;
+
+    // desenează roata (SVG)
+    var R = 150, svg = '<svg viewBox="-160 -160 320 320" aria-hidden="true"><circle r="158" fill="#0e192a"/>';
+    function pt(deg, r) { var rad = (deg - 90) * Math.PI / 180; return [Math.cos(rad) * r, Math.sin(rad) * r]; }
+    for (var i = 0; i < n; i++) {
+      var s0 = pt(i * a, R), s1 = pt((i + 1) * a, R);
+      var fill = (n % palette.length === 1 && i === n - 1) ? '#2f7be6' : palette[i % palette.length];
+      svg += '<path d="M0 0 L' + s0[0].toFixed(2) + ' ' + s0[1].toFixed(2) + ' A' + R + ' ' + R + ' 0 0 1 ' + s1[0].toFixed(2) + ' ' + s1[1].toFixed(2) + ' Z" fill="' + fill + '" stroke="#ffffff" stroke-opacity=".18" stroke-width="1.5"/>';
+      var mid = i * a + a / 2, tp = pt(mid, R * 0.6);
+      var words = String(segs[i]).split(' ');
+      var lines = words.length > 2 ? [words.slice(0, Math.ceil(words.length / 2)).join(' '), words.slice(Math.ceil(words.length / 2)).join(' ')] : (words.length === 2 && segs[i].length > 11 ? words : [segs[i]]);
+      var fs = n > 8 ? 10 : n > 6 ? 11.5 : 13;
+      svg += '<text transform="translate(' + tp[0].toFixed(2) + ' ' + tp[1].toFixed(2) + ') rotate(' + (mid > 180 ? mid + 90 : mid - 90) + ')" fill="#fff" font-size="' + fs + '" font-weight="800" text-anchor="middle" font-family="Plus Jakarta Sans, Inter, sans-serif">' +
+        lines.map(function (l, j) { return '<tspan x="0" dy="' + (j === 0 ? (lines.length > 1 ? -0.35 : 0.35) : 1.15) + 'em">' + esc(l) + '</tspan>'; }).join('') + '</text>';
+    }
+    for (var k = 0; k < n * 2; k++) { var d = pt(k * a / 2, 152); svg += '<circle cx="' + d[0].toFixed(2) + '" cy="' + d[1].toFixed(2) + '" r="3" fill="' + (k % 2 ? '#f6b73c' : '#ffffff') + '"/>'; }
+    disc.innerHTML = svg + '</svg>';
+
+    function rotateTo(index, animate) {
+      var jitter = (Math.random() - 0.5) * a * 0.6;
+      var target = 360 * (animate ? 7 : 0) + (360 - (index * a + a / 2)) + (animate ? jitter : 0);
+      disc.style.transition = animate ? 'transform 5.6s cubic-bezier(.12,.72,.08,1)' : 'none';
+      disc.style.transform = 'rotate(' + target + 'deg)';
+    }
+
+    function showResult(w, fresh) {
+      var hub = $('.wheel-hub', modal); if (hub) { hub.textContent = '🎉'; hub.disabled = true; hub.setAttribute('aria-label', 'Roata a fost învârtită'); }
+      var exp = Date.parse(w.expiresAt);
+      var cartN = getCart().length;
+      copy.innerHTML = '<p class="wheel-won">' + (fresh ? '🎉 Felicitări! Ai câștigat' : 'Premiul tău') + '</p>' +
+        '<h2 id="wheel-title">' + esc(w.label) + '</h2>' +
+        ((w.description !== w.label || w.min) ? '<p>' + esc(w.description !== w.label ? w.description : 'Valabil') + (w.min ? ' la comenzi de minim ' + money(w.min) : '') + '.</p>' : '') +
+        (w.used ? '<p class="wheel-note">Premiul a fost deja folosit la o comandă.</p>' :
+          (exp < Date.now() ? '<p class="wheel-note">Premiul a expirat.</p>' :
+            '<p class="wheel-code">Codul tău: <strong>' + esc(w.code) + '</strong></p><p class="wheel-note">Se aplică automat la comandă. Expiră ' +
+              new Intl.DateTimeFormat('ro-RO', { weekday: 'long', hour: '2-digit', minute: '2-digit' }).format(exp) + '.</p>' +
+              '<a class="btn btn-primary btn-lg btn-block" href="' + (cartN ? '/finalizare' : '/#produse') + '" data-wheel-go>' + (cartN ? 'Finalizează comanda' : 'Alege produsele') + '</a>')) +
+        '<p class="wheel-legal"><a href="/pagina/regulament-roata">Regulament și șanse</a></p>';
+      var go = $('[data-wheel-go]', copy);
+      if (go) go.addEventListener('click', close);
+    }
+
+    function open() {
+      var w = store.get('chimag_wheel', null);
+      modal.hidden = false;
+      document.body.classList.add('no-scroll');
+      if (w) { rotateTo(w.index, false); showResult(w, false); }
+      setTimeout(function () { var b = $('[data-wheel-spin]', modal) || $('[data-wheel-close]', modal); if (b) b.focus(); }, 50);
+    }
+    function close() {
+      if (spinning) return;
+      modal.hidden = true;
+      document.body.classList.remove('no-scroll');
+      if (!store.get('chimag_wheel', null)) store.set('chimag_wheel_later', Date.now());
+    }
+
+    function spin() {
+      if (spinning || store.get('chimag_wheel', null)) return;
+      spinning = true;
+      $$('[data-wheel-spin]', modal).forEach(function (b) { b.disabled = true; });
+      fetch('/api/roata', { method: 'POST' }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+        .then(function (res) {
+          if (!res.ok) throw new Error(res.j.error || 'Roata nu a putut fi învârtită.');
+          var w = res.j;
+          rotateTo(w.index, true);
+          setTimeout(function () {
+            spinning = false;
+            store.set('chimag_wheel', w);
+            store.set('chimag_coupon', w.code);
+            updatePromoBar();
+            updateDot();
+            confetti();
+            showResult(w, true);
+          }, 5800);
+        })
+        .catch(function (err) {
+          spinning = false;
+          $$('[data-wheel-spin]', modal).forEach(function (b) { b.disabled = false; });
+          toast(esc(err.message));
+        });
+    }
+
+    function updateDot() { var d = $('[data-wheel-dot]'); if (d) d.hidden = !!store.get('chimag_wheel', null); }
+    updateDot();
+
+    $$('[data-wheel-open]').forEach(function (b) { b.addEventListener('click', open); });
+    $$('[data-wheel-close]', modal).forEach(function (b) { b.addEventListener('click', close); });
+    $$('[data-wheel-spin]', modal).forEach(function (b) { b.addEventListener('click', spin); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !modal.hidden) close(); });
+
+    // apare singură la prima vizită (nu în timpul comenzii); dacă o închizi, revine după 24h
+    if (/[?&]roata/.test(location.search)) { open(); return; }
+    var later = store.get('chimag_wheel_later', 0);
+    var skip = /^\/(finalizare|multumim|admin|pagina)/.test(location.pathname);
+    if (W.autoOpen && !skip && !store.get('chimag_wheel', null) && Date.now() - later > 24 * 3600e3) {
+      setTimeout(function () { if (modal.hidden) open(); }, W.delay * 1000);
+    }
   })();
 
   /* ---------------- Mulțumim: eveniment Purchase (o singură dată) ---------------- */

@@ -4,12 +4,15 @@ import { ORDER_STATUSES, PAYMENT_STATUSES } from '../lib/db.js';
 import { PROVIDERS } from '../shipping/providers.js';
 import { JUDETE } from '../lib/judete.js';
 import { logoMark } from './layout.js';
+import { COUPON_TYPES, wheelConfig, prizeOdds, describeCoupon } from '../lib/coupons.js';
+import { parseJSON } from '../lib/util.js';
 
 export function adminLayout({ title, active, body, flash, newCount = 0 }) {
   const nav = [
     ['/admin', 'panou', 'Panou'],
     ['/admin/comenzi', 'comenzi', 'Comenzi'],
     ['/admin/produse', 'produse', 'Produse'],
+    ['/admin/coduri', 'coduri', 'Roată și coduri'],
     ['/admin/setari', 'setari', 'Setări'],
   ];
   return html`<html lang="ro"><head>
@@ -17,7 +20,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0 }) {
 <meta name="robots" content="noindex">
 <title>${title} · Admin Chimag</title>
 <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/assets/admin.css?v=2">
+<link rel="stylesheet" href="/assets/admin.css?v=3">
 <script src="/assets/admin.js?v=1" defer></script>
 </head><body>
 <div class="shell">
@@ -40,7 +43,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0 }) {
 
 export function loginView(error) {
   return html`<html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex"><title>Autentificare · Admin</title><link rel="stylesheet" href="/assets/admin.css?v=2"></head>
+<meta name="robots" content="noindex"><title>Autentificare · Admin</title><link rel="stylesheet" href="/assets/admin.css?v=3"></head>
 <body class="login-body"><form class="login" method="post" action="/admin/login">
   <div class="brand">${logoMark()}<span>chimag</span></div>
   <h1>Administrare</h1>
@@ -187,7 +190,8 @@ export function orderView({ order: o, items, events, settings, provider }) {
         </tbody></table>
         <dl class="sum">
           <div><dt>Subtotal</dt><dd>${money(o.subtotal)}</dd></div>
-          ${o.discount ? html`<div><dt>Reducere</dt><dd>−${money(o.discount)}</dd></div>` : ''}
+          ${o.discount ? html`<div><dt>Reducere pachet</dt><dd>−${money(o.discount)}</dd></div>` : ''}
+          ${o.coupon_discount || o.coupon_code ? html`<div><dt>Cod ${o.coupon_code}</dt><dd>${o.coupon_discount ? html`−${money(o.coupon_discount)}` : 'transport gratuit'}</dd></div>` : ''}
           <div><dt>Transport</dt><dd>${money(o.shipping)}</dd></div>
           ${o.cod_fee ? html`<div><dt>Taxă ramburs</dt><dd>${money(o.cod_fee)}</dd></div>` : ''}
           <div class="grand"><dt>Total</dt><dd>${money(o.total)}</dd></div>
@@ -439,4 +443,80 @@ export function settingsView({ settings: s, products, secrets, siteUrl }) {
     </section>
     <div class="sticky-save"><button class="btn primary big">Salvează setările</button></div>
   </form>`;
+}
+
+// ---------------- Roată și coduri ----------------
+export function couponsView({ settings: s, coupons, stats, filter }) {
+  const w = wheelConfig(s);
+  const raw = parseJSON(s.wheel_prizes, []);
+  const rows = Array.from({ length: 8 }, (_, i) => raw[i] || { label: '', type: 'procent', value: '', weight: '', min: '' });
+  const odds = prizeOdds(rows.map((r) => ({ weight: r.label ? Math.max(0, Number(r.weight) || 0) : 0 })));
+  const fmtVal = (r) => (r.type === 'lei' ? (r.value ? moneyNum(r.value) : '') : r.type === 'procent' ? r.value : '');
+  return html`
+  <header class="page-head"><h1>Roată și coduri</h1>${w.enabled ? html`<span class="chip st-livrata">Roata e pornită</span>` : html`<span class="chip">Roata e oprită</span>`}</header>
+
+  <section class="kpis">
+    <div class="kpi"><h2>Învârtiri (30 zile)</h2><p class="kpi-main">${stats.spins}</p></div>
+    <div class="kpi"><h2>Coduri din roată folosite</h2><p class="kpi-main">${stats.wheelUsed}</p><p class="kpi-sub">${stats.spins ? Math.round((stats.wheelUsed / stats.spins) * 100) : 0}% din învârtiri</p></div>
+    <div class="kpi"><h2>Comenzi cu cod (30 zile)</h2><p class="kpi-main">${stats.orders}</p><p class="kpi-sub">${money(stats.revenue)} vânzări</p></div>
+    <div class="kpi"><h2>Reduceri acordate (30 zile)</h2><p class="kpi-main">${money(stats.discount)}</p></div>
+  </section>
+
+  <form method="post" action="/admin/coduri/roata" class="panel">
+    <h2>Roata norocului</h2>
+    <div class="form-grid">
+      <label class="check"><input type="checkbox" name="wheel_enabled" value="1" ${s.wheel_enabled === '1' ? 'checked' : ''}> Roata este pornită (apare butonul 🎁 lângă coș)</label>
+      <label class="check"><input type="checkbox" name="wheel_auto_open" value="1" ${s.wheel_auto_open === '1' ? 'checked' : ''}> Apare singură la intrarea pe site</label>
+      <label>Apare după (secunde)<input name="wheel_delay" type="number" min="0" max="120" value="${s.wheel_delay || 5}"></label>
+      <label>Codul câștigat e valabil (ore)<input name="wheel_hours" type="number" min="1" max="720" value="${s.wheel_hours || 48}"></label>
+      <label class="span2">Titlu<input name="wheel_title" value="${s.wheel_title || ''}"></label>
+    </div>
+    <h3 class="mt">Premii</h3>
+    <p class="hint">Premiile cu șansa 0 sau fără nume nu apar pe roată. Șansele se calculează din „pondere": un premiu cu pondere 30 iese de 3 ori mai des decât unul cu pondere 10. Pe roată pot fi între 2 și 8 premii.</p>
+    <div class="tbl-wrap"><table class="tbl prizes">
+      <thead><tr><th>Nume pe roată</th><th>Tip</th><th>Valoare</th><th>Pondere</th><th>Șansă</th><th>Comandă minimă (lei)</th></tr></thead>
+      <tbody>${rows.map((r, i) => html`<tr>
+        <td><input name="p_label" value="${r.label}" maxlength="24" placeholder="ex: Transport gratuit"></td>
+        <td><select name="p_type">${Object.entries(COUPON_TYPES).map(([k, v]) => html`<option value="${k}" ${k === r.type ? 'selected' : ''}>${v}</option>`)}</select></td>
+        <td><input name="p_value" value="${fmtVal(r)}" inputmode="decimal" placeholder="% sau lei"></td>
+        <td><input name="p_weight" value="${r.label ? r.weight : ''}" inputmode="numeric" placeholder="ex: 20"></td>
+        <td class="r nowrap">${r.label && odds[i] ? `${String(odds[i]).replace('.', ',')}%` : '–'}</td>
+        <td><input name="p_min" value="${r.min ? moneyNum(r.min) : ''}" inputmode="decimal" placeholder="0"></td>
+      </tr>`)}</tbody></table></div>
+    <p class="hint">La „Reducere %" scrii procentul (ex: 10), la „Reducere în lei" suma (ex: 15). Pentru „Transport gratuit" și „1+1 gratis" valoarea nu contează. Șansele apar public în <a href="/pagina/regulament-roata" target="_blank">regulament</a>.</p>
+    <div class="btn-row mt"><button class="btn primary">Salvează roata</button><a class="btn" href="/?roata=test" target="_blank">Vezi pe site</a></div>
+  </form>
+
+  <section class="panel">
+    <h2>Creează un cod de reducere</h2>
+    <p class="hint">Pentru reclame, influenceri sau clienți fideli, de exemplu TIKTOK10. Clientul îl scrie la finalizarea comenzii.</p>
+    <form method="post" action="/admin/coduri/nou" class="form-grid">
+      <label>Cod<input name="code" required maxlength="30" placeholder="ex: TIKTOK10" style="text-transform:uppercase"></label>
+      <label>Tip<select name="type">${Object.entries(COUPON_TYPES).map(([k, v]) => html`<option value="${k}">${v}</option>`)}</select></label>
+      <label>Valoare (% sau lei)<input name="value" inputmode="decimal" placeholder="ex: 10"></label>
+      <label>Comandă minimă (lei)<input name="min_order" inputmode="decimal" placeholder="0"></label>
+      <label>Număr maxim de folosiri (0 = nelimitat)<input name="max_uses" type="number" min="0" value="0"></label>
+      <label>Expiră la (opțional)<input name="expires" type="date"></label>
+      <div class="span2"><button class="btn primary">Creează codul</button></div>
+    </form>
+  </section>
+
+  <section class="panel">
+    <div class="page-head"><h2>Coduri</h2>
+      <nav class="tabs small">${[['manual', 'Create de mine'], ['roata', 'Din roată'], ['folosite', 'Folosite']].map(([k, v]) => html`<a href="/admin/coduri?f=${k}" class="${filter === k ? 'on' : ''}">${v}</a>`)}</nav>
+    </div>
+    ${coupons.length ? html`<div class="tbl-wrap"><table class="tbl">
+      <thead><tr><th>Cod</th><th>Reducere</th><th>Folosit</th><th>Expiră</th><th>Stare</th><th></th></tr></thead>
+      <tbody>${coupons.map((c) => html`<tr>
+        <td><b>${c.code}</b>${c.label && c.source === 'roata' ? html`<br><span class="muted">${c.label}</span>` : ''}</td>
+        <td>${describeCoupon(c)}${c.min_order ? html`<br><span class="muted">minim ${money(c.min_order)}</span>` : ''}</td>
+        <td>${c.used_count}${c.max_uses ? ` / ${c.max_uses}` : ''}</td>
+        <td class="nowrap">${c.expires_at ? formatDate(c.expires_at) : 'nu expiră'}</td>
+        <td>${c.active ? html`<span class="chip st-livrata">Activ</span>` : html`<span class="chip">Oprit</span>`}</td>
+        <td class="r nowrap">
+          <form method="post" action="/admin/coduri/${c.id}/comuta" class="inline-form"><button class="btn sm">${c.active ? 'Oprește' : 'Pornește'}</button></form>
+          ${c.used_count ? '' : html`<form method="post" action="/admin/coduri/${c.id}/sterge" class="inline-form"><button class="btn sm danger" data-confirm="Ștergi codul ${c.code}?">Șterge</button></form>`}
+        </td>
+      </tr>`)}</tbody></table></div>` : html`<p class="muted">Niciun cod aici încă.</p>`}
+  </section>`;
 }

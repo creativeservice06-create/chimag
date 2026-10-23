@@ -118,6 +118,18 @@ Fluxul cu Helpship: comanda intră → o confirmi (telefonic, dacă vrei) → ap
 
 ---
 
+## Roata norocului și coduri de reducere
+Din **Admin → Roată și coduri**:
+- pornești sau oprești roata (butonul 🎁 de lângă coș și fereastra care apare la intrare);
+- alegi premiile (transport gratuit, reducere %, reducere în lei, 1+1 gratis), șansele, comanda minimă și cât timp e valabil codul;
+- creezi coduri proprii (ex. `TIKTOK10`) pe care clientul le scrie la finalizarea comenzii.
+
+Premiul se decide pe server (nu poate fi trucat din browser), fiecare cod din roată merge o singură dată, iar de pe același dispozitiv se poate învârti de maxim 3 ori pe zi. Pragul de transport gratuit se calculează înaintea reducerii, ca un premiu să nu scumpească niciodată comanda. Regulamentul cu șansele reale se generează automat la `/pagina/regulament-roata`.
+
+**Instalare pe o bază de date existentă:** rulează o dată `setup/roata-console.sql` în Cloudflare → D1 → chimag-db → Console.
+
+---
+
 ## Rulare locală (opțional, pentru modificări)
 ```bash
 npm install

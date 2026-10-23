@@ -15,6 +15,12 @@ function form(obj, prefix = '', out = new URLSearchParams()) {
 export async function createCheckoutSession(env, { order, lines, shipping, codFee, siteUrl }) {
   const line_items = {};
   let i = 0;
+  if (order.coupon_discount > 0) {
+    // cu reducere de cupon: un singur rând cu totalul exact al comenzii
+    line_items[0] = { quantity: 1, price_data: { currency: 'ron', unit_amount: order.total, product_data: { name: `Comanda ${order.number}` } } };
+    lines = [];
+    shipping = 0; codFee = 0; i = 1;
+  }
   for (const l of lines) {
     // Stripe nu acceptă reduceri negative pe linie; punem prețul final per bucată (rotunjit în jos).
     const unit = Math.floor(l.total / l.qty);

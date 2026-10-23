@@ -11,6 +11,7 @@ import { staticPage, PAGES } from './views/pages.js';
 import { handleAdmin } from './admin.js';
 import { handleFulfillmentApi } from './fulfillment-api.js';
 import { syncTracking } from './cron.js';
+import { spinWheel } from './lib/coupons.js';
 
 const siteUrl = (env, request) => (env.SITE_URL || new URL(request.url).origin).replace(/\/$/, '');
 
@@ -139,18 +140,25 @@ async function route(request, env, ctx) {
   if (method === 'POST' && path === '/api/cart') {
     const body = await request.json().catch(() => ({}));
     const settings = await getSettings(env);
-    const p = await priceCart(env, settings, body.items || [], { paymentMethod: body.payment === 'card' ? 'card' : 'ramburs', bump: !!body.bump });
+    const p = await priceCart(env, settings, body.items || [], { paymentMethod: body.payment === 'card' ? 'card' : 'ramburs', bump: !!body.bump, coupon: body.coupon });
     return json({
       lines: p.lines.map((l) => ({
         id: l.product.id, slug: l.product.slug, title: l.product.title, image: l.product.images[0] || '/img/placeholder.svg',
         qty: l.qty, unitPrice: l.unitPrice, pct: l.pct, lineDiscount: l.lineDiscount, total: l.total, isBump: l.isBump,
       })).filter((l) => !l.isBump || body.bump),
-      subtotal: p.subtotal, discount: p.discount, shipping: p.shipping, codFee: p.codFee, total: p.total,
-      freeShippingLeft: p.freeShippingLeft, errors: p.errors,
+      subtotal: p.subtotal, discount: p.discount, couponDiscount: p.couponDiscount, coupon: p.coupon,
+      shipping: p.shipping, codFee: p.codFee, total: p.total, freeShippingLeft: p.freeShippingLeft, errors: p.errors,
     });
   }
 
   if (method === 'POST' && path === '/api/comanda') return placeOrder(request, env, ctx);
+
+  if (method === 'POST' && path === '/api/roata') {
+    const settings = await getSettings(env);
+    const r = await spinWheel(env, settings, request.headers.get('cf-connecting-ip') || '');
+    if (r.error) return json({ error: r.error }, r.status || 400);
+    return json(r);
+  }
 
   if (method === 'POST' && (m = path.match(/^\/api\/comanda\/([a-f0-9]{32})\/(plata|ramburs)$/))) {
     const order = await env.DB.prepare('SELECT * FROM orders WHERE token = ?').bind(m[1]).first();
@@ -217,8 +225,9 @@ async function placeOrder(request, env, ctx) {
 
   const settings = await getSettings(env);
   const paymentMethod = body.payment === 'card' && settings.card_enabled === '1' && env.STRIPE_SECRET_KEY ? 'card' : 'ramburs';
-  const priced = await priceCart(env, settings, body.items || [], { paymentMethod, bump: !!body.bump });
+  const priced = await priceCart(env, settings, body.items || [], { paymentMethod, bump: !!body.bump, coupon: body.coupon });
   if (priced.errors.length) return json({ error: priced.errors.join(' ') }, 409);
+  if (body.coupon && priced.coupon && !priced.coupon.ok) return json({ error: `Codul ${priced.coupon.code}: ${priced.coupon.error} Scoate codul și încearcă din nou.`, couponError: true }, 409);
   if (!priced.lines.length) return json({ error: 'Coșul este gol.' }, 400);
 
   const ip = request.headers.get('cf-connecting-ip') || '';

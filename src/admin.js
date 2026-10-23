@@ -8,8 +8,9 @@ import { setStatus, generateAwb, cancelAwb, setManualAwb } from './lib/orders.js
 import { getProvider } from './shipping/providers.js';
 import { JUDETE } from './lib/judete.js';
 import {
-  adminLayout, loginView, dashboardView, ordersView, orderView, labelView, productsView, productFormView, settingsView,
+  adminLayout, loginView, dashboardView, ordersView, orderView, labelView, productsView, productFormView, settingsView, couponsView,
 } from './views/admin-views.js';
+import { COUPON_TYPES, normalizeCode } from './lib/coupons.js';
 
 // Formular gol sau fără content-type nu trebuie să dea eroare
 const readForm = (request) => request.formData().catch(() => new FormData());
@@ -203,6 +204,72 @@ export async function handleAdmin(request, env, ctx, path) {
   if ((m = path.match(/^\/admin\/produse\/(\d+)\/recenzii\/(\d+)\/sterge$/)) && method === 'POST') {
     await env.DB.prepare('DELETE FROM reviews WHERE id = ? AND product_id = ?').bind(Number(m[2]), Number(m[1])).run();
     return redirect(withFlash(`/admin/produse/${m[1]}`, 'ok', 'Recenzie ștearsă.'));
+  }
+
+  // ---------- Roată și coduri ----------
+  if (path === '/admin/coduri' && method === 'GET') {
+    const filter = ['manual', 'roata', 'folosite'].includes(url.searchParams.get('f')) ? url.searchParams.get('f') : 'manual';
+    const where = filter === 'folosite' ? 'WHERE used_count > 0' : 'WHERE source = ?';
+    const stmt = env.DB.prepare(`SELECT * FROM coupons ${where} ORDER BY id DESC LIMIT 200`);
+    const { results: coupons } = await (filter === 'folosite' ? stmt : stmt.bind(filter)).all();
+    const spins = await env.DB.prepare("SELECT COUNT(*) AS n, COALESCE(SUM(CASE WHEN used_count > 0 THEN 1 ELSE 0 END),0) AS used FROM coupons WHERE source = 'roata' AND created_at > datetime('now','-30 days')").first();
+    const ord = await env.DB.prepare("SELECT COUNT(*) AS n, COALESCE(SUM(total),0) AS revenue, COALESCE(SUM(coupon_discount),0) AS discount FROM orders WHERE coupon_code != '' AND status != 'anulata' AND created_at > datetime('now','-30 days')").first();
+    return render(env, url, {
+      title: 'Roată și coduri', active: 'coduri',
+      body: couponsView({ settings, coupons: coupons || [], filter, stats: { spins: spins.n, wheelUsed: spins.used, orders: ord.n, revenue: ord.revenue, discount: ord.discount } }),
+    });
+  }
+  if (path === '/admin/coduri/roata' && method === 'POST') {
+    const form = await readForm(request);
+    const labels = form.getAll('p_label'), types = form.getAll('p_type'), vals = form.getAll('p_value'), weights = form.getAll('p_weight'), mins = form.getAll('p_min');
+    const prizes = [];
+    for (let i = 0; i < labels.length; i++) {
+      const label = String(labels[i] || '').trim().slice(0, 24);
+      if (!label) continue;
+      const type = COUPON_TYPES[types[i]] ? types[i] : 'procent';
+      let value = 0;
+      if (type === 'procent') value = Math.min(90, Math.max(0, Math.round(Number(String(vals[i]).replace(',', '.')) || 0)));
+      if (type === 'lei') value = Math.max(0, toBani(vals[i]));
+      if ((type === 'procent' || type === 'lei') && !value) return redirect(withFlash('/admin/coduri', 'err', `Premiul „${label}" nu are valoare.`));
+      prizes.push({ label, type, value, weight: Math.max(0, Number(String(weights[i]).replace(',', '.')) || 0), min: Math.max(0, toBani(mins[i])) });
+    }
+    const active = prizes.filter((p) => p.weight > 0);
+    if (form.get('wheel_enabled') && active.length < 2) return redirect(withFlash('/admin/coduri', 'err', 'Roata are nevoie de cel puțin 2 premii cu pondere mai mare ca 0.'));
+    await saveSettings(env, {
+      wheel_enabled: form.get('wheel_enabled') ? '1' : '0',
+      wheel_auto_open: form.get('wheel_auto_open') ? '1' : '0',
+      wheel_delay: String(Math.min(120, Math.max(0, Number(form.get('wheel_delay')) || 0))),
+      wheel_hours: String(Math.min(720, Math.max(1, Number(form.get('wheel_hours')) || 48))),
+      wheel_title: String(form.get('wheel_title') || '').trim().slice(0, 80),
+      wheel_prizes: JSON.stringify(prizes),
+    });
+    return redirect(withFlash('/admin/coduri', 'ok', 'Roata a fost salvată.'));
+  }
+  if (path === '/admin/coduri/nou' && method === 'POST') {
+    const form = await readForm(request);
+    const code = normalizeCode(form.get('code'));
+    const type = COUPON_TYPES[form.get('type')] ? form.get('type') : 'procent';
+    if (code.length < 3) return redirect(withFlash('/admin/coduri', 'err', 'Codul trebuie să aibă cel puțin 3 caractere (litere, cifre sau cratimă).'));
+    let value = 0;
+    if (type === 'procent') value = Math.min(90, Math.max(0, Math.round(Number(String(form.get('value') || '').replace(',', '.')) || 0)));
+    if (type === 'lei') value = Math.max(0, toBani(form.get('value')));
+    if ((type === 'procent' || type === 'lei') && !value) return redirect(withFlash('/admin/coduri', 'err', 'Completează valoarea reducerii.'));
+    const exp = String(form.get('expires') || '');
+    const expires = /^\d{4}-\d{2}-\d{2}$/.test(exp) ? `${exp} 20:59:59` : ''; // sfârșitul zilei, ora României
+    try {
+      await env.DB.prepare(`INSERT INTO coupons (code, label, type, value, min_order, max_uses, expires_at, source) VALUES (?, '', ?, ?, ?, ?, ?, 'manual')`)
+        .bind(code, type, value, Math.max(0, toBani(form.get('min_order'))), Math.max(0, Math.floor(Number(form.get('max_uses')) || 0)), expires).run();
+    } catch {
+      return redirect(withFlash('/admin/coduri', 'err', `Codul ${code} există deja.`));
+    }
+    return redirect(withFlash('/admin/coduri', 'ok', `Codul ${code} a fost creat.`));
+  }
+  if ((m = path.match(/^\/admin\/coduri\/(\d+)\/(comuta|sterge)$/)) && method === 'POST') {
+    const id = Number(m[1]);
+    if (m[2] === 'comuta') await env.DB.prepare('UPDATE coupons SET active = 1 - active WHERE id = ?').bind(id).run();
+    else await env.DB.prepare('DELETE FROM coupons WHERE id = ? AND used_count = 0').bind(id).run();
+    const back = request.headers.get('referer') ? new URL(request.headers.get('referer')).pathname + new URL(request.headers.get('referer')).search.replace(/[&?](ok|err)=[^&]*/g, '') : '/admin/coduri';
+    return redirect(withFlash(back, 'ok', m[2] === 'comuta' ? 'Cod actualizat.' : 'Cod șters.'));
   }
 
   // ---------- Setări ----------

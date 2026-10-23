@@ -8,12 +8,14 @@ export async function createOrder(env, { customer, priced, paymentMethod, meta }
   const token = randomToken(16);
   const row = await env.DB.prepare(`INSERT INTO orders
     (number, token, status, payment_method, payment_status, customer_name, phone, email, county, city, address, postal_code, notes,
-     subtotal, discount, shipping, cod_fee, total, utm_source, utm_medium, utm_campaign, fbclid, ttclid, fbp, ip, user_agent)
-    VALUES (?, ?, 'noua', ?, 'neplatita', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     subtotal, discount, shipping, cod_fee, total, utm_source, utm_medium, utm_campaign, fbclid, ttclid, fbp, ip, user_agent,
+     coupon_code, coupon_discount)
+    VALUES (?, ?, 'noua', ?, 'neplatita', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     RETURNING id`)
     .bind(number, token, paymentMethod, customer.name, customer.phone, customer.email, customer.county, customer.city,
       customer.address, customer.postalCode, customer.notes, priced.subtotal, priced.discount, priced.shipping, priced.codFee,
-      priced.total, meta.utm_source, meta.utm_medium, meta.utm_campaign, meta.fbclid, meta.ttclid, meta.fbp, meta.ip, meta.ua)
+      priced.total, meta.utm_source, meta.utm_medium, meta.utm_campaign, meta.fbclid, meta.ttclid, meta.fbp, meta.ip, meta.ua,
+      priced.coupon?.ok ? priced.coupon.code : '', priced.coupon?.ok ? priced.couponDiscount : 0)
     .first();
   const orderId = row.id;
 
@@ -28,6 +30,11 @@ export async function createOrder(env, { customer, priced, paymentMethod, meta }
   }
   stmts.push(env.DB.prepare('INSERT INTO order_events(order_id, message) VALUES (?, ?)')
     .bind(orderId, `Comandă plasată (${paymentMethod === 'card' ? 'plată cu cardul' : 'plată ramburs'})`));
+  if (priced.coupon?.ok) {
+    stmts.push(env.DB.prepare('UPDATE coupons SET used_count = used_count + 1 WHERE code = ?').bind(priced.coupon.code));
+    stmts.push(env.DB.prepare('INSERT INTO order_events(order_id, message) VALUES (?, ?)')
+      .bind(orderId, `Cod de reducere folosit: ${priced.coupon.code} (${priced.coupon.label})`));
+  }
   await env.DB.batch(stmts);
 
   return { id: orderId, number, token };

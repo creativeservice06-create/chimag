@@ -17,8 +17,7 @@ function layout(s, base, { preheader = '', title, intro = '', body = '', cta = n
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${C.bg};padding:24px 12px;"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid ${C.line};">
   <tr><td style="background:${C.navy};padding:20px 28px;">
-    <a href="${esc(base)}" style="text-decoration:none;color:#ffffff;font-size:24px;font-weight:800;letter-spacing:-0.5px;${FONT}">
-      <span style="display:inline-block;background:${C.blue};color:#fff;border-radius:8px;width:30px;height:30px;line-height:30px;text-align:center;font-size:18px;margin-right:8px;">c</span>${esc((s.store_name || 'chimag').toLowerCase())}</a>
+    <a href="${esc(base)}" style="text-decoration:none;color:#ffffff;font-size:24px;font-weight:800;${FONT}"><img src="${esc(base)}/img/logo-email.png" width="121" height="32" alt="${esc((s.store_name || 'chimag').toLowerCase())}" style="display:block;border:0;width:121px;height:32px;color:#ffffff;font-size:22px;font-weight:800;"></a>
   </td></tr>
   <tr><td style="padding:28px 28px 8px;">
     <h1 style="margin:0 0 12px;font-size:24px;line-height:1.25;color:${C.ink};${FONT}">${esc(title)}</h1>

@@ -1,4 +1,5 @@
-INSERT INTO products (slug, title, subtitle, description, price, compare_at_price, cost_price, sku, stock, track_stock, weight_g, images, benefits, faq, bundles, badge, category, active, featured, sort)
+-- Produs nou: lampa de veghe Capybara (se aplica automat la publicare; OR IGNORE = nu dubleaza daca exista deja)
+INSERT OR IGNORE INTO products (slug, title, subtitle, description, price, compare_at_price, cost_price, sku, stock, track_stock, weight_g, images, benefits, faq, bundles, badge, category, active, featured, sort)
 VALUES (
  'lampa-de-veghe-capybara',
  'Lampă de veghe Capybara din silicon',

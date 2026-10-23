@@ -444,7 +444,7 @@ export function thankYouPage({ settings, order, items, payment }) {
       <div class="thanks-head">
         <span class="thanks-icon">${icons.check(34)}</span>
         <h1>${fresh ? 'Mulțumim, comanda e plasată!' : `Comanda ${order.number}`}</h1>
-        <p>Numărul comenzii: <strong>${order.number}</strong>. ${fresh ? 'Te sunăm în scurt timp pentru confirmare.' : ''}</p>
+        <p>Numărul comenzii: <strong>${order.number}</strong>.</p>
       </div>`}
 
     <section class="order-status card">

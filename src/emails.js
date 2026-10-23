@@ -86,7 +86,7 @@ export function customerOrderEmail(s, base, o, items, images) {
   return {
     subject: `Comanda ta ${o.number} a fost primită`,
     html: layout(s, base, {
-      preheader: `Mulțumim! Total ${money(o.total)}. Te sunăm pentru confirmare.`,
+      preheader: `Mulțumim! Total ${money(o.total)}. Îți scriem când o expediem.`,
       title: `Mulțumim, ${o.customer_name.split(' ')[0]}! Am primit comanda ta.`,
       intro: `Numărul comenzii este <strong style="color:${C.ink}">${esc(o.number)}</strong>. Îți scriem din nou când o expediem, împreună cu numărul AWB pentru urmărire.`,
       body: itemsTable(base, items, images) + totalsTable(o) + addressBox(o),

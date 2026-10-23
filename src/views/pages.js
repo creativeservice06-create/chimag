@@ -10,20 +10,20 @@ const shop = (s) => s.store_name || 'Chimag';
 const site = 'www.chimag.ro';
 
 // Afișează doar datele firmei care sunt completate (fără paranteze goale pentru clienți)
-function companyLine(s) {
+function companyLine(s, { phone = false } = {}) {
   const parts = [];
   if (s.company_name) parts.push(html`<strong>${s.company_name}</strong>`);
   if (s.company_cui) parts.push(html`CUI ${s.company_cui}`);
   if (s.company_reg) parts.push(html`Nr. Reg. Com. ${s.company_reg}`);
   if (s.company_address) parts.push(html`sediul în ${s.company_address}`);
-  if (s.phone) parts.push(html`telefon <a href="tel:${s.phone.replace(/\s/g, '')}">${s.phone}</a>`);
+  if (phone && s.phone) parts.push(html`telefon <a href="tel:${s.phone.replace(/\s/g, '')}">${s.phone}</a>`);
   if (s.email) parts.push(html`email <a href="mailto:${s.email}">${s.email}</a>`);
   return html`<p>${parts.map((p, i) => html`${i ? ', ' : ''}${p}`)}.</p>`;
 }
 
 const contactShort = (s) => [
   s.email ? html`email la <a href="mailto:${s.email}">${s.email}</a>` : '',
-  s.phone ? html`telefon la <a href="tel:${s.phone.replace(/\s/g, '')}">${s.phone}</a>` : '',
+  html`<a href="/pagina/contact">formularul de contact</a>`,
 ].filter(Boolean).map((x, i, a) => html`${i ? (i === a.length - 1 ? ' sau ' : ', ') : ''}${x}`);
 
 const returnDays = (s) => Math.max(14, Number(s.return_days) || 14);
@@ -166,7 +166,7 @@ export const PAGES = {
           <a class="contact-card" href="/pagina/retur">${icons.back(26)}<span><strong>Retur în ${returnDays(s)} zile</strong>Vezi cum returnezi un produs</span></a>
           <div class="contact-company">
             <h3>Date de identificare</h3>
-            ${companyLine(s)}
+            ${companyLine(s, { phone: true })}
           </div>
         </aside>
       </div>`;
@@ -184,7 +184,7 @@ export const PAGES = {
         <li><strong>Plătești la livrare.</strong> Nu dai niciun ban în avans; plătești curierului când ai coletul.</li>
         <li><strong>Livrare rapidă.</strong> ${s.delivery_text || 'Livrăm prin curier în toată țara'}.</li>
         <li><strong>Retur simplu.</strong> Ai ${returnDays(s)} zile să te răzgândești, fără explicații.</li>
-        <li><strong>Vorbești cu oameni.</strong> ${s.phone ? html`Ne găsești la <a href="tel:${(s.phone || '').replace(/\s/g, '')}">${s.phone}</a>.` : html`Ne scrii din pagina de <a href="/pagina/contact">contact</a>.`}</li>
+        <li><strong>Vorbești cu oameni.</strong> Ne scrii din pagina de <a href="/pagina/contact">contact</a> și îți răspundem.</li>
       </ul>
       <h2>Cine suntem</h2>
       <p>Magazinul ${site} este operat de:</p>

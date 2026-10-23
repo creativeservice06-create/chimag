@@ -41,8 +41,6 @@ export function homePage({ settings, products, categories = [], bestsellers = []
   const spotlight = featured.find((p) => p !== hero) || null;
   const threshold = Number(settings.free_shipping_threshold) || 0;
   const returnDays = settings.return_days || 14;
-  const phone = settings.phone || '';
-  const tel = phone.replace(/\s/g, '');
 
   const faq = [
     ['Cum plătesc?', `Plătești curierului, la livrare, după ce primești coletul${settings.card_enabled === '1' ? ', sau online cu cardul, la finalizarea comenzii' : ''}. Nu ai nimic de plătit în avans.`],
@@ -159,7 +157,7 @@ export function homePage({ settings, products, categories = [], bestsellers = []
       <article class="reason">${icons.cash(26)}<h3>Plătești la livrare</h3><p>Nu dai niciun ban în avans. Plătești curierului când ai coletul.</p></article>
       <article class="reason">${icons.truck(26)}<h3>Livrare rapidă</h3><p>${settings.delivery_text || 'Livrăm prin curier în 24–48 de ore'}, în toată țara.</p></article>
       <article class="reason">${icons.back(26)}<h3>Retur simplu</h3><p>Ai ${returnDays} zile să te răzgândești, fără să ne explici de ce.</p></article>
-      <article class="reason">${icons.phone(26)}<h3>Vorbești cu un om</h3><p>${phone ? html`Ne suni la <a href="tel:${tel}">${phone}</a> și primești un răspuns clar.` : 'Ne scrii și primești un răspuns clar, de la un om.'}</p></article>
+      <article class="reason">${icons.chat(26)}<h3>Vorbești cu un om</h3><p>Ne scrii din <a href="/pagina/contact">pagina de contact</a> și primești un răspuns clar, de la un om.</p></article>
     </div>
   </section>
 
@@ -178,20 +176,20 @@ export function homePage({ settings, products, categories = [], bestsellers = []
     <div class="faq-home-head">
       <p class="eyebrow">Întrebări frecvente</p>
       <h2>Ce e bine să știi înainte să comanzi</h2>
-      <p class="muted">Nu ai găsit răspunsul? ${phone ? html`Sună-ne la <a href="tel:${tel}">${phone}</a>.` : html`<a href="/pagina/contact">Scrie-ne</a>.`}</p>
+      <p class="muted">Nu ai găsit răspunsul? <a href="/pagina/contact">Scrie-ne</a> și te ajutăm.</p>
     </div>
     <div class="faq">${faq.map(([q, a]) => html`<details><summary>${q}</summary><div><p>${a}</p></div></details>`)}</div>
   </section>
 
-  ${phone ? html`<section class="cta-band">
+  <section class="cta-band">
     <div class="wrap cta-band-inner">
       <div>
         <h2>Ai o întrebare înainte să comanzi?</h2>
-        <p>${settings.hours ? `Te ajutăm ${settings.hours.charAt(0).toLowerCase() + settings.hours.slice(1)}.` : 'Te ajutăm cu drag.'}</p>
+        <p>Scrie-ne și îți răspundem cât mai repede${settings.hours ? `, ${settings.hours.charAt(0).toLowerCase() + settings.hours.slice(1)}` : ''}.</p>
       </div>
-      <a class="btn btn-primary btn-lg" href="tel:${tel}">${icons.phone(20)} Sună la ${phone}</a>
+      <a class="btn btn-primary btn-lg" href="/pagina/contact">${icons.mail(20)} Contactează-ne</a>
     </div>
-  </section>` : ''}`;
+  </section>`;
 }
 
 // ---------------- Pagina de produs ----------------
@@ -475,7 +473,7 @@ export function thankYouPage({ settings, order, items, payment }) {
     </section>
 
     <p class="center"><a class="btn btn-ghost" href="/">Înapoi la magazin</a></p>
-    ${settings.phone ? html`<p class="center muted">Ai o întrebare? Sună-ne la <a href="tel:${settings.phone.replace(/\s/g, '')}">${settings.phone}</a>.</p>` : ''}
+    <p class="center muted">Ai o întrebare? <a href="/pagina/contact">Scrie-ne</a> și te ajutăm.</p>
   </div>`;
 }
 
@@ -509,7 +507,7 @@ export function trackOrderPage({ settings, error }) {
       </div>
       <button class="btn btn-primary btn-lg btn-block">Vezi comanda</button>
     </form>
-    <p class="muted center">Numărul comenzii îl găsești pe pagina de confirmare${settings.phone ? html`. Nu-l mai ai? Sună-ne la <a href="tel:${settings.phone.replace(/\s/g, '')}">${settings.phone}</a>` : ''}.</p>
+    <p class="muted center">Numărul comenzii îl găsești pe pagina de confirmare și în emailul de confirmare. Nu-l mai ai? <a href="/pagina/contact">Scrie-ne</a>.</p>
   </div>`;
 }
 

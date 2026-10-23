@@ -3,7 +3,7 @@ import { waLink } from './pages.js';
 import { icons } from './icons.js';
 import { wheelConfig } from '../lib/coupons.js';
 
-const ASSET_V = '8';
+const ASSET_V = '9';
 
 export function layout({ settings, title, description = '', canonical = '', ogImage = '', body, bodyClass = '', jsonLd = null, pageData = null, siteUrl = '', customer = null, categories = [] }) {
   const storeName = settings.store_name || 'Chimag';
@@ -69,7 +69,6 @@ ${settings.announcement ? html`<div class="announce">${settings.announcement}</d
       <a href="/pagina/despre">Despre noi</a>
       <a href="/comanda">Comanda mea</a>
       <a href="/pagina/contact">Contact</a>
-      ${settings.phone ? html`<a class="sub-nav-phone" href="tel:${settings.phone.replace(/\s/g, '')}">${icons.phone(16)} ${settings.phone}</a>` : ''}
     </div>
   </nav>
 </header>
@@ -97,7 +96,7 @@ ${settings.announcement ? html`<div class="announce">${settings.announcement}</d
     ${accountsOn ? html`<div class="drawer-account">${customer
       ? html`<a class="btn btn-ghost btn-block" href="/cont">${icons.user(20)} Contul meu (${customer.name.split(' ')[0]})</a>`
       : html`<a class="btn btn-primary btn-block" href="/cont/autentificare">Intră în cont</a><a class="btn btn-ghost btn-block" href="/cont/inregistrare">Creează cont</a>`}</div>` : ''}
-    ${settings.phone ? html`<a class="drawer-phone" href="tel:${settings.phone.replace(/\s/g, '')}">${icons.phone(20)}<span><strong>${settings.phone}</strong><small>${settings.hours || 'Sună-ne pentru orice întrebare'}</small></span></a>` : ''}
+    <a class="drawer-phone" href="/pagina/contact">${icons.mail(20)}<span><strong>Ai o întrebare?</strong><small>Scrie-ne din pagina de contact</small></span></a>
   </aside>
 </div>
 <div class="promo-bar" data-promo-bar hidden></div>

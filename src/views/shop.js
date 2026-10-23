@@ -307,7 +307,6 @@ export function productPage({ settings, product: p, reviews, related = [], siteU
         <div>${icons.cash(28)}<strong>Plătești la livrare</strong><span>Nu plătești nimic în avans. Dai banii doar când primești coletul.</span></div>
         <div>${icons.back(28)}<strong>Retur în ${settings.return_days || 14} zile</strong><span>Nu ți-a plăcut? Îl trimiți înapoi și îți returnăm banii.</span></div>
         <div>${icons.truck(28)}<strong>Livrare rapidă</strong><span>${settings.delivery_text}, cu AWB pe email pentru urmărire.</span></div>
-        <div>${icons.chat(28)}<strong>Suntem aici</strong><span>Ai o întrebare? <a href="/pagina/contact">Scrie-ne</a> și îți răspundem repede.</span></div>
       </div>
     </section>
 

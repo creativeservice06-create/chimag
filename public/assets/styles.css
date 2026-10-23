@@ -758,13 +758,13 @@ html.drawer-open { overflow: hidden; }
 .specs dd { margin: 0; font-weight: 600; }
 .worry-free { margin: 64px 0 0; padding: 36px 32px; border-radius: var(--radius-l); background: var(--surface-2); }
 .worry-free h2 { text-align: center; margin: 0 0 24px; font: 800 clamp(1.4rem, 2.6vw, 1.8rem)/1.2 var(--font-display); }
-.worry-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.worry-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
 .worry-grid > div { display: grid; gap: 6px; align-content: start; padding: 20px; border-radius: var(--radius); background: #fff; }
 .worry-grid .ic { color: var(--brand); }
 .worry-grid span { color: var(--muted); font-size: .95rem; }
 @media (max-width: 860px) {
   .worry-free { margin-top: 40px; padding: 24px 16px; }
-  .worry-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .worry-grid { grid-template-columns: minmax(0, 1fr); gap: 10px; }
   .worry-grid > div { padding: 14px; }
   .worry-grid span { font-size: .88rem; }
   .pdp-details { padding-top: 40px; }

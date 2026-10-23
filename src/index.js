@@ -58,10 +58,12 @@ async function route(request, env, ctx) {
   const path = url.pathname.replace(/\/+$/, '') || '/';
   const method = request.method;
 
-  // Redirect chimag.ro -> www.chimag.ro (sau invers, după SITE_URL)
-  if (env.SITE_URL) {
+  // Redirect http -> https și chimag.ro -> www.chimag.ro (după SITE_URL)
+  if (env.SITE_URL && url.hostname !== 'localhost') {
     const canonicalHost = new URL(env.SITE_URL).host;
-    if (url.host !== canonicalHost && url.host.replace(/^www\./, '') === canonicalHost.replace(/^www\./, '')) {
+    const sameSite = url.host.replace(/^www\./, '') === canonicalHost.replace(/^www\./, '');
+    const isHttp = url.protocol === 'http:' || request.headers.get('x-forwarded-proto') === 'http';
+    if (sameSite && (url.host !== canonicalHost || isHttp)) {
       return Response.redirect(`https://${canonicalHost}${url.pathname}${url.search}`, 301);
     }
   }

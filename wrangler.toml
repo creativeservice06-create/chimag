@@ -29,7 +29,8 @@ migrations_dir = "migrations"
 # destination_address = "chirilasadrian@yahoo.com"
 
 [vars]
-SITE_URL = "https://www.chimag.ro"
+# Adresa magazinului (folosită în emailuri, linkuri și poze). Când cumperi domeniul, schimbi în "https://www.chimag.ro".
+SITE_URL = "https://chimag.creativeservice06.workers.dev"
 MAIL_FROM = "formular@chimag.ro"
 
 # La fiecare 30 de minute: actualizează statusul livrărilor (tracking AWB)

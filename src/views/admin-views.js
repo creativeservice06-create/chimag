@@ -13,6 +13,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0, msgCount
     ['/admin/comenzi', 'comenzi', 'Comenzi'],
     ['/admin/produse', 'produse', 'Produse'],
     ['/admin/coduri', 'coduri', 'Roată și coduri'],
+    ['/admin/clienti', 'clienti', 'Clienți'],
     ['/admin/mesaje', 'mesaje', 'Mesaje'],
     ['/admin/setari', 'setari', 'Setări'],
   ];
@@ -400,7 +401,9 @@ export function settingsView({ settings: s, products, secrets, siteUrl }) {
       <h2 class="span2">Notificări pe email</h2>
       ${f('contact_email', 'Unde primești mesajele și comenzile', { placeholder: 'ex: chirilasadrian@yahoo.com' })}
       <label class="check"><input type="checkbox" name="notify_orders" value="1" ${s.notify_orders === '1' ? 'checked' : ''}> Trimite-mi email la fiecare comandă nouă</label>
-      <p class="hint span2">Trimitere email: ${secrets.email?.ok ? html`<span class="chip st-livrata">activă (${secrets.email.via})</span>` : html`<span class="chip">neconfigurată</span> – mesajele se salvează oricum la <a href="/admin/mesaje">Mesaje</a>. Vezi README → „Emailuri”.`}</p>
+      <label class="check"><input type="checkbox" name="customer_emails" value="1" ${s.customer_emails !== '0' ? 'checked' : ''}> Trimite clienților emailuri (confirmare comandă, status, AWB)</label>
+      <label class="check"><input type="checkbox" name="accounts_enabled" value="1" ${s.accounts_enabled !== '0' ? 'checked' : ''}> Clienții își pot face cont în magazin</label>
+      <p class="hint span2">Trimitere email: ${secrets.email?.ok ? html`<span class="chip st-livrata">activă – ${secrets.email.via}</span>${secrets.email.customers ? '' : html` <span class="chip">doar spre tine</span>`}` : html`<span class="chip">neconfigurată</span> – comenzile și mesajele se salvează oricum în admin. Vezi README → „Emailuri”.`} <a href="/admin/mesaje">Trimite un email de test</a></p>
     </section>
     <section class="panel form-grid">
       <h2 class="span2">Rețele sociale (apar în subsolul site-ului)</h2>
@@ -557,4 +560,99 @@ export function messagesView({ messages, email, settings: s }) {
     </header>
     <p class="msg-body">${m.message}</p>
   </article>`)}</div>` : html`<p class="muted">Niciun mesaj încă. Formularul e pe pagina <a href="/pagina/contact" target="_blank">Contact</a>.</p>`}`;
+}
+
+// ---------------- Clienți ----------------
+const custStatus = (c) => (!c.active ? html`<span class="chip st-anulata">Dezactivat</span>` : c.email_verified ? html`<span class="chip st-livrata">Activ</span>` : html`<span class="chip st-noua">Email neconfirmat</span>`);
+
+export function customersView({ customers, q, filter, counts }) {
+  const tabs = [['', 'Toți'], ['activi', 'Activi'], ['neconfirmati', 'Email neconfirmat'], ['dezactivati', 'Dezactivați']];
+  return html`
+  <header class="page-head"><h1>Clienți</h1><a class="btn primary" href="/admin/clienti/nou">Adaugă client</a></header>
+  <nav class="tabs">${tabs.map(([k, v]) => html`<a href="/admin/clienti${k ? `?f=${k}` : ''}" class="${filter === k ? 'on' : ''}">${v} <small>${counts[k || 'all'] || 0}</small></a>`)}</nav>
+  <div class="toolbar"><form method="get" class="search">${filter ? html`<input type="hidden" name="f" value="${filter}">` : ''}<input type="search" name="q" value="${q}" placeholder="Caută după nume, email sau telefon"><button class="btn">Caută</button></form></div>
+  ${customers.length ? html`<div class="tbl-wrap"><table class="tbl orders">
+    <thead><tr><th>Client</th><th>Telefon</th><th class="r">Comenzi</th><th class="r">Total cumpărat</th><th>Înregistrat</th><th>Ultima autentificare</th><th>Stare</th></tr></thead>
+    <tbody>${customers.map((c) => html`<tr>
+      <td><a href="/admin/clienti/${c.id}"><b>${c.name}</b></a><br><span class="muted">${c.email}</span></td>
+      <td class="nowrap">${c.phone || html`<span class="muted">–</span>`}</td>
+      <td class="r">${c.orders}</td>
+      <td class="r nowrap">${money(c.spent)}</td>
+      <td class="nowrap">${formatDate(c.created_at)}</td>
+      <td class="nowrap">${c.last_login ? formatDate(c.last_login) : html`<span class="muted">–</span>`}</td>
+      <td>${custStatus(c)}</td>
+    </tr>`)}</tbody></table></div>` : html`<p class="muted">Niciun client aici.</p>`}`;
+}
+
+export function customerFormView({ error = '', values = {}, emailOk }) {
+  return html`
+  <header class="page-head"><div><a class="back" href="/admin/clienti">Clienți</a><h1>Client nou</h1></div></header>
+  ${error ? html`<div class="flash err">${error}</div>` : ''}
+  <form method="post" action="/admin/clienti/nou" class="panel form-grid">
+    <label>Nume și prenume<input name="name" required value="${values.name || ''}"></label>
+    <label>Email<input name="email" type="email" required value="${values.email || ''}"></label>
+    <label>Telefon<input name="phone" value="${values.phone || ''}"></label>
+    <label>Parolă <small>(opțional)</small><input name="password" type="text" autocomplete="off" placeholder="gol = clientul își alege singur parola"></label>
+    <p class="hint span2">${emailOk
+      ? 'Dacă lași parola goală, clientul primește pe email un link (valabil 7 zile) ca să-și aleagă singur parola. Așa nu trebuie să-i comunici tu parola.'
+      : 'Emailurile nu sunt configurate: setează o parolă și comunic-o clientului, sau configurează emailurile ca să primească link.'}</p>
+    <div class="span2"><button class="btn primary">Creează clientul</button></div>
+  </form>`;
+}
+
+export function customerView({ c, orders, events, stats, emailOk }) {
+  return html`
+  <header class="page-head">
+    <div><a class="back" href="/admin/clienti">Clienți</a><h1>${c.name} ${custStatus(c)}</h1>
+      <p class="muted">${c.email} · client din ${formatDate(c.created_at)}${c.last_login ? ` · ultima autentificare ${formatDate(c.last_login)}` : ''}</p></div>
+    <div class="actions">
+      ${emailOk ? html`<form method="post" action="/admin/clienti/${c.id}/reseteaza"><button class="btn">Trimite link de parolă nouă</button></form>` : ''}
+      ${c.email_verified ? '' : html`<form method="post" action="/admin/clienti/${c.id}/confirma"><button class="btn">Marchează email confirmat</button></form>`}
+      <form method="post" action="/admin/clienti/${c.id}/${c.active ? 'dezactiveaza' : 'activeaza'}"><button class="btn ${c.active ? 'danger' : 'primary'}" ${c.active ? 'data-confirm="Dezactivezi contul? Clientul nu se mai poate autentifica, dar comenzile rămân."' : ''}>${c.active ? 'Dezactivează contul' : 'Reactivează contul'}</button></form>
+    </div>
+  </header>
+
+  <section class="kpis">
+    <div class="kpi"><h2>Comenzi</h2><p class="kpi-main">${stats.orders}</p></div>
+    <div class="kpi"><h2>Total cumpărat</h2><p class="kpi-main">${money(stats.spent)}</p><p class="kpi-sub">fără comenzi anulate</p></div>
+    <div class="kpi"><h2>Coș mediu</h2><p class="kpi-main">${money(stats.orders ? Math.round(stats.spent / stats.orders) : 0)}</p></div>
+    <div class="kpi"><h2>Livrate / refuzate</h2><p class="kpi-main">${stats.delivered} / ${stats.refused}</p></div>
+  </section>
+
+  <div class="order-grid">
+    <div>
+      <section class="panel">
+        <h2>Comenzi</h2>
+        ${orders.length ? html`<table class="tbl"><thead><tr><th>Comandă</th><th>Data</th><th>Status</th><th class="r">Total</th></tr></thead><tbody>
+          ${orders.map((o) => html`<tr><td><a href="/admin/comenzi/${o.id}"><b>${o.number}</b></a></td><td class="nowrap">${formatDate(o.created_at)}</td><td><span class="chip st-${o.status}">${ORDER_STATUSES[o.status]}</span></td><td class="r nowrap">${money(o.total)}</td></tr>`)}
+        </tbody></table>` : html`<p class="muted">Nicio comandă.</p>`}
+      </section>
+      <section class="panel">
+        <h2>Istoric</h2>
+        ${events.length ? html`<ol class="timeline">${events.map((e) => html`<li><time>${formatDate(e.created_at)}</time>${e.message}</li>`)}</ol>` : html`<p class="muted">Fără evenimente.</p>`}
+      </section>
+    </div>
+    <div>
+      <section class="panel">
+        <h2>Date client</h2>
+        <form method="post" action="/admin/clienti/${c.id}" class="form-grid">
+          <label class="span2">Nume<input name="name" required value="${c.name}"></label>
+          <label class="span2">Email<input name="email" type="email" required value="${c.email}"></label>
+          <label>Telefon<input name="phone" value="${c.phone}"></label>
+          <label>Județ<select name="county"><option value="">–</option>${JUDETE.map((j) => html`<option ${j === c.county ? 'selected' : ''}>${j}</option>`)}</select></label>
+          <label>Localitate<input name="city" value="${c.city}"></label>
+          <label>Cod poștal<input name="postal_code" value="${c.postal_code}"></label>
+          <label class="span2">Adresă<input name="address" value="${c.address}"></label>
+          <label class="span2">Notițe interne<textarea name="admin_notes" rows="2">${c.admin_notes}</textarea></label>
+          <label class="span2">Parolă nouă <small>(opțional – completează doar dacă vrei s-o schimbi tu)</small><input name="password" type="text" autocomplete="off"></label>
+          <div class="span2"><button class="btn primary">Salvează</button></div>
+        </form>
+      </section>
+      <section class="panel danger-zone">
+        <h2>Ștergere cont</h2>
+        <p class="hint">Șterge contul și datele lui (la cererea clientului, conform GDPR). Comenzile rămân în evidență pentru contabilitate, dar nu mai sunt legate de cont.</p>
+        <form method="post" action="/admin/clienti/${c.id}/sterge"><button class="btn danger" data-confirm="Ștergi definitiv contul ${c.email}?">Șterge contul</button></form>
+      </section>
+    </div>
+  </div>`;
 }

@@ -15,6 +15,10 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 # Cheia cu care depozitul partener (ex. Helpship) citește comenzile prin API
 WAREHOUSE_API_KEY=o-cheie-lunga-aleatoare
 
+# Emailuri: contul prin care pleacă emailurile (parolă de APLICAȚIE, nu parola normală)
+SMTP_USER=
+SMTP_PASS=
+
 # SmartShip – primești datele de la ei (office@smartship.ro)
 SMARTSHIP_API_URL=
 SMARTSHIP_API_KEY=

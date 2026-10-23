@@ -3,9 +3,9 @@ import { waLink } from './pages.js';
 import { icons } from './icons.js';
 import { wheelConfig } from '../lib/coupons.js';
 
-const ASSET_V = '6';
+const ASSET_V = '8';
 
-export function layout({ settings, title, description = '', canonical = '', ogImage = '', body, bodyClass = '', jsonLd = null, pageData = null, siteUrl = '' }) {
+export function layout({ settings, title, description = '', canonical = '', ogImage = '', body, bodyClass = '', jsonLd = null, pageData = null, siteUrl = '', customer = null, categories = [] }) {
   const storeName = settings.store_name || 'Chimag';
   const fullTitle = title ? `${title} | ${storeName}` : `${storeName} – ${settings.tagline || ''}`;
   const config = {
@@ -16,6 +16,7 @@ export function layout({ settings, title, description = '', canonical = '', ogIm
     shippingCost: Number(settings.shipping_cost) || 0,
   };
   const wheel = wheelConfig(settings);
+  const accountsOn = settings.accounts_enabled !== '0';
   if (wheel.enabled) {
     config.wheel = { autoOpen: wheel.autoOpen, delay: wheel.delay, title: wheel.title, hours: wheel.hours, segments: wheel.prizes.map((p) => p.label) };
   }
@@ -45,17 +46,60 @@ ${jsonLd ? html`<script type="application/ld+json">${jsonScript(jsonLd)}</script
 ${settings.announcement ? html`<div class="announce">${settings.announcement}</div>` : ''}
 <header class="site-header">
   <div class="wrap header-inner">
+    <button type="button" class="icon-btn menu-btn" data-drawer-open aria-label="Deschide meniul" aria-controls="meniu-mobil">${icons.menu(24)}</button>
     <a href="/" class="logo" aria-label="${storeName} – pagina principală">${logoMark()}<span>${storeName.toLowerCase()}</span></a>
-    <nav class="main-nav" aria-label="Meniu">
-      <a href="/#produse">Produse</a>
+    <form class="header-search" action="/cautare" method="get" role="search">
+      <input type="search" name="q" placeholder="Caută produse" aria-label="Caută produse" autocomplete="off">
+      <button aria-label="Caută">${icons.search(20)}</button>
+    </form>
+    <div class="header-actions">
+      <button type="button" class="icon-btn search-toggle" data-search-toggle aria-label="Caută">${icons.search(22)}</button>
+      ${accountsOn ? html`<a href="/cont" class="icon-btn account-btn" aria-label="${customer ? 'Contul meu' : 'Intră în cont'}">${customer ? html`<span class="avatar-mini">${customer.name.charAt(0).toUpperCase()}</span>` : icons.user(22)}<span class="icon-label">${customer ? 'Contul meu' : 'Cont'}</span></a>` : ''}
+      ${wheel.enabled ? html`<button type="button" class="wheel-btn" data-wheel-open aria-label="Roata norocului – câștigă o reducere"><span aria-hidden="true">🎁</span><span class="wheel-dot" data-wheel-dot></span></button>` : ''}
+      <a href="/cos" class="cart-btn" aria-label="Coșul de cumpărături">${icons.cart(22)}<span class="cart-count" data-cart-count hidden>0</span></a>
+    </div>
+  </div>
+  <form class="mobile-search" action="/cautare" method="get" role="search" data-mobile-search hidden>
+    <div class="wrap"><input type="search" name="q" placeholder="Ce cauți?" aria-label="Caută produse" autocomplete="off"><button class="btn btn-primary btn-sm">Caută</button></div>
+  </form>
+  <nav class="sub-nav" aria-label="Meniu principal">
+    <div class="wrap sub-nav-inner">
+      <a href="/#produse">Toate produsele</a>
+      ${categories.map((c) => html`<a href="/categorie/${c.slug}">${c.name}</a>`)}
       <a href="/pagina/despre">Despre noi</a>
       <a href="/comanda">Comanda mea</a>
       <a href="/pagina/contact">Contact</a>
-    </nav>
-    ${wheel.enabled ? html`<button type="button" class="wheel-btn" data-wheel-open aria-label="Roata norocului – câștigă o reducere"><span aria-hidden="true">🎁</span><span class="wheel-dot" data-wheel-dot></span></button>` : ''}
-    <a href="/cos" class="cart-btn" aria-label="Coșul de cumpărături">${icons.cart(22)}<span class="cart-count" data-cart-count hidden>0</span></a>
-  </div>
+      ${settings.phone ? html`<a class="sub-nav-phone" href="tel:${settings.phone.replace(/\s/g, '')}">${icons.phone(16)} ${settings.phone}</a>` : ''}
+    </div>
+  </nav>
 </header>
+
+<div class="drawer" id="meniu-mobil" data-drawer hidden>
+  <div class="drawer-backdrop" data-drawer-close></div>
+  <aside class="drawer-panel" role="dialog" aria-modal="true" aria-label="Meniu">
+    <div class="drawer-head">
+      <a href="/" class="logo">${logoMark()}<span>${storeName.toLowerCase()}</span></a>
+      <button type="button" class="icon-btn" data-drawer-close aria-label="Închide meniul">${icons.close(24)}</button>
+    </div>
+    <form class="drawer-search" action="/cautare" method="get" role="search">
+      <input type="search" name="q" placeholder="Caută produse" aria-label="Caută produse">
+      <button aria-label="Caută">${icons.search(20)}</button>
+    </form>
+    <nav class="drawer-nav">
+      <a href="/">${icons.home(22)} Acasă</a>
+      <a href="/#produse">${icons.grid(22)} Toate produsele</a>
+      ${categories.length ? html`<div class="drawer-cats">${categories.map((c) => html`<a href="/categorie/${c.slug}">${c.name}<small>${c.count}</small></a>`)}</div>` : ''}
+      <a href="/comanda">${icons.box(22)} Unde e comanda mea?</a>
+      <a href="/pagina/despre">${icons.shield(22)} Despre noi</a>
+      <a href="/pagina/contact">${icons.mail(22)} Contact</a>
+      ${wheel.enabled ? html`<button type="button" data-wheel-open data-drawer-close>🎁 Roata norocului</button>` : ''}
+    </nav>
+    ${accountsOn ? html`<div class="drawer-account">${customer
+      ? html`<a class="btn btn-ghost btn-block" href="/cont">${icons.user(20)} Contul meu (${customer.name.split(' ')[0]})</a>`
+      : html`<a class="btn btn-primary btn-block" href="/cont/autentificare">Intră în cont</a><a class="btn btn-ghost btn-block" href="/cont/inregistrare">Creează cont</a>`}</div>` : ''}
+    ${settings.phone ? html`<a class="drawer-phone" href="tel:${settings.phone.replace(/\s/g, '')}">${icons.phone(20)}<span><strong>${settings.phone}</strong><small>${settings.hours || 'Sună-ne pentru orice întrebare'}</small></span></a>` : ''}
+  </aside>
+</div>
 <div class="promo-bar" data-promo-bar hidden></div>
 <main id="continut">${body}</main>
 ${footer(settings)}

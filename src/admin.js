@@ -9,9 +9,13 @@ import { getProvider } from './shipping/providers.js';
 import { JUDETE } from './lib/judete.js';
 import {
   adminLayout, loginView, dashboardView, ordersView, orderView, labelView, productsView, productFormView, settingsView, couponsView, messagesView,
+  customersView, customerFormView, customerView,
 } from './views/admin-views.js';
 import { COUPON_TYPES, CODE_TYPES, normalizeCode } from './lib/coupons.js';
 import { emailStatus, sendEmail } from './lib/email.js';
+import { testEmail, resetEmail } from './emails.js';
+import { hashPassword, passwordProblem, issueToken, customerEvent, customerOrders } from './lib/customers.js';
+import { sendMail } from './lib/email.js';
 
 // Formular gol sau fără content-type nu trebuie să dea eroare
 const readForm = (request) => request.formData().catch(() => new FormData());
@@ -94,10 +98,10 @@ export async function handleAdmin(request, env, ctx, path) {
     let ok = 0; const errors = [];
     for (const id of ids) {
       if (action === 'awb') {
-        const r = await generateAwb(env, settings, id);
+        const r = await generateAwb(env, settings, id, { ctx });
         if (r.ok) ok++; else errors.push(`#${id}: ${r.error}`);
       } else if (ORDER_STATUSES[action]) {
-        await setStatus(env, settings, id, action); ok++;
+        await setStatus(env, settings, id, action, { ctx }); ok++;
       }
     }
     const back = request.headers.get('referer')?.includes('/admin/comenzi') ? new URL(request.headers.get('referer')).pathname + new URL(request.headers.get('referer')).search.replace(/[&?](ok|err)=[^&]*/g, '') : '/admin/comenzi';
@@ -120,7 +124,7 @@ export async function handleAdmin(request, env, ctx, path) {
       case 'status': {
         const s = form.get('status');
         if (!ORDER_STATUSES[s]) return redirect(withFlash(back, 'err', 'Status invalid.'));
-        const { awbResult } = await setStatus(env, settings, id, s);
+        const { awbResult } = await setStatus(env, settings, id, s, { ctx });
         if (awbResult && !awbResult.ok) return redirect(withFlash(back, 'err', `Status salvat, dar AWB-ul nu s-a generat: ${awbResult.error}`));
         return redirect(withFlash(back, 'ok', `Status: ${ORDER_STATUSES[s]}${awbResult?.awb ? ` · AWB ${awbResult.awb}` : ''}`));
       }
@@ -140,7 +144,7 @@ export async function handleAdmin(request, env, ctx, path) {
         return redirect(withFlash(back, 'ok', 'Datele au fost salvate.'));
       }
       case 'awb': {
-        const r = await generateAwb(env, settings, id);
+        const r = await generateAwb(env, settings, id, { ctx });
         return redirect(withFlash(back, r.ok ? 'ok' : 'err', r.ok ? (r.awb ? `AWB generat: ${r.awb}` : r.message) : r.error));
       }
       case 'awb-anulare': {
@@ -208,6 +212,112 @@ export async function handleAdmin(request, env, ctx, path) {
     return redirect(withFlash(`/admin/produse/${m[1]}`, 'ok', 'Recenzie ștearsă.'));
   }
 
+  // ---------- Clienți ----------
+  if (path === '/admin/clienti' && method === 'GET') {
+    const filter = ['activi', 'neconfirmati', 'dezactivati'].includes(url.searchParams.get('f')) ? url.searchParams.get('f') : '';
+    const q = (url.searchParams.get('q') || '').trim();
+    const cond = []; const params = [];
+    if (filter === 'activi') cond.push('c.active = 1 AND c.email_verified = 1');
+    if (filter === 'neconfirmati') cond.push('c.active = 1 AND c.email_verified = 0');
+    if (filter === 'dezactivati') cond.push('c.active = 0');
+    if (q) { cond.push('(c.name LIKE ? OR c.email LIKE ? OR c.phone LIKE ?)'); params.push(`%${q}%`, `%${q}%`, `%${q.replace(/\D/g, '') || q}%`); }
+    const { results } = await env.DB.prepare(`SELECT c.*,
+        (SELECT COUNT(*) FROM orders o WHERE o.customer_id = c.id OR (c.email_verified = 1 AND o.email = c.email COLLATE NOCASE)) AS orders,
+        (SELECT COALESCE(SUM(total),0) FROM orders o WHERE (o.customer_id = c.id OR (c.email_verified = 1 AND o.email = c.email COLLATE NOCASE)) AND o.status != 'anulata') AS spent
+      FROM customers c ${cond.length ? 'WHERE ' + cond.join(' AND ') : ''} ORDER BY c.id DESC LIMIT 300`).bind(...params).all();
+    const cnt = await env.DB.prepare(`SELECT COUNT(*) AS allc, SUM(active = 1 AND email_verified = 1) AS a, SUM(active = 1 AND email_verified = 0) AS n, SUM(active = 0) AS d FROM customers`).first();
+    return render(env, url, { title: 'Clienți', active: 'clienti', body: customersView({ customers: results || [], q, filter, counts: { all: cnt.allc, activi: cnt.a || 0, neconfirmati: cnt.n || 0, dezactivati: cnt.d || 0 } }) });
+  }
+  if (path === '/admin/clienti/nou') {
+    const emailOk = emailStatus(env).customers;
+    if (method === 'GET') return render(env, url, { title: 'Client nou', active: 'clienti', body: customerFormView({ emailOk }) });
+    const form = await readForm(request);
+    const values = { name: String(form.get('name') || '').trim().slice(0, 80), email: String(form.get('email') || '').trim().toLowerCase().slice(0, 120), phone: String(form.get('phone') || '').trim() };
+    const fail = (error) => render(env, url, { title: 'Client nou', active: 'clienti', body: customerFormView({ error, values, emailOk }) });
+    if (values.name.length < 3) return fail('Scrie numele complet.');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(values.email)) return fail('Email invalid.');
+    const phone = values.phone ? normalizePhone(values.phone) : '';
+    if (values.phone && !phone) return fail('Telefon invalid.');
+    const pw = String(form.get('password') || '');
+    if (pw && passwordProblem(pw)) return fail(passwordProblem(pw));
+    if (!pw && !emailOk) return fail('Setează o parolă: emailurile nu sunt configurate, deci clientul nu poate primi link.');
+    if (await env.DB.prepare('SELECT id FROM customers WHERE email = ?').bind(values.email).first()) return fail('Există deja un client cu acest email.');
+    const c = await env.DB.prepare('INSERT INTO customers (name, email, phone, password_hash, email_verified) VALUES (?, ?, ?, ?, ?) RETURNING *')
+      .bind(values.name, values.email, phone || '', pw ? await hashPassword(env, pw) : '', pw ? 1 : 0).first();
+    await customerEvent(env, c.id, 'Cont creat din panoul de administrare.');
+    if (!pw) {
+      const token = await issueToken(env, c.id, 'invite', 24 * 7);
+      const base = (env.SITE_URL || url.origin).replace(/\/$/, '');
+      const r = await sendMail(env, settings, { to: c.email, ...resetEmail(settings, base, c, `${base}/cont/resetare/${token}`, true) });
+      await customerEvent(env, c.id, r.ok ? 'Invitație de setare a parolei trimisă pe email.' : `Invitația nu a putut fi trimisă: ${r.error}`);
+      return redirect(withFlash(`/admin/clienti/${c.id}`, r.ok ? 'ok' : 'err', r.ok ? `Client creat. I-am trimis pe email un link ca să-și aleagă parola.` : `Client creat, dar emailul nu a plecat: ${r.error}`));
+    }
+    return redirect(withFlash(`/admin/clienti/${c.id}`, 'ok', 'Client creat.'));
+  }
+  if ((m = path.match(/^\/admin\/clienti\/(\d+)$/))) {
+    const c = await env.DB.prepare('SELECT * FROM customers WHERE id = ?').bind(Number(m[1])).first();
+    if (!c) return redirect(withFlash('/admin/clienti', 'err', 'Clientul nu există.'));
+    if (method === 'GET') {
+      const orders = await customerOrders(env, c);
+      const { results: events } = await env.DB.prepare('SELECT * FROM customer_events WHERE customer_id = ? ORDER BY id DESC LIMIT 200').bind(c.id).all();
+      const ok = orders.filter((o) => o.status !== 'anulata');
+      const stats = { orders: orders.length, spent: ok.reduce((t, o) => t + o.total, 0), delivered: orders.filter((o) => o.status === 'livrata').length, refused: orders.filter((o) => o.status === 'refuzata' || o.status === 'retur').length };
+      return render(env, url, { title: c.name, active: 'clienti', body: customerView({ c, orders, events: events || [], stats, emailOk: emailStatus(env).customers }) });
+    }
+    const form = await readForm(request);
+    const back = `/admin/clienti/${c.id}`;
+    const email = String(form.get('email') || '').trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return redirect(withFlash(back, 'err', 'Email invalid.'));
+    if (email !== c.email.toLowerCase() && (await env.DB.prepare('SELECT id FROM customers WHERE email = ? AND id != ?').bind(email, c.id).first())) return redirect(withFlash(back, 'err', 'Alt client are deja acest email.'));
+    const phoneRaw = String(form.get('phone') || '').trim();
+    const phone = phoneRaw ? normalizePhone(phoneRaw) : '';
+    if (phoneRaw && !phone) return redirect(withFlash(back, 'err', 'Telefon invalid.'));
+    const county = JUDETE.includes(form.get('county')) ? form.get('county') : '';
+    await env.DB.prepare(`UPDATE customers SET name = ?, email = ?, phone = ?, county = ?, city = ?, address = ?, postal_code = ?, admin_notes = ?, updated_at = datetime('now') WHERE id = ?`)
+      .bind(String(form.get('name') || c.name).trim().slice(0, 80), email, phone || '', county, String(form.get('city') || '').trim(), String(form.get('address') || '').trim(), String(form.get('postal_code') || '').trim(), String(form.get('admin_notes') || ''), c.id).run();
+    const pw = String(form.get('password') || '');
+    if (pw) {
+      if (passwordProblem(pw)) return redirect(withFlash(back, 'err', passwordProblem(pw)));
+      await env.DB.prepare('UPDATE customers SET password_hash = ? WHERE id = ?').bind(await hashPassword(env, pw), c.id).run();
+      await customerEvent(env, c.id, 'Parolă schimbată de administrator.');
+    }
+    await customerEvent(env, c.id, 'Date modificate de administrator.');
+    return redirect(withFlash(back, 'ok', 'Salvat.'));
+  }
+  if ((m = path.match(/^\/admin\/clienti\/(\d+)\/(dezactiveaza|activeaza|reseteaza|confirma|sterge)$/)) && method === 'POST') {
+    const c = await env.DB.prepare('SELECT * FROM customers WHERE id = ?').bind(Number(m[1])).first();
+    if (!c) return redirect('/admin/clienti');
+    const back = `/admin/clienti/${c.id}`;
+    switch (m[2]) {
+      case 'dezactiveaza':
+        await env.DB.prepare('UPDATE customers SET active = 0 WHERE id = ?').bind(c.id).run();
+        await customerEvent(env, c.id, 'Cont dezactivat de administrator.');
+        return redirect(withFlash(back, 'ok', 'Contul a fost dezactivat. Clientul nu se mai poate autentifica.'));
+      case 'activeaza':
+        await env.DB.prepare('UPDATE customers SET active = 1 WHERE id = ?').bind(c.id).run();
+        await customerEvent(env, c.id, 'Cont reactivat de administrator.');
+        return redirect(withFlash(back, 'ok', 'Contul a fost reactivat.'));
+      case 'confirma':
+        await env.DB.prepare('UPDATE customers SET email_verified = 1 WHERE id = ?').bind(c.id).run();
+        await customerEvent(env, c.id, 'Email marcat ca confirmat de administrator.');
+        return redirect(withFlash(back, 'ok', 'Email marcat ca confirmat.'));
+      case 'reseteaza': {
+        const token = await issueToken(env, c.id, 'reset', 24);
+        const base = (env.SITE_URL || url.origin).replace(/\/$/, '');
+        const r = await sendMail(env, settings, { to: c.email, ...resetEmail(settings, base, c, `${base}/cont/resetare/${token}`) });
+        await customerEvent(env, c.id, r.ok ? 'Link de resetare a parolei trimis de administrator.' : `Linkul de resetare nu a putut fi trimis: ${r.error}`);
+        return redirect(withFlash(back, r.ok ? 'ok' : 'err', r.ok ? `Link trimis la ${c.email}.` : `Emailul nu a plecat: ${r.error}`));
+      }
+      case 'sterge':
+        await env.DB.batch([
+          env.DB.prepare('UPDATE orders SET customer_id = 0 WHERE customer_id = ?').bind(c.id),
+          env.DB.prepare('DELETE FROM customer_events WHERE customer_id = ?').bind(c.id),
+          env.DB.prepare('DELETE FROM customers WHERE id = ?').bind(c.id),
+        ]);
+        return redirect(withFlash('/admin/clienti', 'ok', `Contul ${c.email} a fost șters.`));
+    }
+  }
+
   // ---------- Mesaje ----------
   if (path === '/admin/mesaje' && method === 'GET') {
     const { results } = await env.DB.prepare('SELECT * FROM messages ORDER BY id DESC LIMIT 200').all();
@@ -220,7 +330,7 @@ export async function handleAdmin(request, env, ctx, path) {
     return redirect('/admin/mesaje');
   }
   if (path === '/admin/mesaje/test-email' && method === 'POST') {
-    const r = await sendEmail(env, settings, { subject: 'Test email din magazinul Chimag', text: 'Dacă primești acest email, notificările pentru comenzi și mesaje funcționează.' });
+    const r = await sendEmail(env, settings, testEmail(settings, (env.SITE_URL || url.origin).replace(/\/$/, '')));
     return redirect(withFlash('/admin/mesaje', r.ok ? 'ok' : 'err', r.ok ? `Email de test trimis la ${settings.contact_email}. Verifică și folderul Spam.` : `Emailul nu a plecat: ${r.error}`));
   }
 
@@ -315,6 +425,8 @@ export async function handleAdmin(request, env, ctx, path) {
     values.auto_awb_on_confirm = form.get('auto_awb_on_confirm') ? '1' : '0';
     values.card_enabled = form.get('card_enabled') ? '1' : '0';
     values.notify_orders = form.get('notify_orders') ? '1' : '0';
+    values.customer_emails = form.get('customer_emails') ? '1' : '0';
+    values.accounts_enabled = form.get('accounts_enabled') ? '1' : '0';
     for (const k of ['facebook_url', 'instagram_url', 'tiktok_url']) if (values[k] && !/^https:\/\//.test(values[k])) values[k] = '';
     values.fb_pixel_id = values.fb_pixel_id.replace(/\D/g, '');
     values.tiktok_pixel_id = values.tiktok_pixel_id.replace(/[^A-Za-z0-9]/g, '');

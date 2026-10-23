@@ -1,65 +1,61 @@
-// Trimitere email fără parole de Yahoo/Gmail:
-// 1) Cloudflare Email Routing (binding "EMAIL" în wrangler.toml) – gratuit, trimite spre adresa ta verificată
-// 2) sau Resend (RESEND_API_KEY) – alternativă, dacă nu folosești Email Routing
-// Dacă nu e configurat nimic, mesajele rămân salvate în admin (secțiunea Mesaje).
+import { smtpSend, buildMime } from './smtp.js';
 
-function b64utf8(str) {
-  const bytes = new TextEncoder().encode(str);
-  let bin = '';
-  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-  return btoa(bin);
+// Trimitere email:
+// 1) SMTP prin contul tău de email (Yahoo/Gmail) – merge fără domeniu, spre orice adresă.
+//    Secrete în Cloudflare: SMTP_USER (adresa), SMTP_PASS (parola de aplicație),
+//    opțional SMTP_HOST (implicit smtp.mail.yahoo.com) și SMTP_PORT (implicit 465).
+// 2) Cloudflare Email Routing (binding EMAIL) – după ce ai domeniu; trimite doar spre adresa ta.
+// Dacă nu e configurat nimic, emailurile nu pleacă, dar comenzile și mesajele rămân în admin.
+
+function smtpConfig(env) {
+  if (!env.SMTP_USER || !env.SMTP_PASS) return null;
+  const user = String(env.SMTP_USER).trim();
+  const host = env.SMTP_HOST || (/@gmail\.com$/i.test(user) ? 'smtp.gmail.com' : /@(outlook|hotmail|live)\./i.test(user) ? 'smtp-mail.outlook.com' : 'smtp.mail.yahoo.com');
+  const port = Number(env.SMTP_PORT) || (host === 'smtp-mail.outlook.com' ? 587 : 465);
+  return { host, port, user, pass: String(env.SMTP_PASS).replace(/\s/g, ''), heloName: 'chimag.ro' };
 }
-const encodeHeader = (s) => `=?UTF-8?B?${b64utf8(s)}?=`;
-const wrap76 = (s) => s.replace(/(.{76})/g, '$1\r\n');
 
 export function emailStatus(env) {
-  if (env.EMAIL) return { ok: true, via: 'Cloudflare Email Routing' };
-  if (env.RESEND_API_KEY) return { ok: true, via: 'Resend' };
-  return { ok: false, via: '' };
+  const s = smtpConfig(env);
+  if (s) return { ok: true, customers: true, via: `${s.user} (${s.host})` };
+  if (env.EMAIL) return { ok: true, customers: false, via: 'Cloudflare Email Routing (doar spre tine)' };
+  return { ok: false, customers: false, via: '' };
 }
 
-export async function sendEmail(env, settings, { subject, text, replyTo }) {
-  const to = settings.contact_email;
-  if (!to) return { ok: false, error: 'Nu este setată adresa de email pentru notificări.' };
-  const fromAddr = env.MAIL_FROM || 'formular@chimag.ro';
+/** Trimite un email oricui (client sau administrator). */
+export async function sendMail(env, settings, { to, subject, html, text, replyTo }) {
+  const list = (Array.isArray(to) ? to : [to]).map((t) => String(t || '').trim()).filter(Boolean);
+  if (!list.length) return { ok: false, error: 'Lipsește destinatarul.' };
   const fromName = settings.store_name || 'Chimag';
+  const smtp = smtpConfig(env);
 
-  if (env.EMAIL) {
+  if (smtp) {
     try {
-      const { EmailMessage } = await import('cloudflare:email');
-      const host = fromAddr.split('@')[1] || 'chimag.ro';
-      const headers = [
-        `From: ${encodeHeader(fromName)} <${fromAddr}>`,
-        `To: <${to}>`,
-        ...(replyTo ? [`Reply-To: <${replyTo}>`] : []),
-        `Subject: ${encodeHeader(subject)}`,
-        `Date: ${new Date().toUTCString()}`,
-        `Message-ID: <${crypto.randomUUID()}@${host}>`,
-        'MIME-Version: 1.0',
-        'Content-Type: text/plain; charset=UTF-8',
-        'Content-Transfer-Encoding: base64',
-      ];
-      const raw = headers.join('\r\n') + '\r\n\r\n' + wrap76(b64utf8(text));
-      await env.EMAIL.send(new EmailMessage(fromAddr, to, raw));
-      return { ok: true, via: 'email-routing' };
+      const raw = buildMime({ fromName, fromAddr: smtp.user, to: list, subject, text, html, replyTo });
+      await smtpSend(smtp, [{ from: smtp.user, to: list, raw }]);
+      return { ok: true, via: 'smtp' };
     } catch (e) {
-      console.log('email routing error', e?.message || e);
-      if (!env.RESEND_API_KEY) return { ok: false, error: String(e?.message || e) };
+      console.log('smtp error', e?.message || e);
+      return { ok: false, error: String(e?.message || e) };
     }
   }
 
-  if (env.RESEND_API_KEY) {
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { authorization: `Bearer ${env.RESEND_API_KEY}`, 'content-type': 'application/json' },
-      body: JSON.stringify({
-        from: env.RESEND_FROM || `${fromName} <onboarding@resend.dev>`,
-        to: [to], subject, text, ...(replyTo ? { reply_to: replyTo } : {}),
-      }),
-    });
-    if (res.ok) return { ok: true, via: 'resend' };
-    return { ok: false, error: `Resend ${res.status}: ${(await res.text()).slice(0, 200)}` };
+  if (env.EMAIL && list.every((t) => t === settings.contact_email)) {
+    try {
+      const { EmailMessage } = await import('cloudflare:email');
+      const fromAddr = env.MAIL_FROM || 'formular@chimag.ro';
+      const raw = buildMime({ fromName, fromAddr, to: list, subject, text, html, replyTo });
+      await env.EMAIL.send(new EmailMessage(fromAddr, list[0], raw));
+      return { ok: true, via: 'email-routing' };
+    } catch (e) {
+      return { ok: false, error: String(e?.message || e) };
+    }
   }
+  return { ok: false, error: 'Trimiterea de email nu este configurată (vezi README → „Emailuri").' };
+}
 
-  return { ok: false, error: 'Trimiterea de email nu este configurată.' };
+/** Email către administrator (adresa din Setări → Notificări). */
+export async function sendEmail(env, settings, msg) {
+  if (!settings.contact_email) return { ok: false, error: 'Nu este setată adresa de email pentru notificări.' };
+  return sendMail(env, settings, { ...msg, to: settings.contact_email });
 }

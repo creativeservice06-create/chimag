@@ -35,7 +35,7 @@ function productCard(p) {
 }
 
 // ---------------- Pagina principală ----------------
-export function homePage({ settings, products }) {
+export function homePage({ settings, products, categories = [], bestsellers = [], reviews = [], wheelOn = false }) {
   const featured = products.filter((p) => p.featured);
   const hero = featured[0] || products[0];
   const spotlight = featured.find((p) => p !== hero) || null;
@@ -89,6 +89,19 @@ export function homePage({ settings, products }) {
 
   <section class="wrap">${trustRow(settings)}</section>
 
+  ${categories.length >= 2 ? html`<section class="wrap section section-tight">
+    <div class="section-head"><p class="eyebrow">Categorii</p><h2>Cumpără pe categorii</h2></div>
+    <div class="cat-grid">${categories.map((c) => html`<a class="cat-card" href="/categorie/${c.slug}">
+      <span class="cat-media"><img src="${c.image || '/img/placeholder.svg'}" alt="" width="240" height="240" loading="lazy"></span>
+      <span class="cat-name">${c.name}</span><span class="cat-count">${c.count === 1 ? '1 produs' : `${c.count} produse`}</span>
+    </a>`)}</div>
+  </section>` : ''}
+
+  ${bestsellers.length ? html`<section class="wrap section section-tight">
+    <div class="section-head section-head-row"><div><p class="eyebrow">Preferatele clienților</p><h2>Cele mai vândute</h2></div><a class="link-more" href="#produse">Vezi toate produsele</a></div>
+    <div class="pscroller">${bestsellers.map(productCard)}</div>
+  </section>` : ''}
+
   <section class="wrap section" id="produse">
     <div class="section-head section-head-row">
       <div>
@@ -100,6 +113,15 @@ export function homePage({ settings, products }) {
     ${products.length
       ? html`<div class="pgrid">${products.map(productCard)}</div>`
       : html`<p class="empty">Adaugă primul produs din panoul de administrare.</p>`}
+  </section>
+
+  <section class="promo-band">
+    <div class="wrap promo-band-inner">
+      <div class="promo-item">${icons.truck(30)}<span><strong>${threshold ? `Transport gratuit peste ${money(threshold)}` : 'Livrare rapidă'}</strong><small>${settings.delivery_text || 'Livrare prin curier în toată țara'}</small></span></div>
+      <div class="promo-item">${icons.cash(30)}<span><strong>Plătești la livrare</strong><small>Fără plată în avans, fără cont</small></span></div>
+      ${wheelOn ? html`<button type="button" class="promo-item promo-wheel" data-wheel-open><span class="promo-emoji" aria-hidden="true">🎁</span><span><strong>Învârte roata norocului</strong><small>și poți câștiga o reducere</small></span></button>`
+        : html`<div class="promo-item">${icons.back(30)}<span><strong>Retur în ${returnDays} zile</strong><small>Fără să ne explici de ce</small></span></div>`}
+    </div>
   </section>
 
   ${spotlight ? html`<section class="spotlight">
@@ -117,6 +139,15 @@ export function homePage({ settings, products }) {
         <a class="btn btn-primary btn-lg" href="/p/${spotlight.slug}">Vezi produsul</a>
       </div>
     </div>
+  </section>` : ''}
+
+  ${reviews.length ? html`<section class="wrap section">
+    <div class="section-head section-head-row"><div><p class="eyebrow">Recenzii</p><h2>Ce spun clienții</h2></div></div>
+    <div class="review-scroller">${reviews.map((r) => html`<article class="review-card">
+      ${stars(r.rating, 16)}
+      <p>„${r.text.length > 220 ? r.text.slice(0, 217) + '…' : r.text}”</p>
+      <footer><strong>${r.name}</strong>${r.city ? html`<span>${r.city}</span>` : ''}<a href="/p/${r.slug}">${r.product}</a></footer>
+    </article>`)}</div>
   </section>` : ''}
 
   <section class="wrap section">
@@ -294,12 +325,13 @@ export function cartPage() {
 }
 
 // ---------------- Finalizare comandă ----------------
-export function checkoutPage({ settings, bump }) {
+export function checkoutPage({ settings, bump, loggedIn = false }) {
   const cardOn = settings.card_enabled === '1';
   return html`<div class="wrap checkout">
     <h1>Finalizează comanda</h1>
     <div class="checkout-grid">
       <form class="checkout-form" data-checkout-form novalidate>
+        ${!loggedIn && settings.accounts_enabled !== '0' ? html`<p class="checkout-login">Ai cont? <a href="/cont/autentificare?next=/finalizare">Intră în cont</a> și completăm datele automat. Poți comanda și fără cont.</p>` : ''}
         <section>
           <h2>Date de livrare</h2>
           <div class="field">
@@ -330,8 +362,8 @@ export function checkoutPage({ settings, bump }) {
           </div>
           <div class="field-row">
             <div class="field">
-              <label for="f-email">Email <span class="opt">(opțional)</span></label>
-              <input id="f-email" name="email" type="email" autocomplete="email" placeholder="pentru confirmarea comenzii">
+              <label for="f-email">Email <span class="opt">(recomandat)</span></label>
+              <input id="f-email" name="email" type="email" autocomplete="email" placeholder="primești confirmarea și AWB-ul">
             </div>
             <div class="field">
               <label for="f-zip">Cod poștal <span class="opt">(opțional)</span></label>
@@ -444,6 +476,24 @@ export function thankYouPage({ settings, order, items, payment }) {
 
     <p class="center"><a class="btn btn-ghost" href="/">Înapoi la magazin</a></p>
     ${settings.phone ? html`<p class="center muted">Ai o întrebare? Sună-ne la <a href="tel:${settings.phone.replace(/\s/g, '')}">${settings.phone}</a>.</p>` : ''}
+  </div>`;
+}
+
+export function searchPage({ settings, q, products, all, mode }) {
+  const isCat = mode === 'category';
+  return html`<div class="wrap search-page">
+    <header class="search-head">
+      <nav class="crumbs" aria-label="Navigare"><a href="/">Acasă</a><span>/</span><span>${isCat ? q : 'Căutare'}</span></nav>
+      <h1>${isCat ? q : q ? html`Rezultate pentru „${q}”` : 'Caută în magazin'}</h1>
+      ${!isCat ? html`<form class="search-big" action="/cautare" method="get" role="search">
+        <input type="search" name="q" value="${q}" placeholder="Ce cauți?" aria-label="Caută produse" ${q ? '' : 'autofocus'}>
+        <button class="btn btn-primary">${icons.search(20)} Caută</button>
+      </form>` : ''}
+      ${q ? html`<p class="muted">${products.length === 1 ? '1 produs' : `${products.length} produse`}</p>` : ''}
+    </header>
+    ${products.length ? html`<div class="pgrid">${products.map(productCard)}</div>`
+      : q ? html`<div class="empty-box"><p>Nu am găsit nimic pentru „${q}”. Încearcă alt cuvânt sau uită-te prin produsele noastre.</p></div>
+        ${all.length ? html`<h2 class="mt-l">Poate te interesează</h2><div class="pgrid">${all.slice(0, 8).map(productCard)}</div>` : ''}` : ''}
   </div>`;
 }
 

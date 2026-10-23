@@ -2,6 +2,7 @@ import { addOrderEvent, getOrder, getOrderItems, nextOrderNumber, updateOrder, O
 import { randomToken } from './util.js';
 import { getProvider } from '../shipping/providers.js';
 import { trackingUrlFor } from '../shipping/common.js';
+import { notifyStatus } from './notify.js';
 
 export async function createOrder(env, { customer, priced, paymentMethod, meta }) {
   const number = await nextOrderNumber(env);
@@ -9,13 +10,13 @@ export async function createOrder(env, { customer, priced, paymentMethod, meta }
   const row = await env.DB.prepare(`INSERT INTO orders
     (number, token, status, payment_method, payment_status, customer_name, phone, email, county, city, address, postal_code, notes,
      subtotal, discount, shipping, cod_fee, total, utm_source, utm_medium, utm_campaign, fbclid, ttclid, fbp, ip, user_agent,
-     coupon_code, coupon_discount)
-    VALUES (?, ?, 'noua', ?, 'neplatita', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     coupon_code, coupon_discount, customer_id)
+    VALUES (?, ?, 'noua', ?, 'neplatita', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     RETURNING id`)
     .bind(number, token, paymentMethod, customer.name, customer.phone, customer.email, customer.county, customer.city,
       customer.address, customer.postalCode, customer.notes, priced.subtotal, priced.discount, priced.shipping, priced.codFee,
       priced.total, meta.utm_source, meta.utm_medium, meta.utm_campaign, meta.fbclid, meta.ttclid, meta.fbp, meta.ip, meta.ua,
-      priced.coupon?.ok ? priced.coupon.code : '', priced.coupon?.ok ? priced.couponDiscount : 0)
+      priced.coupon?.ok ? priced.coupon.code : '', priced.coupon?.ok ? priced.couponDiscount : 0, meta.customerId || 0)
     .first();
   const orderId = row.id;
 
@@ -49,7 +50,7 @@ async function restoreStock(env, orderId) {
 
 const RESTOCK = new Set(['anulata', 'retur']);
 
-export async function setStatus(env, settings, orderId, status, { by = 'admin' } = {}) {
+export async function setStatus(env, settings, orderId, status, { by = 'admin', ctx = null } = {}) {
   const order = await getOrder(env, orderId);
   if (!order || !ORDER_STATUSES[status] || order.status === status) return { order };
   await updateOrder(env, orderId, { status });
@@ -60,12 +61,18 @@ export async function setStatus(env, settings, orderId, status, { by = 'admin' }
   }
   let awbResult = null;
   if (status === 'confirmata' && settings.auto_awb_on_confirm === '1' && !order.awb) {
-    awbResult = await generateAwb(env, settings, orderId);
+    awbResult = await generateAwb(env, settings, orderId, { ctx });
   }
-  return { order: await getOrder(env, orderId), awbResult };
+  const updated = await getOrder(env, orderId);
+  // email către client (confirmată / expediată / livrată / anulată / retur)
+  if (!(awbResult && awbResult.ok && awbResult.awb)) { // dacă s-a generat AWB, emailul „expediată" pleacă din generateAwb
+    const p = notifyStatus(env, settings, updated);
+    if (ctx) ctx.waitUntil(p); else await p;
+  }
+  return { order: updated, awbResult };
 }
 
-export async function generateAwb(env, settings, orderId) {
+export async function generateAwb(env, settings, orderId, { ctx = null } = {}) {
   const order = await getOrder(env, orderId);
   if (!order) return { ok: false, error: 'Comanda nu există.' };
   if (order.awb) return { ok: false, error: `Comanda are deja AWB-ul ${order.awb}.` };
@@ -96,6 +103,8 @@ export async function generateAwb(env, settings, orderId) {
     if (order.status === 'noua' || order.status === 'confirmata') {
       await updateOrder(env, orderId, { status: 'expediata' });
       await addOrderEvent(env, orderId, `Status: ${ORDER_STATUSES[order.status]} → Expediată`);
+      const p = notifyStatus(env, settings, await getOrder(env, orderId));
+      if (ctx) ctx.waitUntil(p); else await p;
     }
     return { ok: true, awb: r.awb };
   } catch (e) {

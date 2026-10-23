@@ -1,4 +1,4 @@
-import { htmlResponse, json, redirect, normalizePhone, isEmail } from './lib/util.js';
+import { htmlResponse, json, redirect, normalizePhone, isEmail, slugify } from './lib/util.js';
 import { getSettings, listProducts, getProductBySlug, getProductById, getReviews, getOrder, getOrderItems, updateOrder, addOrderEvent } from './lib/db.js';
 import { priceCart } from './lib/pricing.js';
 import { createOrder, markPaid } from './lib/orders.js';
@@ -13,16 +13,22 @@ import { handleFulfillmentApi } from './fulfillment-api.js';
 import { syncTracking } from './cron.js';
 import { hmac, timingSafeEqual } from './lib/auth.js';
 import { getCookie } from './lib/util.js';
-import { spinWheel } from './lib/coupons.js';
-import { sendEmail } from './lib/email.js';
-import { trackOrderPage } from './views/shop.js';
+import { spinWheel, wheelConfig } from './lib/coupons.js';
+import { notifyOrderPlaced, notifyContact } from './lib/notify.js';
+import { trackOrderPage, searchPage } from './views/shop.js';
+import { currentCustomer } from './lib/customers.js';
+import { handleAccount } from './account.js';
 
 const siteUrl = (env, request) => (env.SITE_URL || new URL(request.url).origin).replace(/\/$/, '');
 
 async function page(env, request, opts, status = 200) {
   const settings = opts.settings || (await getSettings(env));
-  return htmlResponse(layout({ ...opts, settings, siteUrl: siteUrl(env, request) }), status, {
+  const customer = opts.customer !== undefined ? opts.customer : await currentCustomer(request, env).catch(() => null);
+  const { results: cats } = await env.DB.prepare("SELECT category AS name, COUNT(*) AS count FROM products WHERE active = 1 AND category != '' GROUP BY category ORDER BY MIN(sort), category").all();
+  const categories = (cats || []).map((c) => ({ ...c, slug: slugify(c.name) }));
+  return htmlResponse(layout({ ...opts, settings, customer, categories, siteUrl: siteUrl(env, request) }), status, {
     'cache-control': 'no-store',
+    ...(opts.noindex ? { 'x-robots-tag': 'noindex' } : {}),
   });
 }
 
@@ -73,11 +79,35 @@ async function route(request, env, ctx) {
   }
   if (path.startsWith('/api/fulfillment')) return handleFulfillmentApi(request, env, path);
 
+  if (path === '/cont' || path.startsWith('/cont/')) {
+    const r = await handleAccount(request, env, ctx, path, (opts, status) => page(env, request, opts, status));
+    return r || notFound(env, request);
+  }
+
   // ---------- Pagini magazin ----------
   if (method === 'GET' && path === '/') {
     const settings = await getSettings(env);
     const products = await listProducts(env);
-    return page(env, request, { settings, body: homePage({ settings, products }), canonical: siteUrl(env, request) + '/', ogImage: products[0]?.images?.[0] });
+    // categorii (cu poza primului produs)
+    const catMap = new Map();
+    for (const p of products) if (p.category) {
+      const c = catMap.get(p.category) || { name: p.category, slug: slugify(p.category), count: 0, image: p.images[0] };
+      c.count++; catMap.set(p.category, c);
+    }
+    // cele mai vândute (ultimele 90 de zile), doar dacă avem mai mult de 8 produse (altfel s-ar repeta lista)
+    let bestsellers = [];
+    if (products.length > 8) {
+      const { results: top } = await env.DB.prepare(`SELECT i.product_id, SUM(i.qty) AS q FROM order_items i JOIN orders o ON o.id = i.order_id
+        WHERE o.status != 'anulata' AND o.created_at > datetime('now','-90 days') GROUP BY i.product_id ORDER BY q DESC LIMIT 8`).all();
+      const rank = new Map((top || []).map((t, i) => [t.product_id, i]));
+      bestsellers = [...products].sort((a, b) => (rank.get(a.id) ?? 99 + a.sort) - (rank.get(b.id) ?? 99 + b.sort)).slice(0, 8);
+    }
+    const { results: reviews } = await env.DB.prepare(`SELECT r.*, p.title AS product, p.slug FROM reviews r JOIN products p ON p.id = r.product_id
+      WHERE r.approved = 1 AND p.active = 1 AND r.rating >= 4 ORDER BY r.id DESC LIMIT 8`).all();
+    return page(env, request, {
+      settings, canonical: siteUrl(env, request) + '/', ogImage: products[0]?.images?.[0],
+      body: homePage({ settings, products, categories: [...catMap.values()], bestsellers, reviews: reviews || [], wheelOn: wheelConfig(settings).enabled }),
+    });
   }
 
   let m;
@@ -100,12 +130,35 @@ async function route(request, env, ctx) {
     });
   }
 
+  // ---------- Căutare și categorii ----------
+  if (method === 'GET' && path === '/cautare') {
+    const settings = await getSettings(env);
+    const q = (url.searchParams.get('q') || '').trim().slice(0, 80);
+    const all = await listProducts(env);
+    const norm = (t) => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const words = norm(q).split(/\s+/).filter(Boolean);
+    const results = words.length ? all.filter((p) => {
+      const hay = norm([p.title, p.subtitle, p.category, p.sku, p.description, p.benefits.join(' ')].join(' '));
+      return words.every((w) => hay.includes(w));
+    }) : [];
+    return page(env, request, { settings, title: q ? `Caută: ${q}` : 'Caută', noindex: true, body: searchPage({ settings, q, products: results, all, mode: 'search' }) });
+  }
+  if (method === 'GET' && (m = path.match(/^\/categorie\/([a-z0-9-]+)$/))) {
+    const settings = await getSettings(env);
+    const all = await listProducts(env);
+    const list = all.filter((p) => slugify(p.category) === m[1]);
+    if (!list.length) return notFound(env, request);
+    return page(env, request, { settings, title: list[0].category, canonical: `${siteUrl(env, request)}/categorie/${m[1]}`, body: searchPage({ settings, q: list[0].category, products: list, all, mode: 'category' }) });
+  }
+
   if (method === 'GET' && path === '/cos') return page(env, request, { title: 'Coș', body: cartPage() });
 
   if (method === 'GET' && path === '/finalizare') {
     const settings = await getSettings(env);
     const bump = settings.bump_product_id ? await getProductById(env, Number(settings.bump_product_id)) : null;
-    return page(env, request, { settings, title: 'Finalizare comandă', body: checkoutPage({ settings, bump: bump?.active ? bump : null }) });
+    const me = await currentCustomer(request, env).catch(() => null);
+    const prefill = me ? { name: me.name, email: me.email, phone: me.phone, county: me.county, city: me.city, address: me.address, postalCode: me.postal_code } : null;
+    return page(env, request, { settings, customer: me, title: 'Finalizare comandă', pageData: prefill ? { customer: prefill } : null, body: checkoutPage({ settings, bump: bump?.active ? bump : null, loggedIn: !!me }) });
   }
 
   if (method === 'GET' && (m = path.match(/^\/multumim\/([a-f0-9]{32})$/))) {
@@ -161,7 +214,8 @@ async function route(request, env, ctx) {
   if (path === '/sitemap.xml') {
     const base = siteUrl(env, request);
     const products = await listProducts(env);
-    const urls = ['/', ...products.map((p) => `/p/${p.slug}`), ...Object.keys(PAGES).map((k) => `/pagina/${k}`)];
+    const cats = [...new Set(products.map((p) => slugify(p.category)).filter(Boolean))];
+    const urls = ['/', ...products.map((p) => `/p/${p.slug}`), ...cats.map((c) => `/categorie/${c}`), ...Object.keys(PAGES).map((k) => `/pagina/${k}`)];
     const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.map((u) => `<url><loc>${base}${u}</loc></url>`).join('')}</urlset>`;
     return new Response(xml, { headers: { 'content-type': 'application/xml' } });
   }
@@ -201,7 +255,7 @@ async function route(request, env, ctx) {
       await updateOrder(env, order.id, { payment_method: 'ramburs', cod_fee: codFee, total: order.total - order.cod_fee + codFee });
       await addOrderEvent(env, order.id, 'Clientul a ales plata ramburs în loc de card.');
       const updated = await getOrder(env, order.id);
-      ctx.waitUntil(sendServerPurchase(env, settings, updated, await getOrderItems(env, order.id), siteUrl(env, request)));
+      ctx.waitUntil(Promise.allSettled([sendServerPurchase(env, settings, updated, await getOrderItems(env, order.id), siteUrl(env, request)), notifyOrderPlaced(env, settings, updated)]));
       return redirect(`/multumim/${m[1]}`);
     }
     const items = await getOrderItems(env, order.id);
@@ -226,7 +280,7 @@ async function route(request, env, ctx) {
           const items = await getOrderItems(env, orderId);
           ctx.waitUntil(Promise.allSettled([
             sendServerPurchase(env, settings, order, items, siteUrl(env, request)),
-            notifyNewOrder(env, settings, order, items, siteUrl(env, request)),
+            notifyOrderPlaced(env, settings, order),
           ]));
         }
       }
@@ -284,7 +338,18 @@ async function placeOrder(request, env, ctx) {
     ip, ua: clean(request.headers.get('user-agent'), 300),
   };
 
+  const me = await currentCustomer(request, env).catch(() => null);
+  if (me && !customer.email) customer.email = me.email;
+  meta.customerId = me ? me.id : 0;
   const created = await createOrder(env, { customer, priced, paymentMethod, meta });
+  if (me) {
+    // salvează adresa în cont dacă nu avea una
+    if (!me.address) {
+      await env.DB.prepare("UPDATE customers SET phone = CASE WHEN phone = '' THEN ? ELSE phone END, county = ?, city = ?, address = ?, postal_code = ? WHERE id = ?")
+        .bind(customer.phone, customer.county, customer.city, customer.address, customer.postalCode, me.id).run();
+    }
+    await env.DB.prepare('INSERT INTO customer_events (customer_id, message) VALUES (?, ?)').bind(me.id, `Comandă plasată: ${created.number}`).run();
+  }
   const base = siteUrl(env, request);
 
   if (paymentMethod === 'card') {
@@ -302,8 +367,7 @@ async function placeOrder(request, env, ctx) {
   ctx.waitUntil((async () => {
     const order = await getOrder(env, created.id);
     const items = await getOrderItems(env, created.id);
-    await sendServerPurchase(env, settings, order, items, base);
-    await notifyNewOrder(env, settings, order, items, base);
+    await Promise.allSettled([sendServerPurchase(env, settings, order, items, base), notifyOrderPlaced(env, settings, order)]);
   })());
   return json({ redirect: `/multumim/${created.token}` });
 }
@@ -357,34 +421,9 @@ async function contactMessage(request, env, ctx) {
     .bind(msg.name, msg.email, phone || '', msg.order_number, msg.subject, msg.message, ip).first();
   ctx.waitUntil((async () => {
     const settings = await getSettings(env);
-    const r = await sendEmail(env, settings, {
-      subject: `Mesaj nou pe ${settings.store_name || 'Chimag'}: ${msg.subject || 'contact'} – ${msg.name}`,
-      replyTo: msg.email || undefined,
-      text: [
-        `Ai primit un mesaj nou din formularul de contact.`, '',
-        `Nume: ${msg.name}`, `Telefon: ${phone || '-'}`, `Email: ${msg.email || '-'}`,
-        `Comandă: ${msg.order_number || '-'}`, `Subiect: ${msg.subject || '-'}`, '', msg.message, '',
-        `Toate mesajele sunt și în panoul de administrare, la Mesaje.`,
-      ].join('\n'),
-    });
+    const r = await notifyContact(env, settings, { ...msg, phone: phone || '' });
     if (r.ok) await env.DB.prepare('UPDATE messages SET emailed = 1 WHERE id = ?').bind(row.id).run();
   })());
   return reply(true);
 }
 
-async function notifyNewOrder(env, settings, order, items, base) {
-  if (settings.notify_orders !== '1') return;
-  const lei = (b) => `${(b / 100).toFixed(2).replace('.', ',')} lei`;
-  await sendEmail(env, settings, {
-    subject: `Comandă nouă ${order.number} – ${lei(order.total)}`,
-    text: [
-      `Comandă nouă pe ${settings.store_name || 'Chimag'}: ${order.number}`, '',
-      ...items.map((i) => `${i.qty} x ${i.title} – ${lei(i.total)}`), '',
-      `Total: ${lei(order.total)} (${order.payment_method === 'card' ? 'plătită cu cardul' : 'ramburs'})`,
-      order.coupon_code ? `Cod folosit: ${order.coupon_code}` : '', '',
-      `Client: ${order.customer_name}, ${order.phone}`, `Adresa: ${order.address}, ${order.city}, ${order.county}`,
-      order.notes ? `Observații: ${order.notes}` : '', '',
-      `Deschide comanda în panoul de administrare: ${base}/admin/comenzi/${order.id}`,
-    ].filter((l, i, a) => l !== '' || a[i - 1] !== '').join('\n'),
-  });
-}

@@ -14,6 +14,43 @@
     del: function (k) { try { localStorage.removeItem(k); } catch (e) {} },
   };
 
+  /* ---------------- Meniu mobil + căutare ---------------- */
+  (function navigation() {
+    var drawer = $('[data-drawer]');
+    var lastFocus = null;
+    function openDrawer() {
+      if (!drawer) return;
+      lastFocus = document.activeElement;
+      drawer.hidden = false;
+      requestAnimationFrame(function () { drawer.classList.add('open'); });
+      document.documentElement.classList.add('drawer-open');
+      var first = $('.drawer-search input', drawer); if (first) setTimeout(function () { $('[data-drawer-close].icon-btn', drawer).focus(); }, 50);
+    }
+    function closeDrawer() {
+      if (!drawer || drawer.hidden) return;
+      drawer.classList.remove('open');
+      document.documentElement.classList.remove('drawer-open');
+      setTimeout(function () { drawer.hidden = true; }, 250);
+      if (lastFocus) lastFocus.focus();
+    }
+    $$('[data-drawer-open]').forEach(function (b) { b.addEventListener('click', openDrawer); });
+    if (drawer) {
+      $$('[data-drawer-close]', drawer).forEach(function (b) { b.addEventListener('click', closeDrawer); });
+      $$('.drawer-nav a', drawer).forEach(function (a) { a.addEventListener('click', closeDrawer); });
+    }
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeDrawer(); });
+
+    var ms = $('[data-mobile-search]');
+    $$('[data-search-toggle]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        if (!ms) return;
+        ms.hidden = !ms.hidden;
+        b.setAttribute('aria-expanded', String(!ms.hidden));
+        if (!ms.hidden) $('input', ms).focus();
+      });
+    });
+  })();
+
   /* ---------------- Atribuire (de unde vine clientul) ---------------- */
   (function captureAttribution() {
     var p = new URLSearchParams(location.search);
@@ -310,8 +347,8 @@
       return;
     }
 
-    // păstrează datele completate dacă clientul revine
-    var saved = store.get('chimag_customer', {});
+    // păstrează datele completate dacă clientul revine (sau le ia din contul clientului)
+    var saved = PAGE.customer || store.get('chimag_customer', {});
     ['name', 'phone', 'county', 'city', 'address', 'email', 'postalCode'].forEach(function (k) {
       if (saved[k] && form.elements[k] && !form.elements[k].value) form.elements[k].value = saved[k];
     });

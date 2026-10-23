@@ -33,6 +33,9 @@ export async function handleAdmin(request, env, ctx, path) {
     if (method === 'POST') {
       const form = await readForm(request);
       if (checkPassword(env, form.get('password'))) {
+        if (!env.SESSION_SECRET || env.SESSION_SECRET.length < 32) {
+          return htmlResponse(loginView(`Parola e corectă, dar SESSION_SECRET ${env.SESSION_SECRET ? `are doar ${env.SESSION_SECRET.length} caractere (minim 32)` : 'nu este setat'} în Cloudflare → Settings → Variables and Secrets.`), 500);
+        }
         return redirect('/admin', 303, { 'set-cookie': await createSessionCookie(env, secure) });
       }
       await new Promise((r) => setTimeout(r, 800)); // încetinește încercările de ghicire

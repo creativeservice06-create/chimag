@@ -1,0 +1,32 @@
+name = "chimag"
+main = "src/index.js"
+compatibility_date = "2025-09-01"
+
+# Fișierele statice (CSS, JS, imagini) din /public
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+# Baza de date (Cloudflare D1)
+# Pasul 1 din README: `npx wrangler d1 create chimag-db` și pune aici database_id-ul primit
+[[d1_databases]]
+binding = "DB"
+database_name = "chimag-db"
+database_id = "PUNE-AICI-ID-UL-DIN-WRANGLER-D1-CREATE"
+migrations_dir = "migrations"
+
+# Pozele produselor (Cloudflare R2)
+# `npx wrangler r2 bucket create chimag-media`
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "chimag-media"
+
+[vars]
+SITE_URL = "https://www.chimag.ro"
+
+# La fiecare 30 de minute: actualizează statusul livrărilor (tracking AWB)
+[triggers]
+crons = ["*/30 * * * *"]
+
+[observability]
+enabled = true

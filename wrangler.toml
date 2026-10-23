@@ -15,11 +15,11 @@ database_name = "chimag-db"
 database_id = "d5b9fdac-398c-4dbb-b076-ab75d71168b7"
 migrations_dir = "migrations"
 
-# Pozele produselor (Cloudflare R2)
-# `npx wrangler r2 bucket create chimag-media`
-[[r2_buckets]]
-binding = "MEDIA"
-bucket_name = "chimag-media"
+# Pozele produselor: deocamdată în public/img (gratuit, fără R2).
+# Pentru încărcare directă din panou, creează bucket-ul R2 "chimag-media" și decomentează:
+# [[r2_buckets]]
+# binding = "MEDIA"
+# bucket_name = "chimag-media"
 
 [vars]
 SITE_URL = "https://www.chimag.ro"

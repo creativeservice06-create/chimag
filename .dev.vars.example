@@ -1,0 +1,26 @@
+# Copiază acest fișier ca `.dev.vars` pentru rularea locală (nu se urcă pe GitHub).
+# În producție le setezi în Cloudflare: Workers → chimag → Settings → Variables and Secrets (tip "Secret").
+
+# Parola pentru /admin
+ADMIN_PASSWORD=schimba-ma
+# Șir lung aleator (min. 32 caractere) pentru semnarea sesiunii de admin
+SESSION_SECRET=un-sir-foarte-lung-si-aleator-de-minim-32-caractere
+
+# Stripe (plata cu cardul) – dashboard.stripe.com → Developers → API keys
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+
+# Cheia cu care depozitul partener (ex. Helpship) citește comenzile prin API
+WAREHOUSE_API_KEY=o-cheie-lunga-aleatoare
+
+# SmartShip – primești datele de la ei (office@smartship.ro)
+SMARTSHIP_API_URL=
+SMARTSHIP_API_KEY=
+
+# Helpship – dacă îți dau un API în care trimitem noi comenzile
+HELPSHIP_API_URL=
+HELPSHIP_API_KEY=
+
+# Opțional: Conversions API (evenimente trimise de pe server, mai precise decât pixelul)
+FB_CAPI_TOKEN=
+TIKTOK_EVENTS_TOKEN=

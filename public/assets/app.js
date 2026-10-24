@@ -542,10 +542,10 @@
       var s0 = pt(i * a, R), s1 = pt((i + 1) * a, R);
       var fill = (n % palette.length === 1 && i === n - 1) ? '#2f7be6' : palette[i % palette.length];
       svg += '<path d="M0 0 L' + s0[0].toFixed(2) + ' ' + s0[1].toFixed(2) + ' A' + R + ' ' + R + ' 0 0 1 ' + s1[0].toFixed(2) + ' ' + s1[1].toFixed(2) + ' Z" fill="' + fill + '" stroke="#ffffff" stroke-opacity=".18" stroke-width="1.5"/>';
-      var mid = i * a + a / 2, tp = pt(mid, R * 0.6);
+      var mid = i * a + a / 2, tp = pt(mid, R * 0.62);
       var words = String(segs[i]).split(' ');
       var lines = words.length > 2 ? [words.slice(0, Math.ceil(words.length / 2)).join(' '), words.slice(Math.ceil(words.length / 2)).join(' ')] : (words.length === 2 && segs[i].length > 11 ? words : [segs[i]]);
-      var fs = n > 8 ? 10 : n > 6 ? 11.5 : 13;
+      var fs = n > 8 ? 12.5 : n > 6 ? 14.5 : 16;
       svg += '<text transform="translate(' + tp[0].toFixed(2) + ' ' + tp[1].toFixed(2) + ') rotate(' + (mid > 180 ? mid + 90 : mid - 90) + ')" fill="#fff" font-size="' + fs + '" font-weight="800" text-anchor="middle" font-family="Plus Jakarta Sans, Inter, sans-serif">' +
         lines.map(function (l, j) { return '<tspan x="0" dy="' + (j === 0 ? (lines.length > 1 ? -0.35 : 0.35) : 1.15) + 'em">' + esc(l) + '</tspan>'; }).join('') + '</text>';
     }

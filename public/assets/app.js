@@ -373,7 +373,7 @@
         totalsEl.innerHTML = totalsHtml(p);
         if (couponEl) couponEl.innerHTML = couponHtml(p);
         if (p.coupon && p.coupon.ok) updatePromoBar(p.coupon);
-        submitBtn.textContent = (opts().payment === 'card' ? 'Plătește acum ' : 'Comandă cu obligație de plată · ') + money(p.total);
+        submitBtn.textContent = (opts().payment === 'card' ? 'Plătește acum ' : 'Finalizează comanda · ') + money(p.total);
         if (!tracked && p.lines.length) {
           tracked = true;
           track('InitiateCheckout', { value: p.total / 100, contents: p.lines.map(function (l) { return { id: String(l.id), quantity: l.qty, price: l.unitPrice / 100, name: l.title }; }) });

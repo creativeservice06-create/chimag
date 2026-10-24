@@ -10,12 +10,12 @@ const img = (p, i = 0) => p.images?.[i] || '/img/placeholder.svg';
 
 export function trustRow(settings) {
   const items = [
-    [icons.truck(), settings.delivery_text || 'Livrare rapidă prin curier'],
-    [icons.cash(), 'Plătești la livrare, după ce vezi coletul'],
-    [icons.back(), `Retur în ${settings.return_days || 14} zile`],
-    [icons.shield(), 'Garanție pentru toate produsele'],
+    [icons.truck(), 'Livrare 24–48h', 'În toată țara, prin curier'],
+    [icons.cash(), 'Plata la livrare', 'Fără niciun avans'],
+    [icons.back(), `Retur ${settings.return_days || 14} zile`, 'Fără explicații'],
+    [icons.shield(), 'Garanție 2 ani', 'La toate produsele'],
   ];
-  return html`<ul class="trust-row">${items.map(([i, t]) => html`<li>${i}<span>${t}</span></li>`)}</ul>`;
+  return html`<ul class="trust-row">${items.map(([i, t, sub]) => html`<li>${i}<span><strong>${t}</strong><small>${sub}</small></span></li>`)}</ul>`;
 }
 
 function productCard(p) {
@@ -54,12 +54,12 @@ export function homePage({ settings, products, categories = [], bestsellers = []
   <section class="home-hero">
     <div class="wrap home-hero-inner">
       <div class="home-hero-copy">
-        <p class="eyebrow-light">Magazin online cu livrare în toată țara</p>
-        <h1>${settings.tagline || 'Lucruri bune pentru acasă, livrate rapid'}</h1>
-        <p class="home-hero-lead">Alegem puține produse, dar bune, și le trimitem repede. Comanzi în două minute, fără cont, și plătești abia când ai coletul în mână.</p>
+        <p class="eyebrow-light">Oferte noi, livrare în toată România</p>
+        <h1>Produse utile, la prețuri bune</h1>
+        <p class="home-hero-lead">Pentru casă, bucătărie, copii sau cadouri – alegem produse practice, la prețuri corecte, și ți le trimitem rapid. Comanzi în două minute și plătești la livrare.</p>
         <div class="home-hero-actions">
           <a class="btn btn-primary btn-lg" href="#produse">Vezi produsele</a>
-          <a class="btn btn-outline-light btn-lg" href="#cum-comanzi">Cum comanzi</a>
+          <a class="btn btn-outline-light btn-lg" href="#categorii">Vezi categoriile</a>
         </div>
         <ul class="hero-checks">
           <li>${icons.check(18)} Plata la livrare</li>
@@ -69,6 +69,7 @@ export function homePage({ settings, products, categories = [], bestsellers = []
       </div>
       ${hero ? html`<a class="hero-card" href="/p/${hero.slug}">
         <div class="hero-card-media">
+          <span class="hero-card-label">Recomandarea zilei</span>
           <img src="${img(hero)}" alt="${hero.title}" width="640" height="640" fetchpriority="high">
           ${pctOff(hero) ? html`<span class="tag-save tag-lg">−${pctOff(hero)}%</span>` : ''}
           ${hero.badge ? html`<span class="tag-badge">${hero.badge}</span>` : ''}
@@ -87,8 +88,8 @@ export function homePage({ settings, products, categories = [], bestsellers = []
 
   <section class="wrap">${trustRow(settings)}</section>
 
-  ${categories.length >= 2 ? html`<section class="wrap section section-tight">
-    <div class="section-head"><p class="eyebrow">Categorii</p><h2>Cumpără pe categorii</h2></div>
+  ${categories.length >= 2 ? html`<section class="wrap section section-tight" id="categorii">
+    <div class="section-head"><p class="eyebrow">Categorii</p><h2>Ce cauți azi?</h2></div>
     <div class="cat-grid">${categories.map((c) => html`<a class="cat-card" href="/categorie/${c.slug}">
       <span class="cat-media"><img src="${c.image || '/img/placeholder.svg'}" alt="" width="240" height="240" loading="lazy"></span>
       <span class="cat-name">${c.name}</span><span class="cat-count">${c.count === 1 ? '1 produs' : `${c.count} produse`}</span>
@@ -103,30 +104,21 @@ export function homePage({ settings, products, categories = [], bestsellers = []
   <section class="wrap section" id="produse">
     <div class="section-head section-head-row">
       <div>
-        <p class="eyebrow">Produse</p>
-        <h2>Alese pentru casa ta</h2>
+        <p class="eyebrow">Ofertele noastre</p>
+        <h2>Toate produsele</h2>
       </div>
-      ${threshold ? html`<p class="section-note">${icons.truck(18)} Transport gratuit la comenzile peste ${money(threshold)}</p>` : ''}
+      ${threshold ? html`<p class="section-note">${icons.truck(18)} Transport gratuit peste ${money(threshold)}</p>` : ''}
     </div>
     ${products.length
       ? html`<div class="pgrid">${products.map(productCard)}</div>`
       : html`<p class="empty">Adaugă primul produs din panoul de administrare.</p>`}
   </section>
 
-  <section class="promo-band">
-    <div class="wrap promo-band-inner">
-      <div class="promo-item">${icons.truck(30)}<span><strong>${threshold ? `Transport gratuit peste ${money(threshold)}` : 'Livrare rapidă'}</strong><small>${settings.delivery_text || 'Livrare prin curier în toată țara'}</small></span></div>
-      <div class="promo-item">${icons.cash(30)}<span><strong>Plătești la livrare</strong><small>Fără plată în avans, fără cont</small></span></div>
-      ${wheelOn ? html`<button type="button" class="promo-item promo-wheel" data-wheel-open><span class="promo-emoji" aria-hidden="true">🎁</span><span><strong>Învârte roata norocului</strong><small>și poți câștiga o reducere</small></span></button>`
-        : html`<div class="promo-item">${icons.back(30)}<span><strong>Retur în ${returnDays} zile</strong><small>Fără să ne explici de ce</small></span></div>`}
-    </div>
-  </section>
-
   ${spotlight ? html`<section class="spotlight">
     <div class="wrap spotlight-inner">
       <a class="spotlight-media" href="/p/${spotlight.slug}"><img src="${img(spotlight)}" alt="${spotlight.title}" width="640" height="640" loading="lazy"></a>
       <div class="spotlight-copy">
-        <p class="eyebrow">Recomandarea noastră</p>
+        <p class="eyebrow">Recomandarea săptămânii</p>
         <h2>${spotlight.title}</h2>
         ${spotlight.subtitle ? html`<p class="spotlight-sub">${spotlight.subtitle}</p>` : ''}
         ${spotlight.benefits.length ? html`<ul class="benefits">${spotlight.benefits.slice(0, 4).map((b) => html`<li>${icons.check(18)}<span>${b}</span></li>`)}</ul>` : ''}
@@ -148,26 +140,13 @@ export function homePage({ settings, products, categories = [], bestsellers = []
     </article>`)}</div>
   </section>` : ''}
 
-  <section class="wrap section">
-    <div class="section-head">
-      <p class="eyebrow">De ce Chimag</p>
-      <h2>Cumperi fără grijă</h2>
-    </div>
-    <div class="reasons">
-      <article class="reason">${icons.cash(26)}<h3>Plătești la livrare</h3><p>Nu dai niciun ban în avans. Plătești curierului când ai coletul.</p></article>
-      <article class="reason">${icons.truck(26)}<h3>Livrare rapidă</h3><p>${settings.delivery_text || 'Livrăm prin curier în 24–48 de ore'}, în toată țara.</p></article>
-      <article class="reason">${icons.back(26)}<h3>Retur simplu</h3><p>Ai ${returnDays} zile să te răzgândești, fără să ne explici de ce.</p></article>
-      <article class="reason">${icons.chat(26)}<h3>Vorbești cu un om</h3><p>Ne scrii din <a href="/pagina/contact">pagina de contact</a> și primești un răspuns clar, de la un om.</p></article>
-    </div>
-  </section>
-
   <section class="section steps-section" id="cum-comanzi">
     <div class="wrap">
-      <div class="section-head"><p class="eyebrow">Cum comanzi</p><h2>Trei pași, două minute</h2></div>
+      <div class="section-head"><p class="eyebrow">Cum comanzi</p><h2>Simplu, în trei pași</h2></div>
       <ol class="steps">
-        <li><span class="step-n">1</span><h3>Alegi produsul</h3><p>Vezi pozele, detaliile și ofertele de pachet.</p></li>
-        <li><span class="step-n">2</span><h3>Completezi adresa</h3><p>Nume, telefon și adresă. Fără cont, fără parole.</p></li>
-        <li><span class="step-n">3</span><h3>Plătești la livrare</h3><p>Curierul îți aduce coletul, iar tu plătești atunci.</p></li>
+        <li><span class="step-n">1</span><h3>Alegi produsele</h3><p>Le adaugi în coș și vezi pe loc reducerile.</p></li>
+        <li><span class="step-n">2</span><h3>Completezi adresa</h3><p>Doar nume, telefon și adresă de livrare.</p></li>
+        <li><span class="step-n">3</span><h3>Plătești la livrare</h3><p>Primești coletul în 24–48h și plătești curierului.</p></li>
       </ol>
     </div>
   </section>
@@ -175,7 +154,7 @@ export function homePage({ settings, products, categories = [], bestsellers = []
   <section class="wrap section faq-home" id="intrebari">
     <div class="faq-home-head">
       <p class="eyebrow">Întrebări frecvente</p>
-      <h2>Ce e bine să știi înainte să comanzi</h2>
+      <h2>Răspunsuri la ce te interesează</h2>
       <p class="muted">Nu ai găsit răspunsul? <a href="/pagina/contact">Scrie-ne</a> și te ajutăm.</p>
     </div>
     <div class="faq">${faq.map(([q, a]) => html`<details><summary>${q}</summary><div><p>${a}</p></div></details>`)}</div>
@@ -184,7 +163,7 @@ export function homePage({ settings, products, categories = [], bestsellers = []
   <section class="cta-band">
     <div class="wrap cta-band-inner">
       <div>
-        <h2>Ai o întrebare înainte să comanzi?</h2>
+        <h2>Ai nevoie de ajutor?</h2>
         <p>Scrie-ne și îți răspundem cât mai repede${settings.hours ? `, ${settings.hours.charAt(0).toLowerCase() + settings.hours.slice(1)}` : ''}.</p>
       </div>
       <a class="btn btn-primary btn-lg" href="/pagina/contact">${icons.mail(20)} Contactează-ne</a>

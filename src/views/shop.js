@@ -365,6 +365,11 @@ export function checkoutPage({ settings, bump, loggedIn = false }) {
     <div class="co-grid" data-co-main>
       <section class="co-cart">
         <div data-cart-lines><div class="cart-loading" aria-busy="true"><span></span></div></div>
+        <div class="co-summary" data-summary>
+          <div data-summary-free></div>
+          <div data-summary-coupon></div>
+          <dl class="totals" data-summary-totals></dl>
+        </div>
         <a class="co-continue" href="/#produse">← Continuă cumpărăturile</a>
       </section>
 
@@ -440,15 +445,11 @@ export function checkoutPage({ settings, bump, loggedIn = false }) {
 
       </form>
 
-      <aside class="summary co-summary" data-summary>
-        <h2>Sumar comandă</h2>
-        <div data-summary-free></div>
-        <div data-summary-coupon></div>
-        <dl class="totals" data-summary-totals></dl>
+      <div class="co-final">
         <p class="form-error" data-form-error hidden></p>
         <button type="submit" form="checkout-form" class="btn btn-primary btn-xl btn-block" data-submit>Finalizează comanda</button>
         <p class="legal-note">Plasând comanda ești de acord cu <a href="/pagina/termeni" target="_blank">termenii și condițiile</a> și confirmi că ai citit <a href="/pagina/confidentialitate" target="_blank">politica de confidențialitate</a>. Comanda implică obligația de plată. Ai dreptul la retur în ${settings.return_days || 14} zile (dreptul de retragere) – vezi <a href="/pagina/retur" target="_blank">condițiile de retur</a>.</p>
-      </aside>
+      </div>
     </div>
   </div>`;
 }

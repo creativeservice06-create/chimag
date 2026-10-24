@@ -861,25 +861,20 @@ html.drawer-open { overflow: hidden; }
 .privacy-note strong { display: block; color: var(--ink); font-size: .98rem; margin-bottom: 2px; }
 
 /* ---------- Coș + finalizare comandă pe aceeași pagină ---------- */
-.checkout { padding-top: 24px; }
+.checkout { max-width: 720px; padding-top: 24px; }
 .co-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 18px; }
 .co-head[hidden], [data-co-main][hidden] { display: none; }
 .co-head h1 { margin: 0; font-size: clamp(1.6rem, 3vw, 2rem); }
-.co-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 400px); grid-template-areas: "cart summary" "form summary"; column-gap: 36px; row-gap: 8px; align-items: start; }
-.co-cart { grid-area: cart; }
-.co-form { grid-area: form; padding-top: 22px; }
-.co-summary { grid-area: summary; grid-row: 1 / span 2; position: sticky; top: 84px; padding: 22px; border: 1px solid var(--line); border-radius: var(--radius-l); background: var(--surface); }
-.co-summary h2 { margin: 0 0 14px; font-size: 1.2rem; }
+.co-summary { margin-top: 14px; padding: 18px 20px; border: 1px solid var(--line); border-radius: var(--radius-l); background: var(--surface); }
 .co-summary .cart-free { background: #fff; }
 .co-summary .totals { margin-top: 12px; }
-.co-summary [data-submit] { margin-top: 18px; }
-.co-summary .legal-note { margin-bottom: 0; }
 .co-continue { display: inline-block; margin-top: 12px; color: var(--brand); font-weight: 600; text-decoration: none; font-size: .95rem; }
+.co-form { padding-top: 28px; }
+.co-final { margin-top: 8px; }
+.co-final [data-submit] { white-space: nowrap; padding-left: 12px; padding-right: 12px; }
 .cart-bump-tag { display: inline-block; padding: 3px 10px; border-radius: 999px; background: var(--saffron-soft); color: var(--saffron-ink); font-size: .78rem; font-weight: 700; }
 @media (max-width: 860px) {
   .checkout { padding-top: 16px; }
-  .co-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "cart" "form" "summary"; row-gap: 0; }
-  .co-summary { grid-row: auto; position: static; order: 0; margin-top: 8px; padding: 18px 16px; }
-  .co-form { padding-top: 26px; }
+  .co-summary { padding: 16px; }
+  .co-final [data-submit] { font-size: clamp(.98rem, 4.3vw, 1.15rem); }
 }
-@media (max-width: 860px) { .co-summary [data-submit] { white-space: nowrap; padding-left: 12px; padding-right: 12px; font-size: clamp(.98rem, 4.3vw, 1.15rem); } }

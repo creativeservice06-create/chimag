@@ -3,7 +3,7 @@ import { waLink } from './pages.js';
 import { icons } from './icons.js';
 import { wheelConfig } from '../lib/coupons.js';
 
-const ASSET_V = '17';
+const ASSET_V = '18';
 
 export function layout({ settings, title, description = '', canonical = '', ogImage = '', body, bodyClass = '', jsonLd = null, pageData = null, siteUrl = '', customer = null, categories = [] }) {
   const storeName = settings.store_name || 'Chimag';
@@ -187,9 +187,6 @@ function footer(s) {
   </div>
   <div class="wrap footer-legal">
     <p>© ${year} ${s.company_name || s.store_name}${s.company_cui ? ` · CUI ${s.company_cui}` : ''}${s.company_reg ? ` · ${s.company_reg}` : ''}${s.company_address ? ` · ${s.company_address}` : ''}</p>
-    ${s.card_enabled === '1'
-      ? html`<p class="pay-methods">Plata la livrare sau cu cardul <span class="pill">Visa</span><span class="pill">Mastercard</span><span class="pill">Apple Pay</span></p>`
-      : html`<p class="pay-methods">Plata ramburs, la livrare</p>`}
   </div>
 </footer>`;
 }

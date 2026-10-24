@@ -275,7 +275,9 @@
     if (sticky && buyBtn && 'IntersectionObserver' in window) {
       new IntersectionObserver(function (entries) {
         var e = entries[0];
-        sticky.classList.toggle('show', !e.isIntersecting && e.boundingClientRect.top < 0);
+        var on = !e.isIntersecting && e.boundingClientRect.top < 0;
+        sticky.classList.toggle('show', on);
+        document.body.classList.toggle('sticky-on', on);
       }).observe(buyBtn);
     }
 

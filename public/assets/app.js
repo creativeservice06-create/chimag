@@ -377,8 +377,10 @@
             return '<li class="cart-item"><a class="cart-thumb" href="/p/' + esc(l.slug) + '"><img src="' + esc(l.image) + '" alt="" width="88" height="88"></a>' +
               '<div class="cart-info"><h3><a href="/p/' + esc(l.slug) + '">' + esc(l.title) + '</a></h3>' +
               '<p class="cart-unit">' + money(l.unitPrice) + ' / buc.' + (l.pct && !l.isBump ? ' · <span class="line-save">economisești ' + money(gross - l.total) + '</span>' : '') + '</p>' +
-              '<div class="cart-row">' + ctrl + '<div class="cart-price"><strong>' + money(l.total) + '</strong>' + (l.total < gross ? '<s>' + money(gross) + '</s>' : '') + '</div></div></div>' +
-              (l.isBump ? '' : '<button type="button" class="cart-x" data-remove="' + l.id + '" aria-label="Șterge ' + esc(l.title) + '">' + x + '</button>') + '</li>';
+              '<div class="cart-row">' + ctrl + '<div class="cart-price"><strong>' + money(l.total) + '</strong>' + (l.total < gross ? '<s>' + money(gross) + '</s>' : '') + '</div></div>' +
+              '</div>' +
+              (l.isBump ? '' : '<button type="button" class="cart-x" data-remove="' + l.id + '" aria-label="Șterge ' + esc(l.title) + '">' + x + '</button>') +
+              (l.nextTier ? '<button type="button" class="tier-hint" data-tier="' + l.id + ':' + l.nextTier.qty + '"><span class="tier-text">🏷️ Mai adaugă ' + l.nextTier.add + (l.nextTier.add === 1 ? ' bucată' : ' bucăți') + ' și ai <strong>−' + l.nextTier.pct + '%</strong> la toate (' + money(l.nextTier.unit) + '/buc.)</span><span class="tier-add">+ Adaugă</span></button>' : '') + '</li>';
           }).join('') + '</ul>';
         if (freeEl) freeEl.innerHTML = freeBar(p);
         totalsEl.innerHTML = totalsHtml(p);
@@ -395,6 +397,11 @@
     linesEl.addEventListener('click', function (e) {
       var t = e.target.closest('button'); if (!t) return;
       var c = getCart();
+      if (t.hasAttribute('data-tier')) {
+        var tp = t.getAttribute('data-tier').split(':'), tid = Number(tp[0]), tq = Number(tp[1]);
+        c.forEach(function (l) { if (l.id === tid) l.qty = Math.min(50, tq); });
+        setCart(c); refresh(); toast('Reducerea de pachet a fost aplicată.'); return;
+      }
       if (t.hasAttribute('data-remove')) {
         var rid = Number(t.getAttribute('data-remove'));
         setCart(c.filter(function (l) { return l.id !== rid; })); refresh(); return;

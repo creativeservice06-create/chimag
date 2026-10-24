@@ -878,3 +878,10 @@ html.drawer-open { overflow: hidden; }
   .co-summary { padding: 16px; }
   .co-final [data-submit] { font-size: clamp(.98rem, 4.3vw, 1.15rem); }
 }
+
+.tier-hint { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; width: 100%; margin-top: 0; padding: 8px 10px; border: 1px dashed #9fd9b4; border-radius: 10px; background: #f1fbf5; color: #145c34; font: 500 .85rem/1.35 var(--font-body); text-align: left; cursor: pointer; }
+.tier-hint strong { color: #0f7a3b; }
+.tier-text { flex: 1; min-width: 0; }
+.tier-add { flex: none; padding: 5px 10px; border-radius: 999px; background: #fff; border: 1px solid #9fd9b4; font-weight: 700; color: #0f7a3b; white-space: nowrap; }
+.tier-hint:hover { background: #e6f7ed; }
+.cart-price strong { white-space: nowrap; }

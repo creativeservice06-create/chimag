@@ -1,6 +1,6 @@
 import { htmlResponse, json, redirect, normalizePhone, isEmail, slugify } from './lib/util.js';
 import { getSettings, listProducts, getProductBySlug, getProductById, getReviews, getOrder, getOrderItems, updateOrder, addOrderEvent } from './lib/db.js';
-import { priceCart } from './lib/pricing.js';
+import { priceCart, bundlePct } from './lib/pricing.js';
 import { createOrder, markPaid } from './lib/orders.js';
 import { createCheckoutSession, verifyWebhook } from './lib/stripe.js';
 import { sendServerPurchase } from './lib/tracking.js';
@@ -15,6 +15,17 @@ import { hmac, timingSafeEqual } from './lib/auth.js';
 import { getCookie } from './lib/util.js';
 import { spinWheel, wheelConfig, wheelState } from './lib/coupons.js';
 import { checkWheelUnlock, checkWheelUnlocks } from './lib/wheel-notify.js';
+
+// următorul prag de reducere la cantitate pentru un produs din coș (pentru mesajul „mai adaugă 1 și ai −10%")
+function nextBundleTier(product, qty) {
+  const cur = bundlePct(product, qty);
+  const tiers = (product.bundles || []).map((b) => ({ qty: Number(b.qty), pct: Number(b.pct) || 0 }))
+    .filter((b) => b.qty > qty && b.pct > cur && b.qty <= 50).sort((a, b) => a.qty - b.qty);
+  if (!tiers.length) return null;
+  const t = tiers[0];
+  const total = Math.round(product.price * t.qty * (1 - t.pct / 100));
+  return { qty: t.qty, add: t.qty - qty, pct: t.pct, total, unit: Math.round(total / t.qty), save: product.price * t.qty - total };
+}
 import { notifyOrderPlaced, notifyContact } from './lib/notify.js';
 import { trackOrderPage, searchPage } from './views/shop.js';
 import { currentCustomer } from './lib/customers.js';
@@ -234,6 +245,7 @@ async function route(request, env, ctx) {
       lines: p.lines.map((l) => ({
         id: l.product.id, slug: l.product.slug, title: l.product.title, image: l.product.images[0] || '/img/placeholder.svg',
         qty: l.qty, unitPrice: l.unitPrice, pct: l.pct, lineDiscount: l.lineDiscount, total: l.total, isBump: l.isBump,
+        nextTier: l.isBump ? null : nextBundleTier(l.product, l.qty),
       })).filter((l) => !l.isBump || body.bump),
       subtotal: p.subtotal, discount: p.discount, couponDiscount: p.couponDiscount, coupon: p.coupon,
       shipping: p.shipping, codFee: p.codFee, total: p.total, freeShippingLeft: p.freeShippingLeft, errors: p.errors,

@@ -380,7 +380,7 @@
               '<div class="cart-row">' + ctrl + '<div class="cart-price"><strong>' + money(l.total) + '</strong>' + (l.total < gross ? '<s>' + money(gross) + '</s>' : '') + '</div></div>' +
               '</div>' +
               (l.isBump ? '' : '<button type="button" class="cart-x" data-remove="' + l.id + '" aria-label="Șterge ' + esc(l.title) + '">' + x + '</button>') +
-              (l.nextTier ? '<button type="button" class="tier-hint" data-tier="' + l.id + ':' + l.nextTier.qty + '"><span class="tier-text">🏷️ Mai adaugă ' + l.nextTier.add + (l.nextTier.add === 1 ? ' bucată' : ' bucăți') + ' și ai <strong>−' + l.nextTier.pct + '%</strong> la toate (' + money(l.nextTier.unit) + '/buc.)</span><span class="tier-add">+ Adaugă</span></button>' : '') + '</li>';
+              (l.nextTier ? '<button type="button" class="tier-hint" data-tier="' + l.id + ':' + l.nextTier.qty + '"><span class="tier-text">Mai adaugă ' + l.nextTier.add + ' și ai <strong>−' + l.nextTier.pct + '%</strong><small>' + money(l.nextTier.unit) + ' / buc. la toate</small></span><span class="tier-add">+ Adaugă</span></button>' : '') + '</li>';
           }).join('') + '</ul>';
         if (freeEl) freeEl.innerHTML = freeBar(p);
         totalsEl.innerHTML = totalsHtml(p);

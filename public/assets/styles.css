@@ -881,7 +881,19 @@ html.drawer-open { overflow: hidden; }
 
 .tier-hint { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; width: 100%; margin-top: 0; padding: 8px 10px; border: 1px dashed #9fd9b4; border-radius: 10px; background: #f1fbf5; color: #145c34; font: 500 .85rem/1.35 var(--font-body); text-align: left; cursor: pointer; }
 .tier-hint strong { color: #0f7a3b; }
-.tier-text { flex: 1; min-width: 0; }
+.tier-text { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tier-add { flex: none; padding: 5px 10px; border-radius: 999px; background: #fff; border: 1px solid #9fd9b4; font-weight: 700; color: #0f7a3b; white-space: nowrap; }
 .tier-hint:hover { background: #e6f7ed; }
 .cart-price strong { white-space: nowrap; }
+
+/* indiciu reducere + transport gratuit: compacte pe telefon */
+.tier-text small { display: block; color: #3d7a55; font-size: .8rem; font-weight: 500; }
+.cart-free { white-space: nowrap; }
+@media (max-width: 860px) {
+  .cart-item { padding-right: 12px; }
+  .cart-item .cart-info { padding-right: 30px; }
+  .tier-hint { padding: 8px 10px; }
+  .co-summary { padding: 14px 12px; }
+  .co-summary .cart-free { padding: 10px 10px; font-size: clamp(11.5px, 3.45vw, 15px); }
+}
+@media (max-width: 340px) { .cart-free, .tier-text { white-space: normal; } }

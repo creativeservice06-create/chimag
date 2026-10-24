@@ -13,7 +13,8 @@ import { handleFulfillmentApi } from './fulfillment-api.js';
 import { syncTracking } from './cron.js';
 import { hmac, timingSafeEqual } from './lib/auth.js';
 import { getCookie } from './lib/util.js';
-import { spinWheel, wheelConfig } from './lib/coupons.js';
+import { spinWheel, wheelConfig, wheelState } from './lib/coupons.js';
+import { checkWheelUnlock, checkWheelUnlocks } from './lib/wheel-notify.js';
 import { notifyOrderPlaced, notifyContact } from './lib/notify.js';
 import { trackOrderPage, searchPage } from './views/shop.js';
 import { currentCustomer } from './lib/customers.js';
@@ -26,7 +27,8 @@ async function page(env, request, opts, status = 200) {
   const customer = opts.customer !== undefined ? opts.customer : await currentCustomer(request, env).catch(() => null);
   const { results: cats } = await env.DB.prepare("SELECT category AS name, COUNT(*) AS count FROM products WHERE active = 1 AND category != '' GROUP BY category ORDER BY MIN(sort), category").all();
   const categories = (cats || []).map((c) => ({ ...c, slug: slugify(c.name) }));
-  return htmlResponse(layout({ ...opts, settings, customer, categories, siteUrl: siteUrl(env, request) }), status, {
+  const wheel = wheelConfig(settings).enabled ? await wheelState(env, settings, customer).catch(() => null) : null;
+  return htmlResponse(layout({ ...opts, settings, customer, categories, wheelState: wheel, siteUrl: siteUrl(env, request) }), status, {
     'cache-control': 'no-store',
     ...(opts.noindex ? { 'x-robots-tag': 'noindex' } : {}),
   });
@@ -49,7 +51,7 @@ export default {
   },
 
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(syncTracking(env));
+    ctx.waitUntil(Promise.allSettled([syncTracking(env), checkWheelUnlocks(env)]));
   },
 };
 
@@ -226,7 +228,8 @@ async function route(request, env, ctx) {
   if (method === 'POST' && path === '/api/cart') {
     const body = await request.json().catch(() => ({}));
     const settings = await getSettings(env);
-    const p = await priceCart(env, settings, body.items || [], { paymentMethod: body.payment === 'card' ? 'card' : 'ramburs', bump: !!body.bump, coupon: body.coupon });
+    const me = body.coupon ? await currentCustomer(request, env).catch(() => null) : null;
+    const p = await priceCart(env, settings, body.items || [], { paymentMethod: body.payment === 'card' ? 'card' : 'ramburs', bump: !!body.bump, coupon: body.coupon, customerId: me ? me.id : 0 });
     return json({
       lines: p.lines.map((l) => ({
         id: l.product.id, slug: l.product.slug, title: l.product.title, image: l.product.images[0] || '/img/placeholder.svg',
@@ -241,10 +244,13 @@ async function route(request, env, ctx) {
 
   if (method === 'POST' && path === '/api/contact') return contactMessage(request, env, ctx);
 
-  if (method === 'POST' && path === '/api/roata') {
+  if (path === '/api/roata' && (method === 'GET' || method === 'POST')) {
     const settings = await getSettings(env);
-    const r = await spinWheel(env, settings, request.headers.get('cf-connecting-ip') || '');
-    if (r.error) return json({ error: r.error }, r.status || 400);
+    const me = await currentCustomer(request, env).catch(() => null);
+    if (method === 'GET') return json(await wheelState(env, settings, me), 200, { 'cache-control': 'no-store' });
+    const r = await spinWheel(env, settings, request.headers.get('cf-connecting-ip') || '', me);
+    if (r.error) return json({ error: r.error, wheel: r.wheel || null }, r.status || 400);
+    if (r.nothing === undefined) r.wheel = await wheelState(env, settings, me);
     return json(r);
   }
 
@@ -317,7 +323,8 @@ async function placeOrder(request, env, ctx) {
 
   const settings = await getSettings(env);
   const paymentMethod = body.payment === 'card' && settings.card_enabled === '1' && env.STRIPE_SECRET_KEY ? 'card' : 'ramburs';
-  const priced = await priceCart(env, settings, body.items || [], { paymentMethod, bump: !!body.bump, coupon: body.coupon });
+  const me = await currentCustomer(request, env).catch(() => null);
+  const priced = await priceCart(env, settings, body.items || [], { paymentMethod, bump: !!body.bump, coupon: body.coupon, customerId: me ? me.id : 0 });
   if (priced.errors.length) return json({ error: priced.errors.join(' ') }, 409);
   if (body.coupon && priced.coupon && !priced.coupon.ok) return json({ error: `Codul ${priced.coupon.code}: ${priced.coupon.error} Scoate codul și încearcă din nou.`, couponError: true }, 409);
   if (!priced.lines.length) return json({ error: 'Coșul este gol.' }, 400);
@@ -340,7 +347,6 @@ async function placeOrder(request, env, ctx) {
     ip, ua: clean(request.headers.get('user-agent'), 300),
   };
 
-  const me = await currentCustomer(request, env).catch(() => null);
   if (me && !customer.email) customer.email = me.email;
   meta.customerId = me ? me.id : 0;
   const created = await createOrder(env, { customer, priced, paymentMethod, meta });
@@ -351,6 +357,7 @@ async function placeOrder(request, env, ctx) {
         .bind(customer.phone, customer.county, customer.city, customer.address, customer.postalCode, me.id).run();
     }
     await env.DB.prepare('INSERT INTO customer_events (customer_id, message) VALUES (?, ?)').bind(me.id, `Comandă plasată: ${created.number}`).run();
+    ctx.waitUntil(checkWheelUnlock(env, settings, me.id).catch(() => {}));
   }
   const base = siteUrl(env, request);
 

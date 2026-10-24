@@ -3,9 +3,9 @@ import { waLink } from './pages.js';
 import { icons } from './icons.js';
 import { wheelConfig } from '../lib/coupons.js';
 
-const ASSET_V = '24';
+const ASSET_V = '25';
 
-export function layout({ settings, title, description = '', canonical = '', ogImage = '', body, bodyClass = '', jsonLd = null, pageData = null, siteUrl = '', customer = null, categories = [] }) {
+export function layout({ settings, title, description = '', canonical = '', ogImage = '', body, bodyClass = '', jsonLd = null, pageData = null, siteUrl = '', customer = null, categories = [], wheelState = null }) {
   const storeName = settings.store_name || 'Chimag';
   const fullTitle = title ? `${title} | ${storeName}` : `${storeName} – ${settings.tagline || ''}`;
   const config = {
@@ -17,8 +17,11 @@ export function layout({ settings, title, description = '', canonical = '', ogIm
   };
   const wheel = wheelConfig(settings);
   const accountsOn = settings.accounts_enabled !== '0';
+  if (!accountsOn) wheel.enabled = false; // roata funcționează doar cu conturi de client
+  const wheelDot = wheelState && ['ready', 'guest'].includes(wheelState.state);
   if (wheel.enabled) {
-    config.wheel = { autoOpen: wheel.autoOpen, delay: wheel.delay, title: wheel.title, hours: wheel.hours, segments: wheel.prizes.map((p) => p.label) };
+    config.wheel = { autoOpen: wheel.autoOpen, delay: wheel.delay, title: wheel.title, hours: wheel.hours, minThird: wheel.minThird, segments: wheel.prizes.map((p) => p.label),
+      state: wheelState || { state: accountsOn ? 'guest' : 'off' } };
   }
   return html`<html lang="ro">
 <head>
@@ -55,7 +58,7 @@ ${settings.announcement ? html`<div class="announce">${settings.announcement}</d
     <div class="header-actions">
       <button type="button" class="icon-btn search-toggle" data-search-toggle aria-label="Caută">${icons.search(22)}</button>
       ${accountsOn ? html`<a href="/cont" class="icon-btn account-btn" aria-label="${customer ? 'Contul meu' : 'Intră în cont'}">${customer ? html`<span class="avatar-mini">${customer.name.charAt(0).toUpperCase()}</span>` : icons.user(22)}<span class="icon-label">${customer ? 'Contul meu' : 'Cont'}</span></a>` : ''}
-      ${wheel.enabled ? html`<button type="button" class="wheel-btn" data-wheel-open aria-label="Roata norocului – câștigă o reducere"><span aria-hidden="true">🎁</span><span class="wheel-dot" data-wheel-dot></span></button>` : ''}
+      ${wheel.enabled ? html`<button type="button" class="wheel-btn" data-wheel-open aria-label="Roata norocului – câștigă o reducere"><span aria-hidden="true">🎁</span><span class="wheel-dot" data-wheel-dot ${wheelDot ? '' : raw('hidden')}></span></button>` : ''}
       <a href="/cos" class="cart-btn" aria-label="Coșul de cumpărături">${icons.cart(22)}<span class="cart-count" data-cart-count hidden>0</span></a>
     </div>
   </div>
@@ -113,9 +116,8 @@ ${wheel.enabled ? html`<div class="wheel-modal" data-wheel-modal hidden role="di
     </div>
     <div class="wheel-copy" data-wheel-copy>
       <h2 id="wheel-title">${wheel.title}</h2>
-      <p>${wheel.hasNothing ? 'Ai o singură învârtire.' : 'O singură învârtire, premiu garantat.'} Dacă câștigi, reducerea se aplică automat la comandă și e valabilă ${wheel.hours} de ore.</p>
-      <button type="button" class="btn btn-primary btn-lg btn-block" data-wheel-spin>Învârte roata</button>
-      <p class="wheel-legal"><a href="/pagina/regulament-roata">Regulament și șanse</a></p>
+      <p>Se încarcă…</p>
+    </div>
     </div>
   </div>
 </div>
@@ -177,7 +179,7 @@ function footer(s) {
           <li><a href="/pagina/termeni">Termeni și condiții</a></li>
           <li><a href="/pagina/confidentialitate">Politica de confidențialitate</a></li>
           <li><a href="/pagina/cookies">Politica de cookie-uri</a></li>
-          ${wheelConfig(s).enabled ? html`<li><a href="/pagina/regulament-roata">Regulament campanie</a></li>` : ''}
+          ${wheelConfig(s).enabled && s.accounts_enabled !== '0' ? html`<li><a href="/pagina/regulament-roata">Regulament campanie</a></li>` : ''}
           <li><a href="https://anpc.ro" target="_blank" rel="noopener">ANPC</a></li>
         </ul>
         <a class="anpc-badge" href="https://reclamatiisal.anpc.ro/" target="_blank" rel="noopener"><img src="/img/anpc-sal.png?v=3" alt="ANPC – Soluționarea alternativă a litigiilor (SAL)" width="250" height="61" loading="lazy"></a>

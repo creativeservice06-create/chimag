@@ -212,11 +212,15 @@ export function productPage({ settings, product: p, reviews, related = [], siteU
     <div class="pdp-grid">
       <div class="gallery" data-gallery>
         <div class="gallery-main">
-          <img src="${img(p)}" alt="${p.title}" width="900" height="900" data-gallery-main fetchpriority="high">
+          <div class="gallery-track" data-gallery-track>${p.images.length ? p.images.map((src, i) => html`<div class="gallery-slide"><img src="${src}" alt="${p.title}${i ? ` – poza ${i + 1}` : ''}" width="900" height="900" ${i === 0 ? raw('fetchpriority="high"') : raw('loading="lazy"')} draggable="false"></div>`) : html`<div class="gallery-slide"><img src="${img(p)}" alt="${p.title}" width="900" height="900"></div>`}</div>
           ${off ? html`<span class="tag-save tag-lg">−${off}%</span>` : ''}
+          ${p.images.length > 1 ? html`
+          <button type="button" class="gallery-nav prev" data-gallery-prev aria-label="Poza anterioară">${raw('<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>')}</button>
+          <button type="button" class="gallery-nav next" data-gallery-next aria-label="Poza următoare">${raw('<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>')}</button>
+          <div class="gallery-dots" aria-hidden="true">${p.images.map((_, i) => html`<span class="${i === 0 ? 'active' : ''}"></span>`)}</div>` : ''}
         </div>
         ${p.images.length > 1 ? html`<div class="gallery-thumbs">${p.images.map((src, i) => html`
-          <button type="button" class="${i === 0 ? 'active' : ''}" data-gallery-thumb="${src}" aria-label="Poza ${i + 1}">
+          <button type="button" class="${i === 0 ? 'active' : ''}" data-gallery-thumb="${i}" aria-label="Poza ${i + 1}">
             <img src="${src}" alt="" width="120" height="120" loading="lazy">
           </button>`)}</div>` : ''}
       </div>

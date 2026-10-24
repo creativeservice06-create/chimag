@@ -489,7 +489,9 @@ export function couponsView({ settings: s, coupons, stats, filter }) {
       <label class="check"><input type="checkbox" name="wheel_enabled" value="1" ${s.wheel_enabled === '1' ? 'checked' : ''}> Roata este pornită (apare butonul 🎁 lângă coș)</label>
       <label class="check"><input type="checkbox" name="wheel_auto_open" value="1" ${s.wheel_auto_open === '1' ? 'checked' : ''}> Apare singură la intrarea pe site</label>
       <label>Apare după (secunde)<input name="wheel_delay" type="number" min="0" max="120" value="${s.wheel_delay || 5}"></label>
-      <label>Codul câștigat e valabil (ore)<input name="wheel_hours" type="number" min="1" max="720" value="${s.wheel_hours || 48}"></label>
+      <label>Codul câștigat e valabil (ore)<input name="wheel_hours" type="number" min="1" max="720" value="${s.wheel_hours || 2}"></label>
+      <label>A 3-a învârtire: comandă de minim (lei)<input name="wheel_min_third" inputmode="decimal" value="${moneyNum(Number(s.wheel_min_third) || 25000)}"></label>
+      <p class="hint span2">Roata e doar pentru clienții cu cont: învârtirea 1 la contul nou, a 2-a după prima comandă din cont, a 3-a după o comandă peste suma de mai sus. Fiecare învârtire nouă se deblochează după ce premiul anterior a fost folosit sau a expirat.</p>
       <label class="span2">Titlu<input name="wheel_title" value="${s.wheel_title || ''}"></label>
     </div>
     <h3 class="mt">Premii</h3>

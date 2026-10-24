@@ -367,7 +367,8 @@ export async function handleAdmin(request, env, ctx, path) {
       wheel_enabled: form.get('wheel_enabled') ? '1' : '0',
       wheel_auto_open: form.get('wheel_auto_open') ? '1' : '0',
       wheel_delay: String(Math.min(120, Math.max(0, Number(form.get('wheel_delay')) || 0))),
-      wheel_hours: String(Math.min(720, Math.max(1, Number(form.get('wheel_hours')) || 48))),
+      wheel_hours: String(Math.min(720, Math.max(1, Number(form.get('wheel_hours')) || 2))),
+      wheel_min_third: String(Math.max(0, toBani(form.get('wheel_min_third'))) || 25000),
       wheel_title: String(form.get('wheel_title') || '').trim().slice(0, 80),
       wheel_prizes: JSON.stringify(prizes),
     });

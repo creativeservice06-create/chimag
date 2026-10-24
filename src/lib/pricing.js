@@ -68,7 +68,7 @@ export async function priceCart(env, settings, items, opts = {}) {
   const code = normalizeCode(opts.coupon);
   if (code && lines.length) {
     const c = await findCoupon(env, code);
-    const problem = couponProblem(c, afterBundles);
+    const problem = couponProblem(c, afterBundles, opts.customerId || 0);
     if (problem) {
       coupon = { code, ok: false, error: problem };
     } else {

@@ -218,13 +218,35 @@
     var title = form.getAttribute('data-product-title');
 
     // Galerie
-    var main = $('[data-gallery-main]');
-    $$('[data-gallery-thumb]').forEach(function (b) {
-      b.addEventListener('click', function () {
-        main.src = b.getAttribute('data-gallery-thumb');
-        $$('[data-gallery-thumb]').forEach(function (x) { x.classList.toggle('active', x === b); });
-      });
-    });
+    // Galerie: swipe stânga/dreapta pe telefon, săgeți și miniaturi pe calculator
+    (function gallery() {
+      var track = $('[data-gallery-track]');
+      if (!track) return;
+      var slides = track.children, count = slides.length, cur = 0;
+      var thumbs = $$('[data-gallery-thumb]'), dots = $$('.gallery-dots span');
+      function mark(i) {
+        cur = i;
+        thumbs.forEach(function (t, k) { t.classList.toggle('active', k === i); });
+        dots.forEach(function (d, k) { d.classList.toggle('active', k === i); });
+        var th = thumbs[i]; if (th && th.parentNode.scrollWidth > th.parentNode.clientWidth) th.parentNode.scrollTo({ left: th.offsetLeft - 20, behavior: 'smooth' });
+      }
+      function go(i, smooth) {
+        i = (i + count) % count;
+        track.scrollTo({ left: i * track.clientWidth, behavior: smooth === false ? 'auto' : 'smooth' });
+        mark(i);
+      }
+      var t;
+      track.addEventListener('scroll', function () {
+        clearTimeout(t);
+        t = setTimeout(function () { var i = Math.round(track.scrollLeft / track.clientWidth); if (i !== cur) mark(i); }, 60);
+      }, { passive: true });
+      thumbs.forEach(function (b, k) { b.addEventListener('click', function () { go(k); }); });
+      var prev = $('[data-gallery-prev]'), next = $('[data-gallery-next]');
+      if (prev) prev.addEventListener('click', function () { go(cur - 1); });
+      if (next) next.addEventListener('click', function () { go(cur + 1); });
+      track.addEventListener('keydown', function (e) { if (e.key === 'ArrowLeft') go(cur - 1); if (e.key === 'ArrowRight') go(cur + 1); });
+      window.addEventListener('resize', function () { go(cur, false); });
+    })();
 
     // Cantitate
     var qtyInput = $('input[type=number][name=qty]', form);
@@ -429,7 +451,7 @@
           if (res.j && res.j.couponError) refresh();
           if (!res.ok || !res.j.redirect) throw new Error(res.j.error || 'Comanda nu a putut fi trimisă.');
           if (fromCart) setCart([]);
-          if (store.get('chimag_coupon', '')) { store.del('chimag_coupon'); var w = store.get('chimag_wheel', null); if (w) { w.used = true; store.set('chimag_wheel', w); } }
+          if (store.get('chimag_coupon', '')) { store.del('chimag_coupon'); store.del('chimag_wheel'); }
           location.href = res.j.redirect;
         })
         .catch(function (err) {
@@ -537,33 +559,86 @@
       disc.style.transform = 'rotate(' + target + 'deg)';
     }
 
-    function showLost() {
-      var hub = $('.wheel-hub', modal); if (hub) { hub.textContent = '🙂'; hub.disabled = true; hub.setAttribute('aria-label', 'Roata a fost învârtită'); }
-      copy.innerHTML = '<p class="wheel-lost">De data asta nu ai câștigat</p>' +
-        '<h2 id="wheel-title">Mai mult noroc data viitoare!</h2>' +
-        '<p>Poți comanda oricum, cu plata la livrare și retur în 14 zile.</p>' +
-        '<a class="btn btn-primary btn-lg btn-block" href="/#produse" data-wheel-go>Vezi produsele</a>' +
-        '<p class="wheel-legal"><a href="/pagina/regulament-roata">Regulament și șanse</a></p>';
-      var go = $('[data-wheel-go]', copy);
-      if (go) go.addEventListener('click', close);
+    var st = W.state || { state: 'guest' };
+    var hours = W.hours || 2;
+    var legal = '<p class="wheel-legal"><a href="/pagina/regulament-roata">Regulament și șanse</a></p>';
+    var here = location.pathname + '?roata';
+    var regUrl = '/cont/inregistrare?next=' + encodeURIComponent(here);
+    var loginUrl = '/cont/autentificare?next=' + encodeURIComponent(here);
+    var oreTxt = hours === 1 ? 'o oră' : hours + ' ore';
+
+    function hub(on, label) {
+      var h = $('.wheel-hub', modal); if (!h) return;
+      h.disabled = !on; h.textContent = label || 'Învârte';
     }
-    function showResult(w, fresh) {
-      if (w.nothing) return showLost();
-      var hub = $('.wheel-hub', modal); if (hub) { hub.textContent = '🎉'; hub.disabled = true; hub.setAttribute('aria-label', 'Roata a fost învârtită'); }
-      var exp = Date.parse(w.expiresAt);
-      var cartN = getCart().length;
-      copy.innerHTML = '<p class="wheel-won">' + (fresh ? '🎉 Felicitări! Ai câștigat' : 'Premiul tău') + '</p>' +
-        '<h2 id="wheel-title">' + esc(w.label) + '</h2>' +
-        ((w.description !== w.label || w.min) ? '<p>' + esc(w.description !== w.label ? w.description : 'Valabil') + (w.min ? ' la comenzi de minim ' + money(w.min) : '') + '.</p>' : '') +
-        (w.used ? '<p class="wheel-note">Premiul a fost deja folosit la o comandă.</p>' :
-          (exp < Date.now() ? '<p class="wheel-note">Premiul a expirat.</p>' :
-            '<p class="wheel-code">Codul tău: <strong>' + esc(w.code) + '</strong></p><p class="wheel-note">Se aplică automat la comandă. Expiră ' +
-              new Intl.DateTimeFormat('ro-RO', { weekday: 'long', hour: '2-digit', minute: '2-digit' }).format(exp) + '.</p>' +
-              '<a class="btn btn-primary btn-lg btn-block" href="' + (cartN ? '/finalizare' : '/#produse') + '" data-wheel-go>' + (cartN ? 'Finalizează comanda' : 'Alege produsele') + '</a>')) +
-        '<p class="wheel-legal"><a href="/pagina/regulament-roata">Regulament și șanse</a></p>';
-      var go = $('[data-wheel-go]', copy);
-      if (go) go.addEventListener('click', close);
+    function continueBtn(primary) {
+      return '<button type="button" class="btn ' + (primary ? 'btn-primary' : 'btn-ghost') + ' btn-lg btn-block" data-wheel-close-btn>Continuă cumpărăturile</button>';
     }
+    function nextInfo(s) {
+      if (!s) return '';
+      if (s.state === 'wait-order') return 'Următoarea învârtire se deblochează după prima comandă plasată din cont.';
+      if (s.state === 'wait-amount') return 'A treia învârtire se deblochează după o comandă de peste ' + money(s.minThird || W.minThird) + ' plasată din cont.';
+      if (s.state === 'done') return 'Ai folosit toate cele ' + (s.total || 3) + ' învârtiri.';
+      if (s.state === 'ready') return 'Ai deja următoarea învârtire disponibilă!';
+      return '';
+    }
+    function fmtTime(iso) { return new Intl.DateTimeFormat('ro-RO', { hour: '2-digit', minute: '2-digit' }).format(Date.parse(iso)); }
+
+    function render(s, opt) {
+      opt = opt || {};
+      var h = '';
+      if (opt.lost) {
+        hub(false, '🙂');
+        h = '<p class="wheel-lost">De data asta nu ai câștigat</p><h2 id="wheel-title">Mai mult noroc data viitoare!</h2>' +
+          (nextInfo(s) ? '<p>' + esc(nextInfo(s)) + (s.state === 'wait-order' || s.state === 'wait-amount' ? ' Te anunțăm pe email.' : '') + '</p>' : '') + continueBtn(true);
+      } else if (s.state === 'guest') {
+        hub(false, 'Învârte');
+        h = '<h2 id="wheel-title">' + esc(W.title) + '</h2><p>Roata e pentru clienții cu cont. Fă-ți un cont gratuit și învârți imediat.</p>' +
+          '<a class="btn btn-primary btn-lg btn-block" href="' + regUrl + '">Creează cont și învârte</a>' +
+          '<a class="btn btn-ghost btn-block" href="' + loginUrl + '">Am deja cont</a>';
+      } else if (s.state === 'ready') {
+        hub(true, 'Învârte');
+        h = '<p class="wheel-step">Învârtirea ' + s.stage + ' din ' + (s.total || 3) + '</p><h2 id="wheel-title">' + esc(W.title) + '</h2>' +
+          '<p>Dacă câștigi, reducerea se aplică automat la comandă și e valabilă ' + oreTxt + '.</p>' +
+          '<button type="button" class="btn btn-primary btn-lg btn-block" data-wheel-spin>Învârte roata</button>';
+      } else if (s.state === 'voucher') {
+        hub(false, '🎉');
+        var cartN = getCart().length;
+        h = '<p class="wheel-won">' + (opt.fresh ? '🎉 Felicitări! Ai câștigat' : 'Premiul tău') + '</p><h2 id="wheel-title">' + esc(s.label) + '</h2>' +
+          ((s.description && s.description !== s.label) || s.min ? '<p>' + esc(s.description && s.description !== s.label ? s.description : 'Valabil') + (s.min ? ' la comenzi de minim ' + money(s.min) : '') + '.</p>' : '') +
+          '<p class="wheel-code">Codul tău: <strong>' + esc(s.code) + '</strong></p>' +
+          '<p class="wheel-note">Se aplică automat la comandă. Valabil până la ora ' + fmtTime(s.expiresAt) + '.</p>' +
+          continueBtn(!cartN) + (cartN ? '<a class="btn btn-primary btn-lg btn-block" href="/finalizare">Finalizează comanda</a>' : '');
+      } else if (s.state === 'wait-order' || s.state === 'wait-amount') {
+        hub(false, '🔒');
+        h = '<p class="wheel-step">Învârtirea ' + s.stage + ' din ' + (s.total || 3) + '</p>' +
+          '<h2 id="wheel-title">' + (s.state === 'wait-order' ? 'Încă o învârtire după prima comandă' : 'Ultima învârtire te așteaptă') + '</h2>' +
+          '<p>' + (s.state === 'wait-order' ? 'Plasează prima comandă din contul tău și deblochezi următoarea învârtire.' : 'O deblochezi cu o comandă de peste ' + money(s.minThird || W.minThird) + ' plasată din cont.') + ' Te anunțăm pe email.</p>' + continueBtn(true);
+      } else if (s.state === 'done') {
+        hub(false, '⭐');
+        h = '<h2 id="wheel-title">Ai folosit toate învârtirile</h2><p>Mulțumim că ești clientul nostru! Urmărește-ne pentru alte promoții.</p>' + continueBtn(true);
+      } else {
+        h = '<h2 id="wheel-title">Roata nu este activă momentan</h2>' + continueBtn(true);
+      }
+      copy.innerHTML = h + legal;
+      $$('[data-wheel-spin]', copy).forEach(function (b) { b.addEventListener('click', spin); });
+      $$('[data-wheel-close-btn]', copy).forEach(function (b) { b.addEventListener('click', close); });
+    }
+
+    // premiul activ din cont se aplică automat la comandă (și pe alt dispozitiv)
+    function syncCoupon(s) {
+      if (s.state === 'voucher') {
+        store.set('chimag_wheel', { code: s.code, label: s.label, expiresAt: s.expiresAt });
+        if (!store.get('chimag_coupon', '')) store.set('chimag_coupon', s.code);
+      } else {
+        var w = store.get('chimag_wheel', null);
+        if (w && store.get('chimag_coupon', '') === w.code && s.state !== 'guest') store.del('chimag_coupon');
+        store.del('chimag_wheel');
+      }
+      updatePromoBar();
+    }
+    function updateDot() { var d = $('[data-wheel-dot]'); if (d) d.hidden = !(st.state === 'ready' || st.state === 'guest'); }
+    syncCoupon(st);
 
     var scrollY = 0;
     function lockScroll(on) {
@@ -575,59 +650,66 @@
     ['wheel', 'touchmove'].forEach(function (ev) { modal.addEventListener(ev, function (e) { e.preventDefault(); }, { passive: false }); });
 
     function open() {
-      var w = store.get('chimag_wheel', null);
       modal.hidden = false;
       lockScroll(true);
-      if (w) { rotateTo(w.index, false); showResult(w, false); }
-      setTimeout(function () { var b = $('[data-wheel-spin]', modal) || $('[data-wheel-close]', modal); if (b) b.focus(); }, 50);
+      rotateTo(0, false);
+      render(st);
+      fetch('/api/roata', { headers: { accept: 'application/json' } }).then(function (r) { return r.json(); }).then(function (s) {
+        if (spinning || !s || !s.state) return;
+        st = s; syncCoupon(st); updateDot();
+        if (!modal.hidden) render(st);
+      }).catch(function () {});
+      setTimeout(function () { var b = $('[data-wheel-spin]', modal) || $('a.btn', copy) || $('[data-wheel-close]', modal); if (b) b.focus(); }, 50);
+      if (/[?&]roata/.test(location.search) && history.replaceState) history.replaceState(null, '', location.pathname + location.hash);
     }
     function close() {
       if (spinning) return;
       modal.hidden = true;
       lockScroll(false);
-      if (!store.get('chimag_wheel', null)) store.set('chimag_wheel_later', Date.now());
+      if (st.state === 'ready' || st.state === 'guest') store.set('chimag_wheel_later', Date.now());
     }
 
     function spin() {
-      if (spinning || store.get('chimag_wheel', null)) return;
+      if (spinning || st.state !== 'ready') return;
       spinning = true;
       $$('[data-wheel-spin]', modal).forEach(function (b) { b.disabled = true; });
-      fetch('/api/roata', { method: 'POST' }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+      fetch('/api/roata', { method: 'POST' }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, status: r.status, j: j }; }); })
         .then(function (res) {
-          if (!res.ok) throw new Error(res.j.error || 'Roata nu a putut fi învârtită.');
+          if (!res.ok) {
+            if (res.j && res.j.wheel) { st = res.j.wheel; } else if (res.status === 401) { st = { state: 'guest' }; }
+            var e = new Error(res.j.error || 'Roata nu a putut fi învârtită.'); e.keep = true; throw e;
+          }
           var w = res.j;
           rotateTo(w.index, true);
           setTimeout(function () {
             spinning = false;
-            store.set('chimag_wheel', w);
+            st = w.wheel || st;
             updateDot();
-            if (w.nothing) { showLost(); return; }
+            if (w.nothing) { syncCoupon(st); render(st, { lost: true }); return; }
             store.set('chimag_coupon', w.code);
-            updatePromoBar();
+            syncCoupon(st);
             confetti();
-            showResult(w, true);
+            render(st, { fresh: true });
           }, 5800);
         })
         .catch(function (err) {
           spinning = false;
-          $$('[data-wheel-spin]', modal).forEach(function (b) { b.disabled = false; });
+          render(st);
           toast(esc(err.message));
         });
     }
 
-    function updateDot() { var d = $('[data-wheel-dot]'); if (d) d.hidden = !!store.get('chimag_wheel', null); }
     updateDot();
-
     $$('[data-wheel-open]').forEach(function (b) { b.addEventListener('click', open); });
     $$('[data-wheel-close]', modal).forEach(function (b) { b.addEventListener('click', close); });
     $$('[data-wheel-spin]', modal).forEach(function (b) { b.addEventListener('click', spin); });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !modal.hidden) close(); });
 
-    // apare singură la prima vizită (nu în timpul comenzii); dacă o închizi, revine după 24h
+    // apare singură doar când clientul are ceva de făcut (vizitator nou sau învârtire disponibilă); dacă o închizi, revine după 24h
     if (/[?&]roata/.test(location.search)) { open(); return; }
     var later = store.get('chimag_wheel_later', 0);
-    var skip = /^\/(finalizare|multumim|admin|pagina)/.test(location.pathname);
-    if (W.autoOpen && !skip && !store.get('chimag_wheel', null) && Date.now() - later > 24 * 3600e3) {
+    var skip = /^\/(finalizare|multumim|admin|pagina|cont)/.test(location.pathname);
+    if (W.autoOpen && !skip && (st.state === 'guest' || st.state === 'ready') && Date.now() - later > 24 * 3600e3) {
       setTimeout(function () { if (modal.hidden) open(); }, W.delay * 1000);
     }
   })();

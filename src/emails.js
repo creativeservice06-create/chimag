@@ -165,6 +165,22 @@ export function resetEmail(s, base, customer, link, invited = false) {
   };
 }
 
+// ---------- Roata norocului ----------
+export function wheelUnlockedEmail(s, base, customer, st) {
+  const first = customer.name.split(' ')[0];
+  return {
+    subject: `🎁 Ai o nouă învârtire la roata norocului`,
+    html: layout(s, base, {
+      preheader: 'Intră pe site și învârte roata. Reducerea câștigată e valabilă ' + st.hours + ' ore.',
+      title: `${first}, ai o nouă învârtire!`,
+      intro: `Mulțumim pentru comandă! Ai deblocat învârtirea ${st.stage} din ${st.total} la roata norocului. Intră în cont pe site și apasă pe 🎁 de lângă coș. Dacă câștigi, reducerea se aplică automat și e valabilă ${st.hours} ${st.hours === 1 ? 'oră' : 'ore'}.`,
+      cta: { label: 'Învârte roata', href: `${base}/?roata` },
+      body: `<p style="font-size:13px;color:${C.muted};${FONT}">Detalii în <a href="${esc(base)}/pagina/regulament-roata" style="color:${C.blue};">regulamentul campaniei</a>.</p>`,
+    }),
+    text: `Ai o nouă învârtire la roata norocului: ${base}/?roata`,
+  };
+}
+
 // ---------- Contact ----------
 export function contactAdminEmail(s, base, m) {
   return {

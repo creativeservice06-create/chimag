@@ -25,17 +25,19 @@ function authShell(title, lead, inner, side = true) {
   </div>`;
 }
 
-export function registerView({ error = '', values = {} } = {}) {
+export function registerView({ error = '', values = {}, next = '' } = {}) {
   return authShell('Creează-ți cont', 'Durează un minut.', html`
     <form method="post" action="/cont/inregistrare" class="auth-form" novalidate>
       ${alert('err', error)}
+      ${next ? html`<input type="hidden" name="next" value="${next}">` : ''}
+      ${next.includes('roata') ? html`<p class="alert alert-ok">🎁 După ce îți faci contul, te întorci pe pagina unde erai și poți învârti roata.</p>` : ''}
       <div class="field"><label for="r-name">Nume și prenume</label><input id="r-name" name="name" autocomplete="name" required value="${values.name || ''}"></div>
       <div class="field"><label for="r-email">Email</label><input id="r-email" name="email" type="email" autocomplete="email" required value="${values.email || ''}"></div>
       <div class="field"><label for="r-phone">Telefon <span class="opt">(opțional)</span></label><input id="r-phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" value="${values.phone || ''}"></div>
       <div class="field"><label for="r-pass">Parolă</label><input id="r-pass" name="password" type="password" autocomplete="new-password" required minlength="8"><small>Cel puțin 8 caractere.</small></div>
       <label class="check-row"><input type="checkbox" name="terms" value="1" required> <span>Am citit și sunt de acord cu <a href="/pagina/termeni" target="_blank">termenii</a> și <a href="/pagina/confidentialitate" target="_blank">politica de confidențialitate</a>.</span></label>
       <button class="btn btn-primary btn-lg btn-block">Creează contul</button>
-      <p class="auth-switch">Ai deja cont? <a href="/cont/autentificare">Intră în cont</a></p>
+      <p class="auth-switch">Ai deja cont? <a href="/cont/autentificare${next ? `?next=${encodeURIComponent(next)}` : ''}">Intră în cont</a></p>
     </form>`);
 }
 
@@ -48,7 +50,7 @@ export function loginView({ error = '', notice = '', values = {}, next = '' } = 
       <div class="field"><label for="l-pass">Parolă</label><input id="l-pass" name="password" type="password" autocomplete="current-password" required></div>
       <p class="auth-forgot"><a href="/cont/parola-uitata">Ai uitat parola?</a></p>
       <button class="btn btn-primary btn-lg btn-block">Intră în cont</button>
-      <p class="auth-switch">Nu ai cont? <a href="/cont/inregistrare">Creează unul acum</a></p>
+      <p class="auth-switch">Nu ai cont? <a href="/cont/inregistrare${next && next !== '/cont' ? `?next=${encodeURIComponent(next)}` : ''}">Creează unul acum</a></p>
     </form>`);
 }
 
@@ -76,7 +78,12 @@ export function resetView({ token, error = '', invalid = false } = {}) {
 
 const statusChip = (s) => html`<span class="status status-${s}">${ORDER_STATUSES[s] || s}</span>`;
 
-export function accountView({ c, orders, notice = '', error = '', emailOk }) {
+const WHEEL_NOTE = {
+  ready: (w) => html`<div class="alert alert-ok wheel-alert">🎁 <span><strong>Ai o învârtire disponibilă la roata norocului</strong> (învârtirea ${w.stage} din ${w.total}).</span> <button type="button" class="btn btn-primary btn-sm" data-wheel-open>Învârte roata</button></div>`,
+  voucher: (w) => html`<div class="alert alert-ok wheel-alert">🎁 <span>Premiul tău de la roată: <strong>${w.label}</strong>, cod <strong>${w.code}</strong>. Se aplică automat la comandă.</span></div>`,
+};
+
+export function accountView({ c, orders, notice = '', error = '', emailOk, wheel = null }) {
   const first = c.name.split(' ')[0];
   return html`<div class="wrap account">
     <header class="account-head">
@@ -85,6 +92,7 @@ export function accountView({ c, orders, notice = '', error = '', emailOk }) {
       <form method="post" action="/cont/iesire" class="account-logout"><button class="btn btn-ghost">Ieși din cont</button></form>
     </header>
     ${alert('ok', notice)}${alert('err', error)}
+    ${wheel && WHEEL_NOTE[wheel.state] ? WHEEL_NOTE[wheel.state](wheel) : ''}
     ${c.email_verified ? '' : html`<div class="alert alert-warn">Confirmă adresa de email ca să vezi aici și comenzile plasate fără cont cu ${c.email}.
       ${emailOk ? html`<form method="post" action="/cont/retrimite-confirmare" class="inline"><button class="link-btn">Retrimite emailul de confirmare</button></form>` : ''}</div>`}
 

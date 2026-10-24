@@ -9,6 +9,7 @@ import {
 } from './lib/customers.js';
 import { sendMail, emailStatus } from './lib/email.js';
 import { verifyEmail, resetEmail } from './emails.js';
+import { wheelState } from './lib/coupons.js';
 import { registerView, loginView, forgotView, resetView, accountView } from './views/account-views.js';
 
 // Rutele /cont/... (conturi de client). `page` randează o pagină în aspectul magazinului.
@@ -25,6 +26,8 @@ export async function handleAccount(request, env, ctx, path, page) {
   const val = (k, n = 200) => String(form?.get(k) || '').trim().slice(0, n);
   const render = (title, body, status = 200) => page({ settings, title, body, noindex: true }, status);
   const me = await currentCustomer(request, env);
+  // întoarcere după cont (ex: din roata norocului): doar căi interne, opțional cu ?roata
+  const safeNext = (v) => (/^\/[a-z0-9/_-]*(\?roata)?$/i.test(v || '') ? v : '');
   let m;
 
   const sendVerify = async (c) => {
@@ -36,10 +39,11 @@ export async function handleAccount(request, env, ctx, path, page) {
 
   // ---------- Înregistrare ----------
   if (path === '/cont/inregistrare') {
-    if (me) return redirect('/cont');
-    if (method === 'GET') return render('Creează cont', registerView());
+    const next = safeNext(url.searchParams.get('next') || val('next'));
+    if (me) return redirect(next || '/cont');
+    if (method === 'GET') return render('Creează cont', registerView({ next }));
     const values = { name: val('name', 80), email: val('email', 120).toLowerCase(), phone: val('phone', 30) };
-    const fail = (error) => render('Creează cont', registerView({ error, values }), 400);
+    const fail = (error) => render('Creează cont', registerView({ error, values, next }), 400);
     if (values.name.length < 3) return fail('Scrie numele complet.');
     if (!isEmail(values.email)) return fail('Adresa de email nu este validă.');
     const phone = values.phone ? normalizePhone(values.phone) : '';
@@ -56,12 +60,12 @@ export async function handleAccount(request, env, ctx, path, page) {
       .bind(values.name, values.email, phone || '', hash).first();
     await customerEvent(env, c.id, `Cont creat de client${ip ? ` (IP ${ip})` : ''}.`);
     await sendVerify(c);
-    return redirect('/cont?nou=1', 303, { 'set-cookie': await sessionCookie(env, c, secure) });
+    return redirect(next || '/cont?nou=1', 303, { 'set-cookie': await sessionCookie(env, c, secure) });
   }
 
   // ---------- Autentificare ----------
   if (path === '/cont/autentificare') {
-    const next = /^\/[a-z0-9/_-]*$/i.test(url.searchParams.get('next') || val('next')) ? (url.searchParams.get('next') || val('next')) : '/cont';
+    const next = safeNext(url.searchParams.get('next') || val('next')) || '/cont';
     if (me) return redirect(next);
     if (method === 'GET') {
       const notice = url.searchParams.get('parola') ? 'Parola a fost schimbată. Intră cu parola nouă.' : '';
@@ -133,7 +137,8 @@ export async function handleAccount(request, env, ctx, path, page) {
       : url.searchParams.get('parola') ? 'Parola a fost schimbată.'
       : url.searchParams.get('retrimis') ? 'Ți-am retrimis emailul de confirmare.' : '';
     const error = url.searchParams.get('eroare') || '';
-    return render('Contul meu', accountView({ c: me, orders: await customerOrders(env, me), notice, error, emailOk: emailStatus(env).customers }));
+    const wheel = await wheelState(env, settings, me).catch(() => null);
+    return render('Contul meu', accountView({ c: me, orders: await customerOrders(env, me), notice, error, emailOk: emailStatus(env).customers, wheel }));
   }
 
   if (path === '/cont/profil' && method === 'POST') {

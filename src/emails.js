@@ -14,20 +14,20 @@ function layout(s, base, { preheader = '', title, intro = '', body = '', cta = n
   return `<!doctype html><html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light"><title>${esc(title)}</title></head>
 <body style="margin:0;padding:0;background:${C.bg};${FONT}color:${C.ink};">
 <div style="display:none;max-height:0;overflow:hidden;opacity:0">${esc(preheader)}</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${C.bg};padding:24px 12px;"><tr><td align="center">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${C.bg};padding:16px 8px;"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid ${C.line};">
-  <tr><td style="background:#ffffff;padding:16px 22px;border-bottom:1px solid ${C.line};">
+  <tr><td style="background:#ffffff;padding:14px 22px;border-bottom:1px solid ${C.line};">
     <a href="${esc(base)}" style="text-decoration:none;"><img src="${esc(base)}/img/logo-email-v2.png" width="141" height="46" alt="${esc((s.store_name || 'chimag').toLowerCase())}" style="display:block;border:0;width:141px;height:46px;color:${C.ink};font-size:22px;font-weight:800;${FONT}"></a>
   </td></tr>
-  <tr><td style="padding:28px 28px 8px;">
+  <tr><td style="padding:24px 22px 6px;">
     <h1 style="margin:0 0 12px;font-size:24px;line-height:1.25;color:${C.ink};${FONT}">${esc(title)}</h1>
     ${intro ? `<p style="margin:0 0 16px;font-size:16px;line-height:1.55;color:${C.muted};">${intro}</p>` : ''}
   </td></tr>
-  <tr><td style="padding:0 28px 8px;">${body}</td></tr>
-  ${cta ? `<tr><td style="padding:12px 28px 28px;"><a href="${esc(cta.href)}" style="display:inline-block;background:${C.blue};color:#ffffff;text-decoration:none;font-weight:700;font-size:16px;padding:14px 24px;border-radius:10px;${FONT}">${esc(cta.label)}</a></td></tr>` : '<tr><td style="padding:8px"></td></tr>'}
-  <tr><td style="background:${C.bg};padding:20px 28px;font-size:13px;line-height:1.6;color:${C.muted};border-top:1px solid ${C.line};">
-    ${s.phone ? `Ai întrebări? Sună-ne la <a href="tel:${esc(s.phone.replace(/\s/g, ''))}" style="color:${C.blue};">${esc(s.phone)}</a>${s.hours ? ` (${esc(s.hours)})` : ''} sau scrie-ne din <a href="${esc(base)}/pagina/contact" style="color:${C.blue};">pagina de contact</a>.<br>` : ''}
-    ${esc(company)}<br><a href="${esc(base)}" style="color:${C.muted};">${esc(base.replace(/^https?:\/\//, ''))}</a>
+  <tr><td style="padding:0 22px 8px;">${body}</td></tr>
+  ${cta ? `<tr><td style="padding:12px 22px 24px;"><a href="${esc(cta.href)}" style="display:inline-block;background:${C.blue};color:#ffffff;text-decoration:none;font-weight:700;font-size:16px;padding:14px 24px;border-radius:10px;${FONT}">${esc(cta.label)}</a></td></tr>` : '<tr><td style="padding:8px"></td></tr>'}
+  <tr><td style="background:${C.bg};padding:18px 22px;font-size:13px;line-height:1.6;color:${C.muted};border-top:1px solid ${C.line};">
+    Ai întrebări? Scrie-ne din <a href="${esc(base)}/pagina/contact" style="color:${C.blue};">pagina de contact</a>${s.email ? ` sau la <a href="mailto:${esc(s.email)}" style="color:${C.blue};">${esc(s.email)}</a>` : ''}.<br>
+    ${esc(company)} · <a href="${esc(base)}" style="color:${C.muted};">${esc(base.replace(/^https?:\/\//, ''))}</a>
   </td></tr>
 </table></td></tr></table></body></html>`;
 }
@@ -37,7 +37,7 @@ function itemsTable(base, items, images) {
     const img = abs(base, images.get(i.product_id));
     return `<tr>
       <td width="72" style="padding:10px 0;border-bottom:1px solid ${C.line};vertical-align:top;">${img ? `<img src="${esc(img)}" width="64" height="64" alt="" style="display:block;width:64px;height:64px;object-fit:cover;border-radius:10px;background:${C.bg};border:1px solid ${C.line};">` : ''}</td>
-      <td style="padding:10px 12px;border-bottom:1px solid ${C.line};font-size:15px;line-height:1.4;vertical-align:top;">${esc(i.title)}<br><span style="color:${C.muted};font-size:13px;">${i.qty} × ${money(i.unit_price)}${i.line_discount ? ` · reducere −${money(i.line_discount)}` : ''}</span></td>
+      <td style="padding:10px 12px;border-bottom:1px solid ${C.line};font-size:15px;line-height:1.4;vertical-align:top;">${esc(i.title)}<br><span style="color:${C.muted};font-size:13px;">${i.qty} buc. × ${money(i.unit_price)}</span></td>
       <td align="right" style="padding:10px 0;border-bottom:1px solid ${C.line};font-size:15px;font-weight:700;white-space:nowrap;vertical-align:top;">${money(i.total)}</td>
     </tr>`;
   }).join('');
@@ -57,11 +57,25 @@ function totalsTable(o) {
   </table>`;
 }
 
+// rând cu numărul comenzii, data și plata (3 coloane scurte, încap și pe telefon)
+function summaryStrip(o) {
+  const cell = (label, value, last) => `<td width="33%" style="padding:12px 14px;${last ? '' : `border-right:1px solid ${C.line};`}vertical-align:top;">
+    <div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:${C.muted};">${label}</div>
+    <div style="margin-top:3px;font-size:15px;font-weight:700;color:${C.ink};white-space:nowrap;">${value}</div></td>`;
+  const date = formatDate(o.created_at).split(',')[0];
+  const pay = o.payment_method === 'card' ? (o.payment_status === 'platita' ? 'Card, plătită' : 'Card') : 'Ramburs';
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 18px;border:1px solid ${C.line};border-radius:12px;${FONT}"><tr>
+    ${cell('Comanda', esc(o.number))}${cell('Data', esc(date))}${cell('Plata', pay, true)}
+  </tr></table>`;
+}
+
 function addressBox(o) {
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:18px 0 6px;background:${C.bg};border-radius:12px;${FONT}"><tr><td style="padding:14px 16px;font-size:14px;line-height:1.6;">
-    <strong>Livrare la</strong><br>${esc(o.customer_name)}<br>${esc(o.address)}<br>${esc(o.city)}, jud. ${esc(o.county)}${o.postal_code ? ` ${esc(o.postal_code)}` : ''}<br>${esc(o.phone)}${o.email ? ` · ${esc(o.email)}` : ''}
-    <br><span style="color:${C.muted}">Plata: ${o.payment_method === 'card' ? 'card online' : 'ramburs, la livrare'}</span>
-    ${o.notes ? `<br><span style="color:${C.muted}">Observații: ${esc(o.notes)}</span>` : ''}
+  const place = [o.address, o.city, o.county ? `jud. ${o.county}` : '', o.postal_code].filter(Boolean).map(esc).join(', ');
+  const contact = [o.phone, o.email].filter(Boolean).map(esc).join(' · ');
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:18px 0 6px;background:${C.bg};border-radius:12px;${FONT}"><tr><td style="padding:14px 16px;font-size:14px;line-height:1.55;color:${C.ink};">
+    <div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:${C.muted};margin-bottom:4px;">Livrare la</div>
+    <strong>${esc(o.customer_name)}</strong><br>${place}${contact ? `<br><span style="color:${C.muted};">${contact}</span>` : ''}
+    ${o.notes ? `<br><span style="color:${C.muted};">Observații: ${esc(o.notes)}</span>` : ''}
   </td></tr></table>`;
 }
 
@@ -74,8 +88,8 @@ export function adminNewOrderEmail(s, base, o, items, images) {
     html: layout(s, base, {
       preheader: `${o.customer_name}, ${o.city} – ${money(o.total)}`,
       title: `Comandă nouă ${o.number}`,
-      intro: `${esc(o.customer_name)} din ${esc(o.city)} a comandat acum, ${formatDate(o.created_at)}.${o.coupon_code ? ` Cod folosit: <strong>${esc(o.coupon_code)}</strong>.` : ''}${o.utm_source ? ` Sursa: ${esc(o.utm_source)}${o.utm_campaign ? ` / ${esc(o.utm_campaign)}` : ''}.` : ''}`,
-      body: itemsTable(base, items, images) + totalsTable(o) + addressBox(o),
+      intro: `${esc(o.customer_name)} din ${esc(o.city)} · ${formatDate(o.created_at)}${o.coupon_code ? ` · cod <strong>${esc(o.coupon_code)}</strong>` : ''}${o.utm_source ? ` · sursa ${esc(o.utm_source)}${o.utm_campaign ? ` / ${esc(o.utm_campaign)}` : ''}` : ''}`,
+      body: summaryStrip(o) + itemsTable(base, items, images) + totalsTable(o) + addressBox(o),
       cta: { label: 'Deschide comanda în admin', href: `${base}/admin/comenzi/${o.id}` },
     }),
     text: `Comandă nouă ${o.number}\n\n${textItems(items)}\n\nTotal: ${money(o.total)}\nClient: ${o.customer_name}, ${o.phone}\n${o.address}, ${o.city}, ${o.county}\n\n${base}/admin/comenzi/${o.id}`,
@@ -87,9 +101,9 @@ export function customerOrderEmail(s, base, o, items, images) {
     subject: `Comanda ta ${o.number} a fost primită`,
     html: layout(s, base, {
       preheader: `Mulțumim! Total ${money(o.total)}. Îți scriem când o expediem.`,
-      title: `Mulțumim, ${o.customer_name.split(' ')[0]}! Am primit comanda ta.`,
-      intro: `Numărul comenzii este <strong style="color:${C.ink}">${esc(o.number)}</strong>. Îți scriem din nou când o expediem, împreună cu numărul AWB pentru urmărire.`,
-      body: itemsTable(base, items, images) + totalsTable(o) + addressBox(o),
+      title: `Mulțumim, ${o.customer_name.split(' ')[0]}! Am primit comanda.`,
+      intro: 'Îți scriem din nou când o expediem, cu numărul AWB pentru urmărire.',
+      body: summaryStrip(o) + itemsTable(base, items, images) + totalsTable(o) + addressBox(o),
       cta: { label: 'Vezi statusul comenzii', href: `${base}/multumim/${o.token}` },
     }),
     text: `Mulțumim! Am primit comanda ${o.number}.\n\n${textItems(items)}\n\nTotal: ${money(o.total)}\n\nStatusul comenzii: ${base}/multumim/${o.token}`,
@@ -100,7 +114,7 @@ const STATUS_COPY = {
   confirmata: { subject: 'Comanda {n} a fost confirmată', title: 'Comanda ta e confirmată ✅', intro: 'O pregătim pentru expediere. Îți trimitem numărul AWB imediat ce pleacă spre tine.' },
   expediata: { subject: 'Comanda {n} a fost expediată 🚚', title: 'Comanda ta e pe drum 🚚', intro: 'Coletul a plecat spre tine. Curierul te sună înainte de livrare.' },
   livrata: { subject: 'Comanda {n} a fost livrată', title: 'Comanda ta a fost livrată 🎉', intro: 'Sperăm să te bucuri de produse! Dacă ai orice problemă, scrie-ne și o rezolvăm.' },
-  anulata: { subject: 'Comanda {n} a fost anulată', title: 'Comanda ta a fost anulată', intro: 'Dacă nu tu ai cerut anularea sau vrei să plasezi din nou comanda, sună-ne și te ajutăm.' },
+  anulata: { subject: 'Comanda {n} a fost anulată', title: 'Comanda ta a fost anulată', intro: 'Dacă nu tu ai cerut anularea sau vrei să plasezi din nou comanda, scrie-ne și te ajutăm.' },
   retur: { subject: 'Am primit returul pentru comanda {n}', title: 'Am primit produsele returnate', intro: 'Verificăm produsele și îți returnăm banii în cel mult 14 zile, conform politicii de retur.' },
 };
 export const STATUS_EMAILS = Object.keys(STATUS_COPY);
@@ -115,7 +129,7 @@ export function customerStatusEmail(s, base, o, items, images) {
     subject: c.subject.replace('{n}', o.number),
     html: layout(s, base, {
       preheader: c.intro, title: c.title, intro: c.intro,
-      body: awb + itemsTable(base, items, images) + totalsTable(o),
+      body: awb + summaryStrip(o) + itemsTable(base, items, images) + totalsTable(o),
       cta: { label: 'Vezi comanda', href: `${base}/multumim/${o.token}` },
     }),
     text: `${c.title}\n${c.intro}\n${o.awb ? `AWB: ${o.awb} ${o.tracking_url || ''}\n` : ''}\nComanda: ${base}/multumim/${o.token}`,

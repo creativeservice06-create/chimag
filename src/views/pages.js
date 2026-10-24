@@ -216,7 +216,7 @@ export const PAGES = {
       <h2>9. Date personale</h2>
       <p>Prelucrăm datele tale conform <a href="/pagina/confidentialitate">Politicii de confidențialitate</a> și <a href="/pagina/cookies">Politicii de cookie-uri</a>.</p>
       <h2>10. Litigii</h2>
-      <p>Încercăm să rezolvăm amiabil orice neînțelegere: scrie-ne și îți răspundem în cel mult 3 zile lucrătoare. Dacă nu ajungem la o soluție, te poți adresa Autorității Naționale pentru Protecția Consumatorilor (<a href="https://anpc.ro" target="_blank" rel="noopener">anpc.ro</a>), poți folosi procedura de soluționare alternativă a litigiilor (<a href="https://anpc.ro/ce-este-sal/" target="_blank" rel="noopener">SAL</a>) sau platforma europeană de soluționare online a litigiilor (<a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener">SOL</a>). Legea aplicabilă este legea română.</p>
+      <p>Încercăm să rezolvăm amiabil orice neînțelegere: scrie-ne și îți răspundem în cel mult 3 zile lucrătoare. Dacă nu ajungem la o soluție, te poți adresa Autorității Naționale pentru Protecția Consumatorilor (<a href="https://anpc.ro" target="_blank" rel="noopener">anpc.ro</a>) sau poți folosi procedura de soluționare alternativă a litigiilor (<a href="https://reclamatiisal.anpc.ro/" target="_blank" rel="noopener">SAL</a>). Legea aplicabilă este legea română.</p>
       <h2>11. Modificări</h2>
       <p>Putem actualiza acești termeni. Pentru fiecare comandă se aplică versiunea în vigoare la data plasării ei.</p>`,
   },

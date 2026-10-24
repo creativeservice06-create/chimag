@@ -3,7 +3,7 @@ import { waLink } from './pages.js';
 import { icons } from './icons.js';
 import { wheelConfig } from '../lib/coupons.js';
 
-const ASSET_V = '22';
+const ASSET_V = '23';
 
 export function layout({ settings, title, description = '', canonical = '', ogImage = '', body, bodyClass = '', jsonLd = null, pageData = null, siteUrl = '', customer = null, categories = [] }) {
   const storeName = settings.store_name || 'Chimag';
@@ -180,12 +180,12 @@ function footer(s) {
           ${wheelConfig(s).enabled ? html`<li><a href="/pagina/regulament-roata">Regulament campanie</a></li>` : ''}
           <li><a href="https://anpc.ro" target="_blank" rel="noopener">ANPC</a></li>
         </ul>
+        <a class="anpc-badge" href="https://reclamatiisal.anpc.ro/" target="_blank" rel="noopener"><img src="/img/anpc-sal.png?v=3" alt="ANPC – Soluționarea alternativă a litigiilor (SAL)" width="250" height="61" loading="lazy"></a>
       </div>
     </nav>
   </div>
   <div class="wrap footer-bottom">
     <p>© ${year} ${s.company_name || s.store_name}${s.company_cui ? ` · CUI ${s.company_cui}` : ''}${s.company_reg ? ` · ${s.company_reg}` : ''}${s.company_address ? ` · ${s.company_address}` : ''}</p>
-    <a class="anpc-badge" href="https://reclamatiisal.anpc.ro/" target="_blank" rel="noopener"><img src="/img/anpc-sal.png?v=3" alt="ANPC – Soluționarea alternativă a litigiilor (SAL)" width="250" height="61" loading="lazy"></a>
   </div>
 </footer>`;
 }

@@ -310,18 +310,15 @@
   (function cartPage() {
     var view = $('[data-cart-view]');
     if (!view) return;
-    var emptyBox = $('[data-cart-empty]'), suggest = $('[data-cart-suggest]'), countEl = $('[data-cart-items]'), head = $('.cart-head');
+    var emptyBox = $('[data-cart-empty]'), countEl = $('[data-cart-items]'), head = $('.cart-head'), steps = $('.cart-steps');
     var trustTpl = $('[data-cart-trust]');
     var trust = trustTpl ? trustTpl.innerHTML : '';
-    var trash = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>';
-    function showSuggest(ids) {
-      if (!suggest) return;
-      var shown = 0;
-      $$('[data-suggest-id]', suggest).forEach(function (el) {
-        var hide = ids.indexOf(Number(el.getAttribute('data-suggest-id'))) !== -1 || shown >= 4;
-        el.hidden = hide; if (!hide) shown++;
-      });
-      suggest.hidden = shown === 0;
+    var x = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+    function freeBar(p) {
+      if (!CFG.freeShippingThreshold) return '';
+      if (!p.freeShippingLeft) return '<div class="cart-free done">✓ <strong>Ai transport gratuit</strong> la această comandă</div>';
+      var pct = Math.max(4, Math.min(100, 100 - (p.freeShippingLeft / CFG.freeShippingThreshold) * 100));
+      return '<div class="cart-free">Mai adaugă <strong>' + money(p.freeShippingLeft) + '</strong> pentru transport gratuit<div class="bar"><span style="width:' + pct + '%"></span></div></div>';
     }
     function render() {
       var items = getCart();
@@ -329,11 +326,10 @@
         view.innerHTML = ''; view.hidden = true;
         if (emptyBox) emptyBox.hidden = false;
         if (head) head.hidden = true;
-        if (countEl) countEl.textContent = '';
-        showSuggest([]);
+        if (steps) steps.hidden = true;
         return;
       }
-      view.hidden = false; if (emptyBox) emptyBox.hidden = true; if (head) head.hidden = false;
+      view.hidden = false; if (emptyBox) emptyBox.hidden = true; if (head) head.hidden = false; if (steps) steps.hidden = false;
       priceCart(items).then(function (p) {
         // scoate din coș produsele care nu mai există
         var valid = p.lines.map(function (l) { return l.id; });
@@ -341,25 +337,21 @@
         if (cleaned.length !== items.length) setCart(cleaned);
         if (!p.lines.length) { setCart([]); render(); return; }
         var n = p.lines.reduce(function (s, l) { return s + l.qty; }, 0);
-        if (countEl) countEl.textContent = n + (n === 1 ? ' produs' : ' produse');
+        if (countEl) countEl.textContent = '(' + n + (n === 1 ? ' produs)' : ' produse)');
         var lines = p.lines.map(function (l) {
           var gross = l.unitPrice * l.qty;
-          return '<li class="cart-line"><a class="cart-thumb" href="/p/' + esc(l.slug) + '"><img src="' + esc(l.image) + '" alt="" width="96" height="96"></a>' +
+          return '<li class="cart-item"><a class="cart-thumb" href="/p/' + esc(l.slug) + '"><img src="' + esc(l.image) + '" alt="" width="88" height="88"></a>' +
             '<div class="cart-info"><h3><a href="/p/' + esc(l.slug) + '">' + esc(l.title) + '</a></h3>' +
-            '<p class="cart-unit">' + money(l.unitPrice) + ' / buc.' + (l.pct ? ' <span class="line-save">−' + l.pct + '% la pachet</span>' : '') + '</p>' +
-            '<div class="cart-controls"><div class="qty qty-sm" data-line="' + l.id + '"><button type="button" data-d="-1" aria-label="Scade cantitatea">−</button><input value="' + l.qty + '" readonly aria-label="Cantitate"><button type="button" data-d="1" aria-label="Crește cantitatea">+</button></div>' +
-            '<button type="button" class="cart-remove" data-remove="' + l.id + '" aria-label="Șterge ' + esc(l.title) + '">' + trash + '<span>Șterge</span></button></div></div>' +
-            '<div class="line-total"><strong>' + money(l.total) + '</strong>' + (l.total < gross ? '<s>' + money(gross) + '</s>' : '') + '</div></li>';
+            '<p class="cart-unit">' + money(l.unitPrice) + ' / buc.' + (l.pct ? ' · <span class="line-save">economisești ' + money(gross - l.total) + '</span>' : '') + '</p>' +
+            '<div class="cart-row"><div class="qty qty-pill" data-line="' + l.id + '"><button type="button" data-d="-1" aria-label="Scade cantitatea">−</button><input value="' + l.qty + '" readonly aria-label="Cantitate"><button type="button" data-d="1" aria-label="Crește cantitatea">+</button></div>' +
+            '<div class="cart-price"><strong>' + money(l.total) + '</strong>' + (l.total < gross ? '<s>' + money(gross) + '</s>' : '') + '</div></div></div>' +
+            '<button type="button" class="cart-x" data-remove="' + l.id + '" aria-label="Șterge ' + esc(l.title) + '">' + x + '</button></li>';
         }).join('');
-        view.innerHTML = '<div class="cart-layout"><div class="cart-main">' +
-          (p.errors.length ? '<p class="form-error">' + p.errors.map(esc).join('<br>') + '</p>' : '') +
-          '<ul class="cart-lines">' + lines + '</ul>' +
-          '<a class="cart-continue" href="/#produse">← Continuă cumpărăturile</a></div>' +
-          '<aside class="cart-summary"><h2>Sumar comandă</h2>' + shipProgress(p) + couponHtml(p) +
-          '<dl class="totals">' + totalsHtml(p) + '</dl>' +
-          '<a class="btn btn-primary btn-xl btn-block cart-checkout" href="/finalizare">Finalizează comanda</a>' +
-          '<p class="cart-note">La pasul următor completezi doar datele de livrare.</p>' + trust + '</aside></div>';
-        showSuggest(valid);
+        view.innerHTML = (p.errors.length ? '<p class="form-error">' + p.errors.map(esc).join('<br>') + '</p>' : '') +
+          freeBar(p) + '<ul class="cart-items">' + lines + '</ul>' +
+          '<div class="cart-box">' + couponHtml(p) + '<dl class="totals">' + totalsHtml(p) + '</dl>' +
+          '<a class="btn btn-primary btn-xl btn-block cart-checkout" href="/finalizare">Continuă spre livrare →</a>' + trust + '</div>' +
+          '<p class="cart-back"><a href="/#produse">← Continuă cumpărăturile</a></p>';
       });
     }
     bindCoupon(view, render);

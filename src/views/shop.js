@@ -347,34 +347,31 @@ export function productJsonLd(p, reviews, siteUrl) {
 }
 
 // ---------------- Coș ----------------
-export function cartPage({ settings = {}, suggestions = [] } = {}) {
+export function cartPage({ settings = {} } = {}) {
   const returnDays = settings.return_days || 14;
-  return html`<div class="wrap cart-page">
+  return html`<div class="wrap cart-page cart-v3">
+    <ol class="cart-steps" aria-label="Pașii comenzii">
+      <li class="on"><span>1</span>Coș</li><li><span>2</span>Livrare</li><li><span>3</span>Confirmare</li>
+    </ol>
     <div class="cart-head"><h1>Coșul tău</h1><span class="cart-head-count" data-cart-items></span></div>
     <div data-cart-view><div class="cart-loading" aria-busy="true"><span></span><span></span></div></div>
 
     <div data-cart-empty hidden>
       <div class="cart-empty">
-        <div class="cart-empty-icon">${icons.cart(44)}</div>
+        <div class="cart-empty-icon">${icons.cart(40)}</div>
         <h1>Coșul tău este gol</h1>
-        <p>Nu ai adăugat încă niciun produs. Aruncă o privire prin ofertă – livrăm rapid și plătești la livrare.</p>
-        <a class="btn btn-primary btn-lg" href="/#produse">Vezi produsele</a>
+        <p>Adaugă produsele preferate și revino aici ca să finalizezi comanda.</p>
+        <a class="btn btn-primary btn-lg" href="/#produse">Începe cumpărăturile</a>
       </div>
     </div>
 
     <template data-cart-trust>
       <ul class="cart-trust">
-        <li>${icons.cash(20)}<span><strong>Plata la livrare</strong>Plătești curierului când primești coletul</span></li>
-        <li>${icons.truck(20)}<span><strong>Livrare rapidă</strong>${settings.delivery_text || 'Livrare în 24–48h prin curier'}</span></li>
-        <li>${icons.back(20)}<span><strong>Retur în ${returnDays} zile</strong>Te răzgândești? Îți returnăm banii</span></li>
-        <li>${icons.shield(20)}<span><strong>Comandă sigură</strong>Datele tale sunt protejate</span></li>
+        <li>${icons.cash(22)}<span>Plata la livrare</span></li>
+        <li>${icons.truck(22)}<span>Livrare 24–48h</span></li>
+        <li>${icons.back(22)}<span>Retur ${returnDays} zile</span></li>
       </ul>
     </template>
-
-    ${suggestions.length ? html`<section class="cart-suggest" data-cart-suggest hidden>
-      <h2>Ți-ar putea plăcea</h2>
-      <div class="pgrid">${suggestions.map((p) => html`<div data-suggest-id="${p.id}">${productCard(p)}</div>`)}</div>
-    </section>` : ''}
   </div>`;
 }
 

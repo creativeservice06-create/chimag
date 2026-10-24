@@ -157,9 +157,7 @@ async function route(request, env, ctx) {
 
   if (method === 'GET' && path === '/cos') {
     const settings = await getSettings(env);
-    const all = await listProducts(env);
-    const suggestions = [...all.filter((p) => p.featured), ...all.filter((p) => !p.featured)].slice(0, 8);
-    return page(env, request, { settings, title: 'Coșul tău', noindex: true, body: cartPage({ settings, suggestions }) });
+    return page(env, request, { settings, title: 'Coșul tău', noindex: true, body: cartPage({ settings }) });
   }
 
   if (method === 'GET' && path === '/finalizare') {

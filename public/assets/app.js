@@ -153,6 +153,13 @@
         $$('.pcard', grid).forEach(function (c) { c.hidden = !!f && c.getAttribute('data-cat') !== f; });
       });
     });
+    // bulele de categorii: filtrează lista de mai jos și coboară la ea (fără altă pagină)
+    $$('[data-cat-jump]').forEach(function (a) {
+      a.addEventListener('click', function () {
+        var chip = $('[data-filter="' + a.getAttribute('data-cat-jump') + '"]');
+        if (chip) chip.click();
+      });
+    });
   })();
 
   // buton rapid „Adaugă" pe cardurile de produs

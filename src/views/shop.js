@@ -89,8 +89,8 @@ export function homePage({ settings, products, categories = [], bestsellers = []
   ${categories.length >= 2 ? html`<section class="wrap section section-tight" id="categorii">
     <div class="section-head"><p class="eyebrow">Categorii</p><h2>Explorează categoriile</h2><p>Găsește rapid ce ai nevoie, organizat pe categorii.</p></div>
     <div class="cat-bubbles">
-      <a class="cat-bubble" href="#produse"><span class="cat-bubble-img cat-all">${icons.grid(30)}</span><span class="cat-bubble-name">Toate</span><small>${products.length} produse</small></a>
-      ${categories.map((c) => html`<a class="cat-bubble" href="/categorie/${c.slug}">
+      <a class="cat-bubble" href="#produse" data-cat-jump=""><span class="cat-bubble-img cat-all">${icons.grid(30)}</span><span class="cat-bubble-name">Toate</span><small>${products.length} produse</small></a>
+      ${categories.map((c) => html`<a class="cat-bubble" href="#produse" data-cat-jump="${c.slug}">
       <span class="cat-bubble-img"><img src="${c.image || '/img/placeholder.svg'}" alt="" width="160" height="160" loading="lazy"></span>
       <span class="cat-bubble-name">${c.name}</span><small>${c.count === 1 ? '1 produs' : `${c.count} produse`}</small>
     </a>`)}</div>

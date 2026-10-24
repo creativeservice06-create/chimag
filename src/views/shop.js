@@ -19,18 +19,22 @@ export function trustRow(settings) {
 
 function productCard(p) {
   const off = pctOff(p);
-  return html`<a class="pcard" href="/p/${p.slug}">
-    <div class="pcard-media">
-      <img src="${img(p)}" alt="${p.title}" loading="lazy" width="600" height="600">
-      ${off ? html`<span class="tag-save">−${off}%</span>` : ''}
-      ${p.badge ? html`<span class="tag-badge">${p.badge}</span>` : ''}
-    </div>
-    <div class="pcard-body">
-      <h3>${p.title}</h3>
-      ${p.subtitle ? html`<p class="pcard-sub">${p.subtitle}</p>` : ''}
-      <p class="pcard-price"><strong>${money(p.price)}</strong>${p.compare_at_price > p.price ? html`<s>${money(p.compare_at_price)}</s>` : ''}</p>
-    </div>
-  </a>`;
+  const out = p.track_stock && p.stock <= 0;
+  return html`<div class="pcard">
+    <a class="pcard-link" href="/p/${p.slug}">
+      <div class="pcard-media">
+        <img src="${img(p)}" alt="${p.title}" loading="lazy" width="600" height="600">
+        ${off ? html`<span class="tag-save">−${off}%</span>` : ''}
+        ${p.badge ? html`<span class="tag-badge">${p.badge}</span>` : ''}
+      </div>
+      <div class="pcard-body">
+        <h3>${p.title}</h3>
+        ${p.subtitle ? html`<p class="pcard-sub">${p.subtitle}</p>` : ''}
+        <p class="pcard-price"><strong>${money(p.price)}</strong>${p.compare_at_price > p.price ? html`<s>${money(p.compare_at_price)}</s>` : ''}</p>
+      </div>
+    </a>
+    ${out ? '' : html`<button type="button" class="pcard-add" data-quick-add="${p.id}" data-title="${p.title}" aria-label="Adaugă în coș: ${p.title}">${icons.cart(20)}<span>Adaugă</span></button>`}
+  </div>`;
 }
 
 // ---------------- Pagina principală ----------------
@@ -119,7 +123,7 @@ export function homePage({ settings, products, categories = [], bestsellers = []
   </section>
 
   ${spotlight ? html`<section class="spotlight">
-    <div class="wrap spotlight-inner">
+    <div class="wrap"><div class="spotlight-inner">
       <a class="spotlight-media" href="/p/${spotlight.slug}"><img src="${img(spotlight)}" alt="${spotlight.title}" width="640" height="640" loading="lazy"></a>
       <div class="spotlight-copy">
         <p class="eyebrow">Recomandarea săptămânii</p>
@@ -132,7 +136,7 @@ export function homePage({ settings, products, categories = [], bestsellers = []
         </div>
         <a class="btn btn-primary btn-lg" href="/p/${spotlight.slug}">Vezi produsul</a>
       </div>
-    </div>
+    </div></div>
   </section>` : ''}
 
   ${reviews.length ? html`<section class="wrap section">
@@ -148,9 +152,9 @@ export function homePage({ settings, products, categories = [], bestsellers = []
     <div class="wrap">
       <div class="section-head"><p class="eyebrow">Cum comanzi</p><h2>Simplu, în trei pași</h2></div>
       <ol class="steps">
-        <li><span class="step-n">1</span><h3>Alegi produsele</h3><p>Le adaugi în coș și vezi pe loc reducerile.</p></li>
-        <li><span class="step-n">2</span><h3>Completezi adresa</h3><p>Doar nume, telefon și adresă de livrare.</p></li>
-        <li><span class="step-n">3</span><h3>Plătești la livrare</h3><p>Primești coletul în 24–48h și plătești curierului.</p></li>
+        <li><span class="step-n">1</span><span class="step-ic">${icons.cart(26)}</span><h3>Alegi produsele</h3><p>Le adaugi în coș și vezi pe loc reducerile.</p></li>
+        <li><span class="step-n">2</span><span class="step-ic">${icons.home(26)}</span><h3>Completezi adresa</h3><p>Doar nume, telefon și adresă de livrare.</p></li>
+        <li><span class="step-n">3</span><span class="step-ic">${icons.cash(26)}</span><h3>Plătești la livrare</h3><p>Primești coletul în 24–48h și plătești curierului.</p></li>
       </ol>
     </div>
   </section>
@@ -165,13 +169,14 @@ export function homePage({ settings, products, categories = [], bestsellers = []
   </section>
 
   <section class="cta-band">
-    <div class="wrap cta-band-inner">
+    <div class="wrap"><div class="cta-band-inner">
       <div>
+        <span class="cta-emoji" aria-hidden="true">💬</span>
         <h2>Ai nevoie de ajutor?</h2>
         <p>Scrie-ne și îți răspundem cât mai repede${settings.hours ? `, ${settings.hours.charAt(0).toLowerCase() + settings.hours.slice(1)}` : ''}.</p>
       </div>
-      <a class="btn btn-primary btn-lg" href="/pagina/contact">${icons.mail(20)} Contactează-ne</a>
-    </div>
+      <a class="btn btn-primary btn-lg" href="/pagina/contact">${icons.mail(20)} Scrie-ne</a>
+    </div></div>
   </section>`;
 }
 

@@ -142,6 +142,17 @@
     if (line) line.qty = Math.min(50, line.qty + qty); else c.push({ id: id, qty: qty });
     setCart(c);
   }
+  // buton rapid „Adaugă" pe cardurile de produs
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-quick-add]');
+    if (!b) return;
+    e.preventDefault();
+    var pid = Number(b.getAttribute('data-quick-add'));
+    addToCart(pid, 1);
+    b.classList.add('added'); setTimeout(function () { b.classList.remove('added'); }, 1400);
+    if (typeof track === 'function') track('AddToCart', { contents: [{ id: String(pid), quantity: 1 }] });
+    toast('Adăugat în coș: ' + esc(b.getAttribute('data-title') || 'produs') + '. <a href="/cos">Vezi coșul</a>');
+  });
   function updateCount(animate) {
     var n = getCart().reduce(function (s, l) { return s + l.qty; }, 0);
     $$('[data-cart-count]').forEach(function (el) {

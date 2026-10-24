@@ -971,3 +971,57 @@ html.drawer-open { overflow: hidden; }
   .wheel-promo-text small { font-size: .82rem; }
   .wheel-promo-cta { padding: 8px 12px; font-size: .88rem; }
 }
+
+/* ---------- Prima pagină: partea de jos, mai caldă ---------- */
+/* carduri de produs: casetă albă cu buton rapid */
+.pcard { position: relative; background: #fff; border: 1px solid var(--line); border-radius: var(--radius-l); overflow: hidden; transition: box-shadow .2s, transform .2s, border-color .2s; }
+.pcard:hover { box-shadow: 0 20px 38px -26px rgba(16,29,48,.45); transform: translateY(-3px); border-color: #cfdaea; }
+.pcard-link { display: flex; flex-direction: column; flex: 1; color: var(--ink); text-decoration: none; }
+.pcard-link:hover { color: var(--ink); }
+.pcard-media { border-radius: 0; background: var(--surface); }
+.pcard:hover .pcard-media img { transform: scale(1.03); }
+.pcard-body { padding: 14px 16px 62px; }
+.pcard-add { position: absolute; left: 16px; right: 16px; bottom: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; border: 1.5px solid var(--brand); border-radius: 10px; background: #fff; color: var(--brand); font: 700 .92rem var(--font-body); cursor: pointer; transition: background .15s, color .15s; }
+.pcard-add:hover { background: var(--brand); color: #fff; }
+.pcard-add.added { background: var(--ok); border-color: var(--ok); color: #fff; }
+.pcard-add.added span::after { content: ' ✓'; }
+#produse { position: relative; }
+#produse::before { content: ''; position: absolute; z-index: -1; inset: 0 calc(50% - 50vw); background: linear-gradient(180deg, #fff 0%, var(--surface) 40%, var(--surface) 100%); }
+
+/* recomandarea săptămânii: casetă colorată */
+.spotlight { background: transparent; border: 0; }
+.spotlight-inner { margin-top: 8px; padding: 40px; border-radius: 26px; background: linear-gradient(120deg, #eef4ff 0%, #fff7e8 100%); border: 1px solid #e3eaf5; }
+.spotlight-media { box-shadow: 0 24px 46px -30px rgba(21,94,204,.5); }
+
+/* pași cu iconițe */
+.steps-section { background: transparent; }
+.steps li { padding: 24px 22px; border-radius: var(--radius-l); background: #fff; border: 1px solid var(--line); box-shadow: 0 14px 30px -26px rgba(16,29,48,.4); }
+.steps li .step-n { position: absolute; top: 18px; right: 18px; width: 28px; height: 28px; margin: 0; font-size: .85rem; background: var(--brand-tint); color: var(--brand); }
+.step-ic { display: inline-grid; place-items: center; width: 52px; height: 52px; margin-bottom: 14px; border-radius: 16px; background: var(--brand); color: #fff; }
+.steps h3 { margin: 0 0 6px; }
+
+/* întrebări frecvente în casetă */
+.faq-home .faq { padding: 6px 22px; border-radius: var(--radius-l); background: #fff; border: 1px solid var(--line); }
+.faq-home .faq details:last-child { border-bottom: 0; }
+
+/* banda de ajutor: deschisă și prietenoasă */
+.cta-band { background: transparent; margin-bottom: 0; }
+.cta-band-inner { margin-bottom: 8px; padding: 32px 36px; border-radius: 26px; background: linear-gradient(110deg, var(--brand-tint) 0%, #f5f9ff 100%); border: 1px solid #d9e6fa; }
+.cta-band h2 { color: var(--ink); }
+.cta-band p { color: var(--muted); }
+.cta-emoji { display: inline-grid; place-items: center; width: 48px; height: 48px; margin-bottom: 10px; border-radius: 50%; background: #fff; font-size: 1.4rem; }
+
+@media (max-width: 860px) {
+  .pcard-body { padding: 10px 10px 54px; }
+  .pcard-add { left: 10px; right: 10px; bottom: 10px; height: 36px; font-size: .85rem; }
+  .spotlight-inner { padding: 20px 16px; border-radius: 20px; }
+  .steps li { display: grid; grid-template-columns: 44px minmax(0, 1fr); column-gap: 14px; align-items: start; padding: 16px 48px 16px 16px; }
+  .steps li .step-ic { grid-row: span 2; margin: 0; }
+  .steps li .step-n { grid-row: auto; top: 14px; right: 14px; }
+  .steps li h3 { margin: 2px 0 2px; }
+  .steps li p { grid-column: 2; }
+  .step-ic { width: 44px; height: 44px; border-radius: 14px; margin-bottom: 10px; }
+  .faq-home .faq { padding: 2px 14px; }
+  .cta-band-inner { padding: 22px 18px; border-radius: 20px; }
+  .cta-band-inner .btn { width: 100%; }
+}

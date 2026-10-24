@@ -350,9 +350,6 @@ export function productJsonLd(p, reviews, siteUrl) {
 export function cartPage({ settings = {} } = {}) {
   const returnDays = settings.return_days || 14;
   return html`<div class="wrap cart-page cart-v3">
-    <ol class="cart-steps" aria-label="Pașii comenzii">
-      <li class="on"><span>1</span>Coș</li><li><span>2</span>Livrare</li><li><span>3</span>Confirmare</li>
-    </ol>
     <div class="cart-head"><h1>Coșul tău</h1><span class="cart-head-count" data-cart-items></span></div>
     <div data-cart-view><div class="cart-loading" aria-busy="true"><span></span><span></span></div></div>
 
@@ -365,13 +362,6 @@ export function cartPage({ settings = {} } = {}) {
       </div>
     </div>
 
-    <template data-cart-trust>
-      <ul class="cart-trust">
-        <li>${icons.cash(22)}<span>Plata la livrare</span></li>
-        <li>${icons.truck(22)}<span>Livrare 24–48h</span></li>
-        <li>${icons.back(22)}<span>Retur ${returnDays} zile</span></li>
-      </ul>
-    </template>
   </div>`;
 }
 
@@ -467,10 +457,7 @@ export function checkoutPage({ settings, bump, loggedIn = false }) {
 }
 
 function trustMini() {
-  return html`<ul class="trust-mini">
-    <li>${icons.shield(18)} Datele tale sunt folosite doar pentru comandă</li>
-    <li>${icons.back(18)} Retur simplu dacă nu îți place</li>
-  </ul>`;
+  return html`<p class="privacy-note">${icons.lock(20)}<span><strong>Date protejate</strong>Folosim datele tale doar pentru procesarea și livrarea comenzii.</span></p>`;
 }
 
 // ---------------- Mulțumim / status comandă ----------------

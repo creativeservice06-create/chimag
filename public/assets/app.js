@@ -310,9 +310,7 @@
   (function cartPage() {
     var view = $('[data-cart-view]');
     if (!view) return;
-    var emptyBox = $('[data-cart-empty]'), countEl = $('[data-cart-items]'), head = $('.cart-head'), steps = $('.cart-steps');
-    var trustTpl = $('[data-cart-trust]');
-    var trust = trustTpl ? trustTpl.innerHTML : '';
+    var emptyBox = $('[data-cart-empty]'), countEl = $('[data-cart-items]'), head = $('.cart-head');
     var x = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
     function freeBar(p) {
       if (!CFG.freeShippingThreshold) return '';
@@ -326,10 +324,9 @@
         view.innerHTML = ''; view.hidden = true;
         if (emptyBox) emptyBox.hidden = false;
         if (head) head.hidden = true;
-        if (steps) steps.hidden = true;
         return;
       }
-      view.hidden = false; if (emptyBox) emptyBox.hidden = true; if (head) head.hidden = false; if (steps) steps.hidden = false;
+      view.hidden = false; if (emptyBox) emptyBox.hidden = true; if (head) head.hidden = false;
       priceCart(items).then(function (p) {
         // scoate din coș produsele care nu mai există
         var valid = p.lines.map(function (l) { return l.id; });
@@ -350,7 +347,7 @@
         view.innerHTML = (p.errors.length ? '<p class="form-error">' + p.errors.map(esc).join('<br>') + '</p>' : '') +
           freeBar(p) + '<ul class="cart-items">' + lines + '</ul>' +
           '<div class="cart-box">' + couponHtml(p) + '<dl class="totals">' + totalsHtml(p) + '</dl>' +
-          '<a class="btn btn-primary btn-xl btn-block cart-checkout" href="/finalizare">Continuă spre livrare →</a>' + trust + '</div>' +
+          '<a class="btn btn-primary btn-xl btn-block cart-checkout" href="/finalizare">Continuă spre livrare →</a></div>' +
           '<p class="cart-back"><a href="/#produse">← Continuă cumpărăturile</a></p>';
       });
     }

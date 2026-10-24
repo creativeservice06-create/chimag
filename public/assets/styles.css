@@ -855,3 +855,7 @@ html.drawer-open { overflow: hidden; }
   .cart-box { padding: 16px; }
   .cart-empty { padding-top: 40px; }
 }
+
+.privacy-note { display: flex; align-items: flex-start; gap: 12px; margin: 16px 0 0; padding: 14px 16px; border-radius: var(--radius); background: #fff; border: 1px solid var(--line); font-size: .92rem; line-height: 1.4; color: var(--muted); }
+.privacy-note .ic { flex: none; color: var(--brand); margin-top: 1px; }
+.privacy-note strong { display: block; color: var(--ink); font-size: .98rem; margin-bottom: 2px; }

@@ -426,8 +426,8 @@ export function checkoutPage({ settings, bump, loggedIn = false }) {
         </label>` : ''}
 
         <p class="form-error" data-form-error hidden></p>
-        <button type="submit" class="btn btn-primary btn-xl btn-block" data-submit>Plasează comanda</button>
-        <p class="legal-note">Plasând comanda ești de acord cu <a href="/pagina/termeni" target="_blank">termenii și condițiile</a> și confirmi că ai citit <a href="/pagina/confidentialitate" target="_blank">politica de confidențialitate</a>. Comanda implică obligația de plată.</p>
+        <button type="submit" class="btn btn-primary btn-xl btn-block" data-submit>Comandă cu obligație de plată</button>
+        <p class="legal-note">Plasând comanda ești de acord cu <a href="/pagina/termeni" target="_blank">termenii și condițiile</a> și confirmi că ai citit <a href="/pagina/confidentialitate" target="_blank">politica de confidențialitate</a>. Comanda implică obligația de plată. Ai dreptul să te retragi în ${settings.return_days || 14} zile – vezi <a href="/pagina/retur" target="_blank">condițiile de retur</a>.</p>
       </form>
 
       <aside class="summary" data-summary>

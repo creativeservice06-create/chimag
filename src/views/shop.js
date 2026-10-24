@@ -13,7 +13,6 @@ export function trustRow(settings) {
     [icons.truck(), 'Livrare 24–48h', 'În toată țara, prin curier'],
     [icons.cash(), 'Plata la livrare', 'Fără niciun avans'],
     [icons.back(), `Retur ${settings.return_days || 14} zile`, 'Fără explicații'],
-    [icons.shield(), 'Garanție 2 ani', 'La toate produsele'],
   ];
   return html`<ul class="trust-row">${items.map(([i, t, sub]) => html`<li>${i}<span><strong>${t}</strong><small>${sub}</small></span></li>`)}</ul>`;
 }
@@ -51,21 +50,16 @@ export function homePage({ settings, products, categories = [], bestsellers = []
   ];
 
   return html`
-  <section class="home-hero">
+  <section class="home-hero home-friendly">
     <div class="wrap home-hero-inner">
       <div class="home-hero-copy">
-        <p class="eyebrow-light">Oferte noi, livrare în toată România</p>
+        <p class="hero-hello">👋 Bun venit la ${(settings.store_name || 'Chimag').toLowerCase()}</p>
         <h1>Produse utile, la prețuri bune</h1>
         <p class="home-hero-lead">Pentru casă, bucătărie, copii sau cadouri – alegem produse practice, la prețuri corecte, și ți le trimitem rapid. Comanzi în două minute și plătești la livrare.</p>
         <div class="home-hero-actions">
           <a class="btn btn-primary btn-lg" href="#produse">Vezi produsele</a>
-          <a class="btn btn-outline-light btn-lg" href="#categorii">Vezi categoriile</a>
+          <a class="btn btn-ghost btn-lg" href="#categorii">Vezi categoriile</a>
         </div>
-        <ul class="hero-checks">
-          <li>${icons.check(18)} Plata la livrare</li>
-          <li>${icons.check(18)} Livrare în 24–48h</li>
-          <li>${icons.check(18)} Retur în ${returnDays} zile</li>
-        </ul>
       </div>
       ${hero ? html`<a class="hero-card" href="/p/${hero.slug}">
         <div class="hero-card-media">
@@ -90,15 +84,25 @@ export function homePage({ settings, products, categories = [], bestsellers = []
 
   ${categories.length >= 2 ? html`<section class="wrap section section-tight" id="categorii">
     <div class="section-head"><p class="eyebrow">Categorii</p><h2>Ce cauți azi?</h2></div>
-    <div class="cat-grid">${categories.map((c) => html`<a class="cat-card" href="/categorie/${c.slug}">
-      <span class="cat-media"><img src="${c.image || '/img/placeholder.svg'}" alt="" width="240" height="240" loading="lazy"></span>
-      <span class="cat-name">${c.name}</span><span class="cat-count">${c.count === 1 ? '1 produs' : `${c.count} produse`}</span>
+    <div class="cat-bubbles">
+      <a class="cat-bubble" href="#produse"><span class="cat-bubble-img cat-all">${icons.grid(30)}</span><span>Toate</span></a>
+      ${categories.map((c) => html`<a class="cat-bubble" href="/categorie/${c.slug}">
+      <span class="cat-bubble-img"><img src="${c.image || '/img/placeholder.svg'}" alt="" width="160" height="160" loading="lazy"></span>
+      <span>${c.name}</span>
     </a>`)}</div>
   </section>` : ''}
 
   ${bestsellers.length ? html`<section class="wrap section section-tight">
     <div class="section-head section-head-row"><div><p class="eyebrow">Preferatele clienților</p><h2>Cele mai vândute</h2></div><a class="link-more" href="#produse">Vezi toate produsele</a></div>
     <div class="pscroller">${bestsellers.map(productCard)}</div>
+  </section>` : ''}
+
+  ${wheelOn ? html`<section class="wrap">
+    <button type="button" class="wheel-promo" data-wheel-open>
+      <span class="wheel-promo-emoji" aria-hidden="true">🎁</span>
+      <span class="wheel-promo-text"><strong>Ai o surpriză!</strong><small>Învârte roata norocului și poți câștiga o reducere.</small></span>
+      <span class="wheel-promo-cta">Încearcă</span>
+    </button>
   </section>` : ''}
 
   <section class="wrap section" id="produse">

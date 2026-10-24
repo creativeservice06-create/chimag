@@ -915,3 +915,59 @@ html.drawer-open { overflow: hidden; }
   .trust-row li small { display: none; }
   .home-hero-lead { font-size: 1.02rem; }
 }
+
+/* ---------- Prima pagină: variantă prietenoasă (fundal deschis) ---------- */
+.home-friendly { background: linear-gradient(180deg, #eef4ff 0%, #f7faff 62%, #fff 100%); color: var(--ink); }
+.home-friendly::before { background:
+  radial-gradient(520px 320px at 88% 8%, rgba(120,170,233,.28), transparent 70%),
+  radial-gradient(420px 260px at 4% 96%, rgba(246,183,60,.18), transparent 70%) !important; }
+.home-friendly h1 { color: var(--ink); }
+.home-friendly .home-hero-lead { color: var(--muted); }
+.home-friendly .hero-checks { color: var(--ink); }
+.home-friendly .hero-checks .ic { color: var(--ok); }
+.hero-hello { display: inline-flex; align-items: center; gap: 6px; margin: 0 0 16px; padding: 7px 14px; border-radius: 999px; background: #fff; border: 1px solid var(--line); color: var(--ink); font-weight: 600; font-size: .92rem; box-shadow: 0 6px 18px -10px rgba(21,94,204,.35); }
+.home-friendly .hero-card { box-shadow: 0 30px 60px -32px rgba(21,94,204,.45); border: 1px solid var(--line); }
+.home-friendly .btn-ghost { background: #fff; }
+
+/* garanțiile: 3 pe un rând, iconița deasupra */
+.trust-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.trust-row li { flex-direction: column; justify-content: center; text-align: center; gap: 8px; padding: 6px 12px; }
+.trust-row li span { justify-items: center; }
+@media (max-width: 860px) {
+  .trust-row { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; padding: 14px 0; }
+  .trust-row li:nth-child(3) { border-left: 1px solid var(--line); }
+  .trust-row li { gap: 6px; padding: 4px 4px; }
+  .trust-row .ic { width: 40px; height: 40px; padding: 8px; }
+  .trust-row li strong { font-size: .84rem; }
+}
+
+/* categorii ca bule */
+.cat-bubbles { display: flex; gap: 18px; overflow-x: auto; padding: 4px 2px 10px; scrollbar-width: none; scroll-snap-type: x proximity; }
+.cat-bubbles::-webkit-scrollbar { display: none; }
+.cat-bubble { flex: none; display: grid; justify-items: center; gap: 8px; width: 104px; text-decoration: none; color: var(--ink); font-weight: 600; font-size: .92rem; text-align: center; scroll-snap-align: start; }
+.cat-bubble-img { display: grid; place-items: center; width: 92px; height: 92px; border-radius: 50%; overflow: hidden; background: var(--surface-2); border: 2px solid #fff; box-shadow: 0 0 0 1px var(--line), 0 10px 22px -14px rgba(16,29,48,.35); transition: transform .2s, box-shadow .2s; }
+.cat-bubble-img img { width: 100%; height: 100%; object-fit: cover; }
+.cat-all { background: var(--brand-tint); color: var(--brand); }
+.cat-bubble:hover { color: var(--brand); }
+.cat-bubble:hover .cat-bubble-img { transform: translateY(-3px); box-shadow: 0 0 0 2px var(--brand), 0 14px 24px -14px rgba(21,94,204,.5); }
+@media (max-width: 860px) {
+  .cat-bubbles { gap: 12px; margin: 0 calc(var(--gutter) * -1); padding-left: var(--gutter); padding-right: var(--gutter); }
+  .cat-bubble { width: 80px; font-size: .84rem; }
+  .cat-bubble-img { width: 72px; height: 72px; }
+}
+
+/* invitație la roată */
+.wheel-promo { display: flex; align-items: center; gap: 16px; width: 100%; margin-top: 40px; padding: 18px 22px; border: 0; border-radius: var(--radius-l); background: linear-gradient(100deg, #155ecc 0%, #2f7be6 60%, #4f95f0 100%); color: #fff; text-align: left; cursor: pointer; box-shadow: 0 18px 36px -22px rgba(21,94,204,.7); font: inherit; }
+.wheel-promo-emoji { flex: none; display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; background: rgba(255,255,255,.18); font-size: 1.8rem; }
+.wheel-promo-text { flex: 1; display: grid; gap: 2px; min-width: 0; }
+.wheel-promo-text strong { font: 800 1.15rem var(--font-display); }
+.wheel-promo-text small { color: #dbe8fb; font-size: .92rem; }
+.wheel-promo-cta { flex: none; padding: 10px 18px; border-radius: 999px; background: #fff; color: var(--brand); font-weight: 700; }
+.wheel-promo:hover .wheel-promo-cta { background: var(--saffron); color: var(--saffron-ink); }
+@media (max-width: 860px) {
+  .wheel-promo { margin-top: 28px; gap: 12px; padding: 14px; }
+  .wheel-promo-emoji { width: 44px; height: 44px; font-size: 1.4rem; }
+  .wheel-promo-text strong { font-size: 1rem; }
+  .wheel-promo-text small { font-size: .82rem; }
+  .wheel-promo-cta { padding: 8px 12px; font-size: .88rem; }
+}

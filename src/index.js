@@ -121,7 +121,7 @@ async function route(request, env, ctx) {
       WHERE r.approved = 1 AND p.active = 1 AND r.rating >= 4 ORDER BY r.id DESC LIMIT 8`).all();
     return page(env, request, {
       settings, canonical: siteUrl(env, request) + '/', ogImage: products[0]?.images?.[0],
-      body: homePage({ settings, products, categories: [...catMap.values()], bestsellers, reviews: reviews || [], wheelOn: wheelConfig(settings).enabled }),
+      body: homePage({ settings, products, categories: [...catMap.values()], bestsellers, reviews: reviews || [], wheelOn: wheelConfig(settings).enabled && settings.accounts_enabled !== '0' }),
     });
   }
 

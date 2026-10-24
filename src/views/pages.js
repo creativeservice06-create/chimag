@@ -164,10 +164,6 @@ export const PAGES = {
           ${s.email ? html`<a class="contact-card" href="mailto:${s.email}">${icons.mail(26)}<span><strong>Email</strong>${s.email}</span></a>` : ''}
           <a class="contact-card" href="/comanda">${icons.box(26)}<span><strong>Unde e comanda mea?</strong>Vezi statusul și AWB-ul<small>cu numărul comenzii și telefonul</small></span></a>
           <a class="contact-card" href="/pagina/retur">${icons.back(26)}<span><strong>Retur în ${returnDays(s)} zile</strong>Vezi cum returnezi un produs</span></a>
-          <div class="contact-company">
-            <h3>Date de identificare</h3>
-            ${companyLine(s, { phone: true })}
-          </div>
         </aside>
       </div>`;
     },

@@ -3,7 +3,7 @@ import { waLink } from './pages.js';
 import { icons } from './icons.js';
 import { wheelConfig } from '../lib/coupons.js';
 
-const ASSET_V = '21';
+const ASSET_V = '22';
 
 export function layout({ settings, title, description = '', canonical = '', ogImage = '', body, bodyClass = '', jsonLd = null, pageData = null, siteUrl = '', customer = null, categories = [] }) {
   const storeName = settings.store_name || 'Chimag';
@@ -66,7 +66,6 @@ ${settings.announcement ? html`<div class="announce">${settings.announcement}</d
     <div class="wrap sub-nav-inner">
       <a href="/#produse">Toate produsele</a>
       ${categories.map((c) => html`<a href="/categorie/${c.slug}">${c.name}</a>`)}
-      <a href="/pagina/despre">Despre noi</a>
       <a href="/comanda">Comanda mea</a>
       <a href="/pagina/contact">Contact</a>
     </div>
@@ -89,7 +88,6 @@ ${settings.announcement ? html`<div class="announce">${settings.announcement}</d
       <a href="/#produse">${icons.grid(22)} Toate produsele</a>
       ${categories.length ? html`<div class="drawer-cats">${categories.map((c) => html`<a href="/categorie/${c.slug}">${c.name}<small>${c.count}</small></a>`)}</div>` : ''}
       <a href="/comanda">${icons.box(22)} Unde e comanda mea?</a>
-      <a href="/pagina/despre">${icons.shield(22)} Despre noi</a>
       <a href="/pagina/contact">${icons.mail(22)} Contact</a>
       ${wheel.enabled ? html`<button type="button" data-wheel-open data-drawer-close>🎁 Roata norocului</button>` : ''}
     </nav>
@@ -156,29 +154,30 @@ function footer(s) {
     </div>
     <nav class="footer-cols" aria-label="Linkuri utile">
       <div>
-        <h3>Magazin</h3>
+        <h3>Cumpărături</h3>
         <ul>
-          <li><a href="/#produse">Produse</a></li>
-          <li><a href="/pagina/despre">Despre noi</a></li>
-          <li><a href="/comanda">Unde e comanda mea?</a></li>
+          <li><a href="/#produse">Toate produsele</a></li>
+          <li><a href="/comanda">Urmărește comanda</a></li>
+          ${s.accounts_enabled !== '0' ? html`<li><a href="/cont">Contul meu</a></li>` : ''}
+          <li><a href="/#intrebari">Întrebări frecvente</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3>Asistență clienți</h3>
+        <ul>
           <li><a href="/pagina/contact">Contact</a></li>
-        </ul>
-      </div>
-      <div>
-        <h3>Ajutor</h3>
-        <ul>
           <li><a href="/pagina/livrare">Livrare și plată</a></li>
-          <li><a href="/pagina/retur">Retur și garanție</a></li>
+          <li><a href="/pagina/retur">Returnări și garanție</a></li>
           <li><a href="/pagina/formular-retragere">Formular de retragere</a></li>
-          ${wheelConfig(s).enabled ? html`<li><a href="/pagina/regulament-roata">Regulament roata norocului</a></li>` : ''}
         </ul>
       </div>
       <div>
-        <h3>Legal</h3>
+        <h3>Informații legale</h3>
         <ul>
           <li><a href="/pagina/termeni">Termeni și condiții</a></li>
-          <li><a href="/pagina/confidentialitate">Confidențialitate (GDPR)</a></li>
+          <li><a href="/pagina/confidentialitate">Politica de confidențialitate</a></li>
           <li><a href="/pagina/cookies">Politica de cookie-uri</a></li>
+          ${wheelConfig(s).enabled ? html`<li><a href="/pagina/regulament-roata">Regulament campanie</a></li>` : ''}
           <li><a href="https://anpc.ro" target="_blank" rel="noopener">ANPC</a></li>
         </ul>
       </div>

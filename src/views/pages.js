@@ -173,25 +173,6 @@ export const PAGES = {
     },
   },
 
-  despre: {
-    title: 'Despre noi',
-    body: (s) => html`
-      <p class="page-lead">${shop(s)} e un magazin online românesc cu o idee simplă: puține produse, alese atent, livrate repede și cu plata la livrare.</p>
-      <h2>Ce ne propunem</h2>
-      <p>Nu vrem să avem de toate. Alegem produsele atent și păstrăm doar ce ne-am cumpăra și noi. Fiecare produs are descriere clară și prețul final afișat de la început, cu transportul calculat înainte să comanzi.</p>
-      <h2>Cum lucrăm</h2>
-      <ul>
-        <li><strong>Plătești la livrare.</strong> Nu dai niciun ban în avans; plătești curierului când ai coletul.</li>
-        <li><strong>Livrare rapidă.</strong> ${s.delivery_text || 'Livrăm prin curier în toată țara'}.</li>
-        <li><strong>Retur simplu.</strong> Ai ${returnDays(s)} zile să te răzgândești, fără explicații.</li>
-        <li><strong>Vorbești cu oameni.</strong> Ne scrii din pagina de <a href="/pagina/contact">contact</a> și îți răspundem.</li>
-      </ul>
-      <h2>Cine suntem</h2>
-      <p>Magazinul ${site} este operat de:</p>
-      ${companyLine(s)}
-      <p><a class="btn btn-primary" href="/#produse">Vezi produsele</a></p>`,
-  },
-
   termeni: {
     title: 'Termeni și condiții',
     body: (s) => html`

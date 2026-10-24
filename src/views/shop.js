@@ -172,7 +172,7 @@ export function homePage({ settings, products, categories = [], bestsellers = []
     </div>
   </section>
 
-  <section class="wrap section faq-home">
+  <section class="wrap section faq-home" id="intrebari">
     <div class="faq-home-head">
       <p class="eyebrow">Întrebări frecvente</p>
       <h2>Ce e bine să știi înainte să comanzi</h2>

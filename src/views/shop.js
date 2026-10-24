@@ -347,10 +347,34 @@ export function productJsonLd(p, reviews, siteUrl) {
 }
 
 // ---------------- Coș ----------------
-export function cartPage() {
-  return html`<div class="wrap narrow cart-page">
-    <h1>Coșul tău</h1>
-    <div data-cart-view><p class="muted">Se încarcă…</p></div>
+export function cartPage({ settings = {}, suggestions = [] } = {}) {
+  const returnDays = settings.return_days || 14;
+  return html`<div class="wrap cart-page">
+    <div class="cart-head"><h1>Coșul tău</h1><span class="cart-head-count" data-cart-items></span></div>
+    <div data-cart-view><div class="cart-loading" aria-busy="true"><span></span><span></span></div></div>
+
+    <div data-cart-empty hidden>
+      <div class="cart-empty">
+        <div class="cart-empty-icon">${icons.cart(44)}</div>
+        <h1>Coșul tău este gol</h1>
+        <p>Nu ai adăugat încă niciun produs. Aruncă o privire prin ofertă – livrăm rapid și plătești la livrare.</p>
+        <a class="btn btn-primary btn-lg" href="/#produse">Vezi produsele</a>
+      </div>
+    </div>
+
+    <template data-cart-trust>
+      <ul class="cart-trust">
+        <li>${icons.cash(20)}<span><strong>Plata la livrare</strong>Plătești curierului când primești coletul</span></li>
+        <li>${icons.truck(20)}<span><strong>Livrare rapidă</strong>${settings.delivery_text || 'Livrare în 24–48h prin curier'}</span></li>
+        <li>${icons.back(20)}<span><strong>Retur în ${returnDays} zile</strong>Te răzgândești? Îți returnăm banii</span></li>
+        <li>${icons.shield(20)}<span><strong>Comandă sigură</strong>Datele tale sunt protejate</span></li>
+      </ul>
+    </template>
+
+    ${suggestions.length ? html`<section class="cart-suggest" data-cart-suggest hidden>
+      <h2>Ți-ar putea plăcea</h2>
+      <div class="pgrid">${suggestions.map((p) => html`<div data-suggest-id="${p.id}">${productCard(p)}</div>`)}</div>
+    </section>` : ''}
   </div>`;
 }
 

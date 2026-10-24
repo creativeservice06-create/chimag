@@ -155,7 +155,12 @@ async function route(request, env, ctx) {
     return page(env, request, { settings, title: list[0].category, canonical: `${siteUrl(env, request)}/categorie/${m[1]}`, body: searchPage({ settings, q: list[0].category, products: list, all, mode: 'category' }) });
   }
 
-  if (method === 'GET' && path === '/cos') return page(env, request, { title: 'Coș', body: cartPage() });
+  if (method === 'GET' && path === '/cos') {
+    const settings = await getSettings(env);
+    const all = await listProducts(env);
+    const suggestions = [...all.filter((p) => p.featured), ...all.filter((p) => !p.featured)].slice(0, 8);
+    return page(env, request, { settings, title: 'Coșul tău', noindex: true, body: cartPage({ settings, suggestions }) });
+  }
 
   if (method === 'GET' && path === '/finalizare') {
     const settings = await getSettings(env);

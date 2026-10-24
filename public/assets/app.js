@@ -310,28 +310,56 @@
   (function cartPage() {
     var view = $('[data-cart-view]');
     if (!view) return;
+    var emptyBox = $('[data-cart-empty]'), suggest = $('[data-cart-suggest]'), countEl = $('[data-cart-items]'), head = $('.cart-head');
+    var trustTpl = $('[data-cart-trust]');
+    var trust = trustTpl ? trustTpl.innerHTML : '';
+    var trash = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>';
+    function showSuggest(ids) {
+      if (!suggest) return;
+      var shown = 0;
+      $$('[data-suggest-id]', suggest).forEach(function (el) {
+        var hide = ids.indexOf(Number(el.getAttribute('data-suggest-id'))) !== -1 || shown >= 4;
+        el.hidden = hide; if (!hide) shown++;
+      });
+      suggest.hidden = shown === 0;
+    }
     function render() {
       var items = getCart();
       if (!items.length) {
-        view.innerHTML = '<p>Coșul este gol.</p><p><a class="btn btn-primary" href="/#produse">Vezi produsele</a></p>';
+        view.innerHTML = ''; view.hidden = true;
+        if (emptyBox) emptyBox.hidden = false;
+        if (head) head.hidden = true;
+        if (countEl) countEl.textContent = '';
+        showSuggest([]);
         return;
       }
+      view.hidden = false; if (emptyBox) emptyBox.hidden = true; if (head) head.hidden = false;
       priceCart(items).then(function (p) {
         // scoate din coș produsele care nu mai există
         var valid = p.lines.map(function (l) { return l.id; });
         var cleaned = items.filter(function (i) { return valid.indexOf(i.id) !== -1; });
         if (cleaned.length !== items.length) setCart(cleaned);
+        if (!p.lines.length) { setCart([]); render(); return; }
+        var n = p.lines.reduce(function (s, l) { return s + l.qty; }, 0);
+        if (countEl) countEl.textContent = n + (n === 1 ? ' produs' : ' produse');
         var lines = p.lines.map(function (l) {
-          return '<li class="cart-line"><a href="/p/' + esc(l.slug) + '"><img src="' + esc(l.image) + '" alt="" width="84" height="84"></a>' +
-            '<div><h3><a href="/p/' + esc(l.slug) + '">' + esc(l.title) + '</a></h3>' +
-            '<div class="qty" data-line="' + l.id + '"><button type="button" data-d="-1" aria-label="Scade">−</button><input value="' + l.qty + '" readonly aria-label="Cantitate"><button type="button" data-d="1" aria-label="Crește">+</button></div> ' +
-            '<button type="button" class="link-btn" data-remove="' + l.id + '">Șterge</button>' +
-            (l.pct ? '<div class="line-save">Reducere pachet −' + l.pct + '%</div>' : '') + '</div>' +
-            '<div class="line-total">' + money(l.total) + '</div></li>';
+          var gross = l.unitPrice * l.qty;
+          return '<li class="cart-line"><a class="cart-thumb" href="/p/' + esc(l.slug) + '"><img src="' + esc(l.image) + '" alt="" width="96" height="96"></a>' +
+            '<div class="cart-info"><h3><a href="/p/' + esc(l.slug) + '">' + esc(l.title) + '</a></h3>' +
+            '<p class="cart-unit">' + money(l.unitPrice) + ' / buc.' + (l.pct ? ' <span class="line-save">−' + l.pct + '% la pachet</span>' : '') + '</p>' +
+            '<div class="cart-controls"><div class="qty qty-sm" data-line="' + l.id + '"><button type="button" data-d="-1" aria-label="Scade cantitatea">−</button><input value="' + l.qty + '" readonly aria-label="Cantitate"><button type="button" data-d="1" aria-label="Crește cantitatea">+</button></div>' +
+            '<button type="button" class="cart-remove" data-remove="' + l.id + '" aria-label="Șterge ' + esc(l.title) + '">' + trash + '<span>Șterge</span></button></div></div>' +
+            '<div class="line-total"><strong>' + money(l.total) + '</strong>' + (l.total < gross ? '<s>' + money(gross) + '</s>' : '') + '</div></li>';
         }).join('');
-        view.innerHTML = (p.errors.length ? '<p class="form-error">' + p.errors.map(esc).join('<br>') + '</p>' : '') +
-          shipProgress(p) + '<ul class="cart-lines">' + lines + '</ul>' + couponHtml(p) + '<dl class="totals">' + totalsHtml(p) + '</dl>' +
-          '<div class="cart-actions"><a class="btn btn-primary btn-xl btn-block" href="/finalizare">Finalizează comanda</a><a class="btn btn-ghost btn-block" href="/#produse">Continuă cumpărăturile</a></div>';
+        view.innerHTML = '<div class="cart-layout"><div class="cart-main">' +
+          (p.errors.length ? '<p class="form-error">' + p.errors.map(esc).join('<br>') + '</p>' : '') +
+          '<ul class="cart-lines">' + lines + '</ul>' +
+          '<a class="cart-continue" href="/#produse">← Continuă cumpărăturile</a></div>' +
+          '<aside class="cart-summary"><h2>Sumar comandă</h2>' + shipProgress(p) + couponHtml(p) +
+          '<dl class="totals">' + totalsHtml(p) + '</dl>' +
+          '<a class="btn btn-primary btn-xl btn-block cart-checkout" href="/finalizare">Finalizează comanda</a>' +
+          '<p class="cart-note">La pasul următor completezi doar datele de livrare.</p>' + trust + '</aside></div>';
+        showSuggest(valid);
       });
     }
     bindCoupon(view, render);

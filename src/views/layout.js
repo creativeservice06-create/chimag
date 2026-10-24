@@ -3,7 +3,7 @@ import { waLink } from './pages.js';
 import { icons } from './icons.js';
 import { wheelConfig } from '../lib/coupons.js';
 
-const ASSET_V = '16';
+const ASSET_V = '17';
 
 export function layout({ settings, title, description = '', canonical = '', ogImage = '', body, bodyClass = '', jsonLd = null, pageData = null, siteUrl = '', customer = null, categories = [] }) {
   const storeName = settings.store_name || 'Chimag';
@@ -183,7 +183,7 @@ function footer(s) {
     </div>
   </div>
   <div class="wrap footer-badges">
-    <a class="anpc-badge" href="https://reclamatiisal.anpc.ro/" target="_blank" rel="noopener"><img src="/img/anpc-sal.png?v=2" alt="ANPC – Soluționarea alternativă a litigiilor (SAL)" width="197" height="50"></a>
+    <a class="anpc-badge" href="https://reclamatiisal.anpc.ro/" target="_blank" rel="noopener"><img src="/img/anpc-sal.png?v=3" alt="ANPC – Soluționarea alternativă a litigiilor (SAL)" width="250" height="61"></a>
   </div>
   <div class="wrap footer-legal">
     <p>© ${year} ${s.company_name || s.store_name}${s.company_cui ? ` · CUI ${s.company_cui}` : ''}${s.company_reg ? ` · ${s.company_reg}` : ''}${s.company_address ? ` · ${s.company_address}` : ''}</p>

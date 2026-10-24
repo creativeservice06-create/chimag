@@ -475,7 +475,7 @@ body.no-scroll { position: fixed; left: 0; right: 0; width: 100%; }
 .socials a:hover { background: var(--brand); text-decoration: none; }
 .footer-badges { display: flex; flex-wrap: wrap; gap: 12px; padding-bottom: 22px; }
 .anpc-badge { display: inline-block; line-height: 0; }
-.anpc-badge img { display: block; width: auto; height: 50px; }
+.anpc-badge img { display: block; width: 250px; max-width: 100%; height: auto; }
 
 /* ---------- WhatsApp ---------- */
 .wa-float { position: fixed; right: 18px; bottom: 18px; z-index: 45; width: 56px; height: 56px; border-radius: 50%; background: #25d366; color: #fff; display: grid; place-items: center; box-shadow: 0 10px 24px rgba(0,0,0,.25); transition: transform .15s; }

@@ -146,7 +146,7 @@
     var n = getCart().reduce(function (s, l) { return s + l.qty; }, 0);
     $$('[data-cart-count]').forEach(function (el) {
       el.textContent = n; el.hidden = n === 0;
-      if (animate) { el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
+      if (animate) { el.classList.remove('count-pop'); void el.offsetWidth; el.classList.add('count-pop'); }
     });
   }
   updateCount(false);

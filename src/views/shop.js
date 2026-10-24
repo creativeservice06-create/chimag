@@ -450,14 +450,9 @@ export function checkoutPage({ settings, bump, loggedIn = false }) {
         <div data-summary-lines><p class="muted">Se încarcă…</p></div>
         <div data-summary-coupon></div>
         <dl class="totals" data-summary-totals></dl>
-        ${trustMini()}
       </aside>
     </div>
   </div>`;
-}
-
-function trustMini() {
-  return html`<p class="privacy-note">${icons.lock(20)}<span><strong>Date protejate</strong>Folosim datele tale doar pentru procesarea și livrarea comenzii.</span></p>`;
 }
 
 // ---------------- Mulțumim / status comandă ----------------

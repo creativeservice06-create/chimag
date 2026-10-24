@@ -1,5 +1,5 @@
 import { html, raw, paragraphs } from '../lib/html.js';
-import { money, moneyNum } from '../lib/util.js';
+import { money, moneyNum, slugify } from '../lib/util.js';
 import { JUDETE } from '../lib/judete.js';
 import { ORDER_STATUSES } from '../lib/db.js';
 import { icons, stars } from './icons.js';
@@ -20,7 +20,7 @@ export function trustRow(settings) {
 function productCard(p) {
   const off = pctOff(p);
   const out = p.track_stock && p.stock <= 0;
-  return html`<div class="pcard">
+  return html`<div class="pcard" data-cat="${p.category ? slugify(p.category) : ''}">
     <a class="pcard-link" href="/p/${p.slug}">
       <div class="pcard-media">
         <img src="${img(p)}" alt="${p.title}" loading="lazy" width="600" height="600">
@@ -57,12 +57,12 @@ export function homePage({ settings, products, categories = [], bestsellers = []
   <section class="home-hero home-friendly">
     <div class="wrap home-hero-inner">
       <div class="home-hero-copy">
-        <p class="hero-hello">👋 Bun venit la ${(settings.store_name || 'Chimag').toLowerCase()}</p>
-        <h1>Produse utile, la prețuri bune</h1>
-        <p class="home-hero-lead">Pentru casă, bucătărie, copii sau cadouri – alegem produse practice, la prețuri corecte, și ți le trimitem rapid. Comanzi în două minute și plătești la livrare.</p>
+        <p class="hero-hello">${icons.truck(18)} Livrare rapidă în toată România</p>
+        <h1>Produse practice, la prețuri corecte</h1>
+        <p class="home-hero-lead">Selectăm cu atenție produse utile pentru casă, bucătărie, copii și cadouri. Comanzi în câteva minute, primești coletul în 24–48 de ore și plătești la livrare.</p>
         <div class="home-hero-actions">
           <a class="btn btn-primary btn-lg" href="#produse">Vezi produsele</a>
-          <a class="btn btn-ghost btn-lg" href="#categorii">Vezi categoriile</a>
+          <a class="btn btn-ghost btn-lg" href="#categorii">Categorii</a>
         </div>
       </div>
       ${hero ? html`<a class="hero-card" href="/p/${hero.slug}">
@@ -87,12 +87,12 @@ export function homePage({ settings, products, categories = [], bestsellers = []
   <section class="wrap">${trustRow(settings)}</section>
 
   ${categories.length >= 2 ? html`<section class="wrap section section-tight" id="categorii">
-    <div class="section-head"><p class="eyebrow">Categorii</p><h2>Ce cauți azi?</h2></div>
+    <div class="section-head"><p class="eyebrow">Categorii</p><h2>Explorează categoriile</h2><p>Găsește rapid ce ai nevoie, organizat pe categorii.</p></div>
     <div class="cat-bubbles">
-      <a class="cat-bubble" href="#produse"><span class="cat-bubble-img cat-all">${icons.grid(30)}</span><span>Toate</span></a>
+      <a class="cat-bubble" href="#produse"><span class="cat-bubble-img cat-all">${icons.grid(30)}</span><span class="cat-bubble-name">Toate</span><small>${products.length} produse</small></a>
       ${categories.map((c) => html`<a class="cat-bubble" href="/categorie/${c.slug}">
       <span class="cat-bubble-img"><img src="${c.image || '/img/placeholder.svg'}" alt="" width="160" height="160" loading="lazy"></span>
-      <span>${c.name}</span>
+      <span class="cat-bubble-name">${c.name}</span><small>${c.count === 1 ? '1 produs' : `${c.count} produse`}</small>
     </a>`)}</div>
   </section>` : ''}
 
@@ -112,13 +112,18 @@ export function homePage({ settings, products, categories = [], bestsellers = []
   <section class="wrap section" id="produse">
     <div class="section-head section-head-row">
       <div>
-        <p class="eyebrow">Ofertele noastre</p>
-        <h2>Toate produsele</h2>
+        <p class="eyebrow">Oferte</p>
+        <h2>Produsele noastre</h2>
+        <p>Prețuri bune la produse atent selectate. Le poți adăuga în coș direct de aici.</p>
       </div>
       ${threshold ? html`<p class="section-note">${icons.truck(18)} Transport gratuit peste ${money(threshold)}</p>` : ''}
     </div>
+    ${categories.length >= 2 ? html`<div class="filter-chips" role="tablist" aria-label="Filtrează după categorie">
+      <button type="button" class="chip on" data-filter="">Toate</button>
+      ${categories.map((c) => html`<button type="button" class="chip" data-filter="${c.slug}">${c.name}</button>`)}
+    </div>` : ''}
     ${products.length
-      ? html`<div class="pgrid">${products.map(productCard)}</div>`
+      ? html`<div class="pgrid" data-filter-grid>${products.map(productCard)}</div>`
       : html`<p class="empty">Adaugă primul produs din panoul de administrare.</p>`}
   </section>
 
@@ -150,7 +155,7 @@ export function homePage({ settings, products, categories = [], bestsellers = []
 
   <section class="section steps-section" id="cum-comanzi">
     <div class="wrap">
-      <div class="section-head"><p class="eyebrow">Cum comanzi</p><h2>Simplu, în trei pași</h2></div>
+      <div class="section-head"><p class="eyebrow">Simplu și rapid</p><h2>Cum comanzi</h2><p>De la alegerea produsului până la livrare, totul durează doar câteva minute.</p></div>
       <ol class="steps">
         <li><span class="step-n">1</span><span class="step-ic">${icons.cart(26)}</span><h3>Alegi produsele</h3><p>Le adaugi în coș și vezi pe loc reducerile.</p></li>
         <li><span class="step-n">2</span><span class="step-ic">${icons.home(26)}</span><h3>Completezi adresa</h3><p>Doar nume, telefon și adresă de livrare.</p></li>
@@ -162,7 +167,7 @@ export function homePage({ settings, products, categories = [], bestsellers = []
   <section class="wrap section faq-home" id="intrebari">
     <div class="faq-home-head">
       <p class="eyebrow">Întrebări frecvente</p>
-      <h2>Răspunsuri la ce te interesează</h2>
+      <h2>Tot ce trebuie să știi</h2>
       <p class="muted">Nu ai găsit răspunsul? <a href="/pagina/contact">Scrie-ne</a> și te ajutăm.</p>
     </div>
     <div class="faq">${faq.map(([q, a]) => html`<details><summary>${q}</summary><div><p>${a}</p></div></details>`)}</div>

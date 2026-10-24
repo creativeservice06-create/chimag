@@ -142,6 +142,19 @@
     if (line) line.qty = Math.min(50, line.qty + qty); else c.push({ id: id, qty: qty });
     setCart(c);
   }
+  // filtre pe categorii în lista de produse de pe prima pagină
+  (function filters() {
+    var grid = $('[data-filter-grid]');
+    if (!grid) return;
+    $$('[data-filter]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var f = b.getAttribute('data-filter');
+        $$('[data-filter]').forEach(function (x) { x.classList.toggle('on', x === b); x.setAttribute('aria-selected', x === b ? 'true' : 'false'); });
+        $$('.pcard', grid).forEach(function (c) { c.hidden = !!f && c.getAttribute('data-cat') !== f; });
+      });
+    });
+  })();
+
   // buton rapid „Adaugă" pe cardurile de produs
   document.addEventListener('click', function (e) {
     var b = e.target.closest && e.target.closest('[data-quick-add]');

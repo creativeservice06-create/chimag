@@ -3,7 +3,7 @@ import { waLink } from './pages.js';
 import { icons } from './icons.js';
 import { wheelConfig } from '../lib/coupons.js';
 
-const ASSET_V = '20';
+const ASSET_V = '21';
 
 export function layout({ settings, title, description = '', canonical = '', ogImage = '', body, bodyClass = '', jsonLd = null, pageData = null, siteUrl = '', customer = null, categories = [] }) {
   const storeName = settings.store_name || 'Chimag';
@@ -145,48 +145,48 @@ function footer(s) {
     ['tiktok_url', 'TikTok', '<path d="M14 3v11.5a3.5 3.5 0 1 1-3.5-3.5"/><path d="M14 3c.5 2.6 2.4 4.4 5 4.6"/>'],
   ].filter(([k]) => s[k]);
   return html`<footer class="site-footer">
-  <div class="wrap footer-grid">
+  <div class="wrap footer-top">
     <div class="footer-brand">
       <a href="/" class="logo">${logoMark()}<span>${(s.store_name || 'chimag').toLowerCase()}</span></a>
-      <p>${s.tagline}</p>
-      ${s.phone ? html`<p class="footer-contact">${icons.phone(18)} <a href="tel:${s.phone.replace(/\s/g, '')}">${s.phone}</a></p>` : ''}
-      ${s.email ? html`<p class="footer-contact">${icons.mail(18)} <a href="mailto:${s.email}">${s.email}</a></p>` : ''}
-      ${s.hours ? html`<p class="footer-contact">${icons.clock(18)} ${s.hours}</p>` : ''}
+      ${s.email || s.hours ? html`<ul class="footer-contact-list">
+        ${s.email ? html`<li>${icons.mail(18)}<a href="mailto:${s.email}">${s.email}</a></li>` : ''}
+        ${s.hours ? html`<li>${icons.clock(18)}<span>${s.hours}</span></li>` : ''}
+      </ul>` : ''}
       ${socials.length ? html`<div class="socials">${socials.map(([k, name, d]) => html`<a href="${s[k]}" target="_blank" rel="noopener" aria-label="${name}">${raw(`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`)}</a>`)}</div>` : ''}
     </div>
-    <div>
-      <h3>Magazin</h3>
-      <ul>
-        <li><a href="/#produse">Produse</a></li>
-        <li><a href="/pagina/despre">Despre noi</a></li>
-        <li><a href="/comanda">Unde e comanda mea?</a></li>
-        <li><a href="/pagina/contact">Contact</a></li>
-      </ul>
-    </div>
-    <div>
-      <h3>Ajutor</h3>
-      <ul>
-        <li><a href="/pagina/livrare">Livrare și plată</a></li>
-        <li><a href="/pagina/retur">Retur și garanție</a></li>
-        <li><a href="/pagina/formular-retragere">Formular de retragere</a></li>
-        ${wheelConfig(s).enabled ? html`<li><a href="/pagina/regulament-roata">Regulament roata norocului</a></li>` : ''}
-      </ul>
-    </div>
-    <div>
-      <h3>Legal</h3>
-      <ul>
-        <li><a href="/pagina/termeni">Termeni și condiții</a></li>
-        <li><a href="/pagina/confidentialitate">Confidențialitate (GDPR)</a></li>
-        <li><a href="/pagina/cookies">Politica de cookie-uri</a></li>
-        <li><a href="https://anpc.ro" target="_blank" rel="noopener">ANPC</a></li>
-      </ul>
-    </div>
+    <nav class="footer-cols" aria-label="Linkuri utile">
+      <div>
+        <h3>Magazin</h3>
+        <ul>
+          <li><a href="/#produse">Produse</a></li>
+          <li><a href="/pagina/despre">Despre noi</a></li>
+          <li><a href="/comanda">Unde e comanda mea?</a></li>
+          <li><a href="/pagina/contact">Contact</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3>Ajutor</h3>
+        <ul>
+          <li><a href="/pagina/livrare">Livrare și plată</a></li>
+          <li><a href="/pagina/retur">Retur și garanție</a></li>
+          <li><a href="/pagina/formular-retragere">Formular de retragere</a></li>
+          ${wheelConfig(s).enabled ? html`<li><a href="/pagina/regulament-roata">Regulament roata norocului</a></li>` : ''}
+        </ul>
+      </div>
+      <div>
+        <h3>Legal</h3>
+        <ul>
+          <li><a href="/pagina/termeni">Termeni și condiții</a></li>
+          <li><a href="/pagina/confidentialitate">Confidențialitate (GDPR)</a></li>
+          <li><a href="/pagina/cookies">Politica de cookie-uri</a></li>
+          <li><a href="https://anpc.ro" target="_blank" rel="noopener">ANPC</a></li>
+        </ul>
+      </div>
+    </nav>
   </div>
-  <div class="wrap footer-badges">
-    <a class="anpc-badge" href="https://reclamatiisal.anpc.ro/" target="_blank" rel="noopener"><img src="/img/anpc-sal.png?v=3" alt="ANPC – Soluționarea alternativă a litigiilor (SAL)" width="250" height="61"></a>
-  </div>
-  <div class="wrap footer-legal">
+  <div class="wrap footer-bottom">
     <p>© ${year} ${s.company_name || s.store_name}${s.company_cui ? ` · CUI ${s.company_cui}` : ''}${s.company_reg ? ` · ${s.company_reg}` : ''}${s.company_address ? ` · ${s.company_address}` : ''}</p>
+    <a class="anpc-badge" href="https://reclamatiisal.anpc.ro/" target="_blank" rel="noopener"><img src="/img/anpc-sal.png?v=3" alt="ANPC – Soluționarea alternativă a litigiilor (SAL)" width="250" height="61" loading="lazy"></a>
   </div>
 </footer>`;
 }

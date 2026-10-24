@@ -270,7 +270,10 @@
     form.addEventListener('submit', function (e) {
       e.preventDefault();
       track('AddToCart', { value: selectedTotal() / 100, contents: [{ id: String(id), quantity: qty(), price: price / 100, name: title }] });
-      location.href = '/finalizare?buy=' + id + ':' + qty();
+      var c = getCart(), q = qty(), line = c.filter(function (l) { return l.id === id; })[0];
+      if (line) line.qty = q; else c.push({ id: id, qty: q });
+      setCart(c);
+      location.href = '/cos';
     });
     var addBtn = $('[data-add-to-cart]', form);
     if (addBtn) addBtn.addEventListener('click', function () {
@@ -306,90 +309,34 @@
     if (PAGE.product) track('ViewContent', { value: PAGE.product.price / 100, contents: [{ id: String(PAGE.product.id), quantity: 1, price: PAGE.product.price / 100, name: PAGE.product.title }] });
   })();
 
-  /* ---------------- Pagina coș ---------------- */
-  (function cartPage() {
-    var view = $('[data-cart-view]');
-    if (!view) return;
-    var emptyBox = $('[data-cart-empty]'), countEl = $('[data-cart-items]'), head = $('.cart-head');
-    var x = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
-    function freeBar(p) {
-      if (!CFG.freeShippingThreshold) return '';
-      if (!p.freeShippingLeft) return '<div class="cart-free done">✓ <strong>Ai transport gratuit</strong> la această comandă</div>';
-      var pct = Math.max(4, Math.min(100, 100 - (p.freeShippingLeft / CFG.freeShippingThreshold) * 100));
-      return '<div class="cart-free">Mai adaugă <strong>' + money(p.freeShippingLeft) + '</strong> pentru transport gratuit<div class="bar"><span style="width:' + pct + '%"></span></div></div>';
-    }
-    function render() {
-      var items = getCart();
-      if (!items.length) {
-        view.innerHTML = ''; view.hidden = true;
-        if (emptyBox) emptyBox.hidden = false;
-        if (head) head.hidden = true;
-        return;
-      }
-      view.hidden = false; if (emptyBox) emptyBox.hidden = true; if (head) head.hidden = false;
-      priceCart(items).then(function (p) {
-        // scoate din coș produsele care nu mai există
-        var valid = p.lines.map(function (l) { return l.id; });
-        var cleaned = items.filter(function (i) { return valid.indexOf(i.id) !== -1; });
-        if (cleaned.length !== items.length) setCart(cleaned);
-        if (!p.lines.length) { setCart([]); render(); return; }
-        var n = p.lines.reduce(function (s, l) { return s + l.qty; }, 0);
-        if (countEl) countEl.textContent = '(' + n + (n === 1 ? ' produs)' : ' produse)');
-        var lines = p.lines.map(function (l) {
-          var gross = l.unitPrice * l.qty;
-          return '<li class="cart-item"><a class="cart-thumb" href="/p/' + esc(l.slug) + '"><img src="' + esc(l.image) + '" alt="" width="88" height="88"></a>' +
-            '<div class="cart-info"><h3><a href="/p/' + esc(l.slug) + '">' + esc(l.title) + '</a></h3>' +
-            '<p class="cart-unit">' + money(l.unitPrice) + ' / buc.' + (l.pct ? ' · <span class="line-save">economisești ' + money(gross - l.total) + '</span>' : '') + '</p>' +
-            '<div class="cart-row"><div class="qty qty-pill" data-line="' + l.id + '"><button type="button" data-d="-1" aria-label="Scade cantitatea">−</button><input value="' + l.qty + '" readonly aria-label="Cantitate"><button type="button" data-d="1" aria-label="Crește cantitatea">+</button></div>' +
-            '<div class="cart-price"><strong>' + money(l.total) + '</strong>' + (l.total < gross ? '<s>' + money(gross) + '</s>' : '') + '</div></div></div>' +
-            '<button type="button" class="cart-x" data-remove="' + l.id + '" aria-label="Șterge ' + esc(l.title) + '">' + x + '</button></li>';
-        }).join('');
-        view.innerHTML = (p.errors.length ? '<p class="form-error">' + p.errors.map(esc).join('<br>') + '</p>' : '') +
-          freeBar(p) + '<ul class="cart-items">' + lines + '</ul>' +
-          '<div class="cart-box">' + couponHtml(p) + '<dl class="totals">' + totalsHtml(p) + '</dl>' +
-          '<a class="btn btn-primary btn-xl btn-block cart-checkout" href="/finalizare">Continuă spre livrare →</a></div>' +
-          '<p class="cart-back"><a href="/#produse">← Continuă cumpărăturile</a></p>';
-      });
-    }
-    bindCoupon(view, render);
-    view.addEventListener('click', function (e) {
-      var t = e.target.closest('button'); if (!t || t.hasAttribute('data-coupon-remove') || t.hasAttribute('data-coupon-apply')) return;
-      var c = getCart();
-      if (t.hasAttribute('data-remove')) {
-        var rid = Number(t.getAttribute('data-remove'));
-        setCart(c.filter(function (l) { return l.id !== rid; })); render(); return;
-      }
-      var wrap = t.closest('[data-line]');
-      if (wrap) {
-        var id = Number(wrap.getAttribute('data-line'));
-        c.forEach(function (l) { if (l.id === id) l.qty = Math.max(1, Math.min(50, l.qty + Number(t.getAttribute('data-d')))); });
-        setCart(c); render();
-      }
-    });
-    render();
-  })();
-
   /* ---------------- Finalizare comandă ---------------- */
   (function checkout() {
     var form = $('[data-checkout-form]');
     if (!form) return;
+    // link vechi /finalizare?buy=ID:CANT -> produsul intră în coș
     var params = new URLSearchParams(location.search);
-    var buy = params.get('buy');
-    var fromCart = !buy;
-    var items = fromCart ? getCart() : buy.split(',').map(function (s) { var p = s.split(':'); return { id: Number(p[0]), qty: Number(p[1]) || 1 }; });
-    var linesEl = $('[data-summary-lines]');
+    if (params.get('buy')) {
+      var c0 = getCart();
+      params.get('buy').split(',').forEach(function (s) {
+        var p = s.split(':'), id = Number(p[0]), q = Math.max(1, Math.min(50, Number(p[1]) || 1));
+        if (!id) return;
+        var l = c0.filter(function (x) { return x.id === id; })[0];
+        if (l) l.qty = q; else c0.push({ id: id, qty: q });
+      });
+      setCart(c0);
+      if (history.replaceState) history.replaceState(null, '', '/cos');
+    }
+    var linesEl = $('[data-cart-lines]');
+    var freeEl = $('[data-summary-free]');
     var couponEl = $('[data-summary-coupon]');
     var totalsEl = $('[data-summary-totals]');
     var errEl = $('[data-form-error]');
     var submitBtn = $('[data-submit]');
+    var mainEl = $('[data-co-main]'), emptyEl = $('[data-cart-empty]'), headEl = $('[data-co-head]'), countEl = $('[data-cart-items]');
     var last = null;
     var tracked = false;
-
-    if (!items.length) {
-      linesEl.innerHTML = '<p>Coșul este gol. <a href="/#produse">Alege un produs</a>.</p>';
-      submitBtn.disabled = true;
-      return;
-    }
+    var x = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+    function items() { return getCart(); }
 
     // păstrează datele completate dacă clientul revine (sau le ia din contul clientului)
     var saved = PAGE.customer || store.get('chimag_customer', {});
@@ -401,17 +348,43 @@
       var pay = form.elements.payment;
       return { payment: pay ? (pay.value || 'ramburs') : 'ramburs', bump: !!(form.elements.bump && form.elements.bump.checked) };
     }
+    function freeBar(p) {
+      if (!CFG.freeShippingThreshold) return '';
+      if (!p.freeShippingLeft) return '<div class="cart-free done">✓ <strong>Ai transport gratuit</strong></div>';
+      var pct = Math.max(4, Math.min(100, 100 - (p.freeShippingLeft / CFG.freeShippingThreshold) * 100));
+      return '<div class="cart-free">Mai adaugă <strong>' + money(p.freeShippingLeft) + '</strong> pentru transport gratuit<div class="bar"><span style="width:' + pct + '%"></span></div></div>';
+    }
+    function showEmpty(empty) {
+      mainEl.hidden = empty; emptyEl.hidden = !empty; headEl.hidden = empty;
+    }
     function refresh() {
-      priceCart(items, opts()).then(function (p) {
+      var list = items();
+      if (!list.length) { showEmpty(true); return; }
+      showEmpty(false);
+      priceCart(list, opts()).then(function (p) {
         last = p;
+        // scoate din coș produsele care nu mai există
+        var valid = p.lines.filter(function (l) { return !l.isBump; }).map(function (l) { return l.id; });
+        var cleaned = list.filter(function (i) { return valid.indexOf(i.id) !== -1; });
+        if (cleaned.length !== list.length) { setCart(cleaned); if (!cleaned.length) { showEmpty(true); return; } }
+        var n = p.lines.filter(function (l) { return !l.isBump; }).reduce(function (s, l) { return s + l.qty; }, 0);
+        if (countEl) countEl.textContent = '(' + n + (n === 1 ? ' produs)' : ' produse)');
         linesEl.innerHTML = (p.errors.length ? '<p class="form-error">' + p.errors.map(esc).join('<br>') + '</p>' : '') +
-          p.lines.map(function (l) {
-            return '<div class="summary-line"><img src="' + esc(l.image) + '" alt="" width="56" height="56"><div>' + esc(l.title) +
-              '<div class="q">' + l.qty + ' buc.' + (l.pct ? ' · −' + l.pct + '%' : '') + '</div></div><strong>' + money(l.total) + '</strong></div>';
-          }).join('');
+          '<ul class="cart-items">' + p.lines.map(function (l) {
+            var gross = l.unitPrice * l.qty;
+            var ctrl = l.isBump ? '<span class="cart-bump-tag">Ofertă la comandă</span>' :
+              '<div class="qty qty-pill" data-line="' + l.id + '"><button type="button" data-d="-1" aria-label="Scade cantitatea">−</button><input value="' + l.qty + '" readonly aria-label="Cantitate"><button type="button" data-d="1" aria-label="Crește cantitatea">+</button></div>';
+            return '<li class="cart-item"><a class="cart-thumb" href="/p/' + esc(l.slug) + '"><img src="' + esc(l.image) + '" alt="" width="88" height="88"></a>' +
+              '<div class="cart-info"><h3><a href="/p/' + esc(l.slug) + '">' + esc(l.title) + '</a></h3>' +
+              '<p class="cart-unit">' + money(l.unitPrice) + ' / buc.' + (l.pct && !l.isBump ? ' · <span class="line-save">economisești ' + money(gross - l.total) + '</span>' : '') + '</p>' +
+              '<div class="cart-row">' + ctrl + '<div class="cart-price"><strong>' + money(l.total) + '</strong>' + (l.total < gross ? '<s>' + money(gross) + '</s>' : '') + '</div></div></div>' +
+              (l.isBump ? '' : '<button type="button" class="cart-x" data-remove="' + l.id + '" aria-label="Șterge ' + esc(l.title) + '">' + x + '</button>') + '</li>';
+          }).join('') + '</ul>';
+        if (freeEl) freeEl.innerHTML = freeBar(p);
         totalsEl.innerHTML = totalsHtml(p);
         if (couponEl) couponEl.innerHTML = couponHtml(p);
         if (p.coupon && p.coupon.ok) updatePromoBar(p.coupon);
+        submitBtn.disabled = !!p.errors.length;
         submitBtn.textContent = (opts().payment === 'card' ? 'Plătește acum ' : 'Finalizează comanda · ') + money(p.total);
         if (!tracked && p.lines.length) {
           tracked = true;
@@ -419,6 +392,20 @@
         }
       });
     }
+    linesEl.addEventListener('click', function (e) {
+      var t = e.target.closest('button'); if (!t) return;
+      var c = getCart();
+      if (t.hasAttribute('data-remove')) {
+        var rid = Number(t.getAttribute('data-remove'));
+        setCart(c.filter(function (l) { return l.id !== rid; })); refresh(); return;
+      }
+      var wrap = t.closest('[data-line]');
+      if (wrap) {
+        var id = Number(wrap.getAttribute('data-line'));
+        c.forEach(function (l) { if (l.id === id) l.qty = Math.max(1, Math.min(50, l.qty + Number(t.getAttribute('data-d')))); });
+        setCart(c); refresh();
+      }
+    });
     form.addEventListener('change', function (e) {
       if (e.target.name === 'payment' || e.target.name === 'bump') refresh();
     });
@@ -462,12 +449,12 @@
       submitBtn.textContent = 'Se trimite comanda…';
       fetch('/api/comanda', {
         method: 'POST', headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ items: items, customer: data, payment: o.payment, bump: o.bump, attribution: attribution(), coupon: store.get('chimag_coupon', '') }),
+        body: JSON.stringify({ items: items(), customer: data, payment: o.payment, bump: o.bump, attribution: attribution(), coupon: store.get('chimag_coupon', '') }),
       }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
         .then(function (res) {
           if (res.j && res.j.couponError) refresh();
           if (!res.ok || !res.j.redirect) throw new Error(res.j.error || 'Comanda nu a putut fi trimisă.');
-          if (fromCart) setCart([]);
+          setCart([]);
           if (store.get('chimag_coupon', '')) { store.del('chimag_coupon'); store.del('chimag_wheel'); }
           location.href = res.j.redirect;
         })
@@ -625,7 +612,7 @@
           ((s.description && s.description !== s.label) || s.min ? '<p>' + esc(s.description && s.description !== s.label ? s.description : 'Valabil') + (s.min ? ' la comenzi de minim ' + money(s.min) : '') + '.</p>' : '') +
           '<p class="wheel-code">Codul tău: <strong>' + esc(s.code) + '</strong></p>' +
           '<p class="wheel-note">Se aplică automat la comandă. Valabil până la ora ' + fmtTime(s.expiresAt) + '.</p>' +
-          continueBtn(!cartN) + (cartN ? '<a class="btn btn-primary btn-lg btn-block" href="/finalizare">Finalizează comanda</a>' : '');
+          continueBtn(!cartN) + (cartN ? '<a class="btn btn-primary btn-lg btn-block" href="/cos">Finalizează comanda</a>' : '');
       } else if (s.state === 'wait-order' || s.state === 'wait-amount') {
         hub(false, '🔒');
         h = '<p class="wheel-step">Învârtirea ' + s.stage + ' din ' + (s.total || 3) + '</p>' +
@@ -725,7 +712,7 @@
     // apare singură doar când clientul are ceva de făcut (vizitator nou sau învârtire disponibilă); dacă o închizi, revine după 24h
     if (/[?&]roata/.test(location.search)) { open(); return; }
     var later = store.get('chimag_wheel_later', 0);
-    var skip = /^\/(finalizare|multumim|admin|pagina|cont)/.test(location.pathname);
+    var skip = /^\/(finalizare|cos|multumim|admin|pagina|cont)/.test(location.pathname);
     if (W.autoOpen && !skip && (st.state === 'guest' || st.state === 'ready') && Date.now() - later > 24 * 3600e3) {
       setTimeout(function () { if (modal.hidden) open(); }, W.delay * 1000);
     }

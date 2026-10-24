@@ -347,11 +347,11 @@ export function productJsonLd(p, reviews, siteUrl) {
 }
 
 // ---------------- Coș ----------------
-export function cartPage({ settings = {} } = {}) {
-  const returnDays = settings.return_days || 14;
-  return html`<div class="wrap cart-page cart-v3">
-    <div class="cart-head"><h1>Coșul tău</h1><span class="cart-head-count" data-cart-items></span></div>
-    <div data-cart-view><div class="cart-loading" aria-busy="true"><span></span><span></span></div></div>
+// ---------------- Finalizare comandă ----------------
+export function checkoutPage({ settings, bump, loggedIn = false }) {
+  const cardOn = settings.card_enabled === '1';
+  return html`<div class="wrap checkout">
+    <div class="co-head" data-co-head><h1>Coșul tău</h1><span class="cart-head-count" data-cart-items></span></div>
 
     <div data-cart-empty hidden>
       <div class="cart-empty">
@@ -362,17 +362,15 @@ export function cartPage({ settings = {} } = {}) {
       </div>
     </div>
 
-  </div>`;
-}
+    <div class="co-grid" data-co-main>
+      <section class="co-cart">
+        <div data-cart-lines><div class="cart-loading" aria-busy="true"><span></span></div></div>
+        <a class="co-continue" href="/#produse">← Continuă cumpărăturile</a>
+      </section>
 
-// ---------------- Finalizare comandă ----------------
-export function checkoutPage({ settings, bump, loggedIn = false }) {
-  const cardOn = settings.card_enabled === '1';
-  return html`<div class="wrap checkout">
-    <h1>Finalizează comanda</h1>
-    <div class="checkout-grid">
-      <form class="checkout-form" data-checkout-form novalidate>
-        ${!loggedIn && settings.accounts_enabled !== '0' ? html`<p class="checkout-login">Ai cont? <a href="/cont/autentificare?next=/finalizare">Intră în cont</a> și completăm datele automat. Poți comanda și fără cont.</p>` : ''}
+      <form class="checkout-form co-form" id="checkout-form" data-checkout-form novalidate>
+
+        ${!loggedIn && settings.accounts_enabled !== '0' ? html`<p class="checkout-login">Ai cont? <a href="/cont/autentificare?next=/cos">Intră în cont</a> și completăm datele automat. Poți comanda și fără cont.</p>` : ''}
         <section>
           <h2>Date de livrare</h2>
           <div class="field">
@@ -440,16 +438,16 @@ export function checkoutPage({ settings, bump, loggedIn = false }) {
           </span>
         </label>` : ''}
 
-        <p class="form-error" data-form-error hidden></p>
-        <button type="submit" class="btn btn-primary btn-xl btn-block" data-submit>Finalizează comanda</button>
-        <p class="legal-note">Plasând comanda ești de acord cu <a href="/pagina/termeni" target="_blank">termenii și condițiile</a> și confirmi că ai citit <a href="/pagina/confidentialitate" target="_blank">politica de confidențialitate</a>. Comanda implică obligația de plată. Ai dreptul la retur în ${settings.return_days || 14} zile (dreptul de retragere) – vezi <a href="/pagina/retur" target="_blank">condițiile de retur</a>.</p>
       </form>
 
-      <aside class="summary" data-summary>
-        <h2>Comanda ta</h2>
-        <div data-summary-lines><p class="muted">Se încarcă…</p></div>
+      <aside class="summary co-summary" data-summary>
+        <h2>Sumar comandă</h2>
+        <div data-summary-free></div>
         <div data-summary-coupon></div>
         <dl class="totals" data-summary-totals></dl>
+        <p class="form-error" data-form-error hidden></p>
+        <button type="submit" form="checkout-form" class="btn btn-primary btn-xl btn-block" data-submit>Finalizează comanda</button>
+        <p class="legal-note">Plasând comanda ești de acord cu <a href="/pagina/termeni" target="_blank">termenii și condițiile</a> și confirmi că ai citit <a href="/pagina/confidentialitate" target="_blank">politica de confidențialitate</a>. Comanda implică obligația de plată. Ai dreptul la retur în ${settings.return_days || 14} zile (dreptul de retragere) – vezi <a href="/pagina/retur" target="_blank">condițiile de retur</a>.</p>
       </aside>
     </div>
   </div>`;

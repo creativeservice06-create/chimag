@@ -6,7 +6,7 @@ import { createCheckoutSession, verifyWebhook } from './lib/stripe.js';
 import { sendServerPurchase } from './lib/tracking.js';
 import { JUDETE } from './lib/judete.js';
 import { layout } from './views/layout.js';
-import { homePage, productPage, productJsonLd, cartPage, checkoutPage, thankYouPage, notFoundPage } from './views/shop.js';
+import { homePage, productPage, productJsonLd, checkoutPage, thankYouPage, notFoundPage } from './views/shop.js';
 import { staticPage, PAGES } from './views/pages.js';
 import { handleAdmin } from './admin.js';
 import { handleFulfillmentApi } from './fulfillment-api.js';
@@ -155,17 +155,14 @@ async function route(request, env, ctx) {
     return page(env, request, { settings, title: list[0].category, canonical: `${siteUrl(env, request)}/categorie/${m[1]}`, body: searchPage({ settings, q: list[0].category, products: list, all, mode: 'category' }) });
   }
 
+  // Coșul și finalizarea comenzii sunt aceeași pagină (/cos); adresa veche duce aici
+  if (method === 'GET' && path === '/finalizare') return redirect('/cos' + url.search, 301);
   if (method === 'GET' && path === '/cos') {
-    const settings = await getSettings(env);
-    return page(env, request, { settings, title: 'Coșul tău', noindex: true, body: cartPage({ settings }) });
-  }
-
-  if (method === 'GET' && path === '/finalizare') {
     const settings = await getSettings(env);
     const bump = settings.bump_product_id ? await getProductById(env, Number(settings.bump_product_id)) : null;
     const me = await currentCustomer(request, env).catch(() => null);
     const prefill = me ? { name: me.name, email: me.email, phone: me.phone, county: me.county, city: me.city, address: me.address, postalCode: me.postal_code } : null;
-    return page(env, request, { settings, customer: me, title: 'Finalizare comandă', pageData: prefill ? { customer: prefill } : null, body: checkoutPage({ settings, bump: bump?.active ? bump : null, loggedIn: !!me }) });
+    return page(env, request, { settings, customer: me, title: 'Coșul tău', noindex: true, pageData: prefill ? { customer: prefill } : null, body: checkoutPage({ settings, bump: bump?.active ? bump : null, loggedIn: !!me }) });
   }
 
   if (method === 'GET' && (m = path.match(/^\/multumim\/([a-f0-9]{32})$/))) {
@@ -216,7 +213,7 @@ async function route(request, env, ctx) {
 
   // ---------- SEO ----------
   if (path === '/robots.txt') {
-    return new Response(`User-agent: *\nDisallow: /api/\nDisallow: /multumim/\nDisallow: /finalizare\nSitemap: ${siteUrl(env, request)}/sitemap.xml\n`, { headers: { 'content-type': 'text/plain' } });
+    return new Response(`User-agent: *\nDisallow: /api/\nDisallow: /multumim/\nDisallow: /finalizare\nDisallow: /cos\nSitemap: ${siteUrl(env, request)}/sitemap.xml\n`, { headers: { 'content-type': 'text/plain' } });
   }
   if (path === '/sitemap.xml') {
     const base = siteUrl(env, request);

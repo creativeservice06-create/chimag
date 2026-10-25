@@ -524,7 +524,7 @@
         var h = Math.floor(left / 3600e3), m = Math.floor(left / 60e3) % 60, sec = Math.floor(left / 1e3) % 60;
         t = ' · expiră în <b>' + h + ':' + (m < 10 ? '0' : '') + m + ':' + (sec < 10 ? '0' : '') + sec + '</b>';
       }
-      bar.innerHTML = '<div class="wrap">🎁 <strong>' + esc(info.label) + '</strong> se aplică automat la comandă' + t + '</div>';
+      bar.innerHTML = '<div class="wrap">🎁 <strong>' + esc(info.label) + '</strong><span class="pb-long"> se aplică automat la comandă</span><span class="pb-short"> activă</span>' + t + '</div>';
       bar.hidden = false;
     }
     tick();

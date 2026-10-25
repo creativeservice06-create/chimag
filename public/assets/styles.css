@@ -443,7 +443,10 @@ body.no-scroll { position: fixed; left: 0; right: 0; width: 100%; }
 }
 @media (max-height: 560px) and (min-width: 701px) { .wheel-stage { width: min(100%, calc(100dvh - 90px)); } }
 .confetti { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 100; display: none; }
-.promo-bar { background: var(--brand); color: #fff; font-size: .92rem; padding: 9px 0; text-align: center; }
+.promo-bar { background: var(--brand); color: #fff; font-size: .92rem; line-height: 1.35; padding: 8px 0; text-align: center; }
+.promo-bar[hidden] { display: none; }
+.pb-short { display: none; }
+@media (max-width: 860px) { .promo-bar { font-size: .82rem; padding: 6px 0; white-space: nowrap; } .pb-long { display: none; } .pb-short { display: inline; } }
 .promo-bar b { font-variant-numeric: tabular-nums; }
 .coupon-box { margin: 4px 0 6px; }
 .coupon-box summary { cursor: pointer; color: var(--brand); font-weight: 600; padding: 6px 0; }

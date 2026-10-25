@@ -176,7 +176,6 @@ export function homePage({ settings, products, categories = [], bestsellers = []
   <section class="cta-band">
     <div class="wrap"><div class="cta-band-inner">
       <div>
-        <span class="cta-emoji" aria-hidden="true">💬</span>
         <h2>Ai nevoie de ajutor?</h2>
         <p>Scrie-ne și îți răspundem cât mai repede${settings.hours ? `, ${settings.hours.charAt(0).toLowerCase() + settings.hours.slice(1)}` : ''}.</p>
       </div>

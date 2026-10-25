@@ -686,7 +686,13 @@
     function lockScroll(on) {
       var b = document.body, h = document.documentElement;
       if (on) { scrollY = window.scrollY; b.style.top = -scrollY + 'px'; b.classList.add('no-scroll'); h.classList.add('no-scroll'); }
-      else { b.classList.remove('no-scroll'); h.classList.remove('no-scroll'); b.style.top = ''; window.scrollTo(0, scrollY); }
+      else {
+        // revine instant unde era pagina, fără animația de derulare de sus
+        h.style.scrollBehavior = 'auto';
+        b.classList.remove('no-scroll'); h.classList.remove('no-scroll'); b.style.top = '';
+        window.scrollTo({ top: scrollY, left: 0, behavior: 'instant' });
+        setTimeout(function () { h.style.scrollBehavior = ''; }, 0);
+      }
     }
     // fereastra nu se derulează și nu lasă pagina din spate să se miște (mouse, touchpad, deget)
     ['wheel', 'touchmove'].forEach(function (ev) { modal.addEventListener(ev, function (e) { e.preventDefault(); }, { passive: false }); });

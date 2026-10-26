@@ -479,8 +479,16 @@ export function thankYouPage({ settings, order, items, payment }) {
     <section class="order-status card">
       <h2>Status</h2>
       <p class="status-line"><span class="status status-${order.status}">${ORDER_STATUSES[order.status]}</span>
-      ${order.awb ? html` · AWB ${order.tracking_url ? html`<a href="${order.tracking_url}" target="_blank" rel="noopener">${order.awb}</a>` : order.awb}${order.courier ? ` (${order.courier})` : ''}` : ''}</p>
-      ${order.hs_awb ? html`<p class="status-line">Al doilea colet: AWB ${order.hs_tracking_url ? html`<a href="${order.hs_tracking_url}" target="_blank" rel="noopener">${order.hs_awb}</a>` : order.hs_awb}${order.hs_courier ? ` (${order.hs_courier})` : ''}</p>` : ''}
+      ${order.fulfillment_mode !== 'mixt' && order.awb ? html` · AWB ${order.tracking_url ? html`<a href="${order.tracking_url}" target="_blank" rel="noopener">${order.awb}</a>` : order.awb}${order.courier ? ` (${order.courier})` : ''}` : ''}</p>
+      ${order.fulfillment_mode === 'mixt' ? html`<ul class="parcel-list">
+        ${[
+          ['Coletul 1', items.filter((i) => i.fulfillment === 'helpship'), order.hs_awb, order.hs_tracking_url, order.hs_courier],
+          ['Coletul 2', items.filter((i) => i.fulfillment !== 'helpship'), order.awb, order.tracking_url, order.courier],
+        ].map(([label, list, awb, url, courier]) => html`<li>
+          <strong>${label}</strong><span class="muted">${list.map((i) => `${i.qty} × ${i.title}`).join(', ')}</span>
+          <span>${awb ? html`AWB ${url ? html`<a href="${url}" target="_blank" rel="noopener">${awb}</a>` : awb}${courier ? ` (${courier})` : ''}` : html`<span class="muted">În pregătire – AWB-ul apare aici când pleacă coletul</span>`}</span>
+        </li>`)}
+      </ul>` : ''}
       <p class="muted">Păstrează această pagină: poți reveni oricând aici ca să vezi statusul comenzii.</p>
     </section>
 

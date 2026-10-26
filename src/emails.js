@@ -32,12 +32,12 @@ function layout(s, base, { preheader = '', title, intro = '', body = '', cta = n
 </table></td></tr></table></body></html>`;
 }
 
-function itemsTable(base, items, images) {
+function itemsTable(base, items, images, admin = false) {
   const rows = items.map((i) => {
     const img = abs(base, images.get(i.product_id));
     return `<tr>
       <td width="72" style="padding:10px 0;border-bottom:1px solid ${C.line};vertical-align:top;">${img ? `<img src="${esc(img)}" width="64" height="64" alt="" style="display:block;width:64px;height:64px;object-fit:cover;border-radius:10px;background:${C.bg};border:1px solid ${C.line};">` : ''}</td>
-      <td style="padding:10px 12px;border-bottom:1px solid ${C.line};font-size:15px;line-height:1.4;vertical-align:top;">${esc(i.title)}<br><span style="color:${C.muted};font-size:13px;">${i.qty} buc. × ${money(i.unit_price)}${i.fulfillment === 'helpship' ? ' · <span style="color:#8a5a00;font-weight:700;">Helpship</span>' : ''}</span></td>
+      <td style="padding:10px 12px;border-bottom:1px solid ${C.line};font-size:15px;line-height:1.4;vertical-align:top;">${esc(i.title)}<br><span style="color:${C.muted};font-size:13px;">${i.qty} buc. × ${money(i.unit_price)}${admin && i.fulfillment === 'helpship' ? ' · <span style="color:#8a5a00;font-weight:700;">Helpship</span>' : ''}</span></td>
       <td align="right" style="padding:10px 0;border-bottom:1px solid ${C.line};font-size:15px;font-weight:700;white-space:nowrap;vertical-align:top;">${money(i.total)}</td>
     </tr>`;
   }).join('');
@@ -102,7 +102,7 @@ export function adminNewOrderEmail(s, base, o, items, images) {
       preheader: `${o.customer_name}, ${o.city} – ${money(o.total)}`,
       title: `Comandă nouă ${o.number}`,
       intro: `${esc(o.customer_name)} din ${esc(o.city)} · ${formatDate(o.created_at)}${o.coupon_code ? ` · cod <strong>${esc(o.coupon_code)}</strong>` : ''}${o.utm_source ? ` · sursa ${esc(o.utm_source)}${o.utm_campaign ? ` / ${esc(o.utm_campaign)}` : ''}` : ''}`,
-      body: summaryStrip(o) + splitBox(o, true) + itemsTable(base, items, images) + totalsTable(o) + addressBox(o),
+      body: summaryStrip(o) + splitBox(o, true) + itemsTable(base, items, images, true) + totalsTable(o) + addressBox(o),
       cta: { label: 'Deschide comanda în admin', href: `${base}/admin/comenzi/${o.id}` },
     }),
     text: `Comandă nouă ${o.number}\n\n${textItems(items)}\n\nTotal: ${money(o.total)}\nClient: ${o.customer_name}, ${o.phone}\n${o.address}, ${o.city}, ${o.county}\n\n${base}/admin/comenzi/${o.id}`,

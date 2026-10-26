@@ -74,6 +74,8 @@ export function buildOrderPayload(env, order, items, countryId) {
     shippingPrice: diff > 0 ? diff : 0,
     discountPrice: diff < 0 ? -diff : 0,
     paymentStatus: paid ? 'Paid' : 'Pending',
+    // Ramburs = plată manuală (încasată de curier); cardul plătit online = Checkout.
+    paymentProcessing: order.payment_method === 'card' ? 'Checkout' : 'Manual',
     customerNote: order.notes || null,
     shopOwnerNote: order.fulfillment_mode === 'mixt' ? 'Comanda are 2 colete; acesta conține doar produsele Helpship.' : null,
     mailingAddress: {

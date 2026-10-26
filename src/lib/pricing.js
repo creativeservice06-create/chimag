@@ -102,3 +102,16 @@ export async function priceCart(env, settings, items, opts = {}) {
     freeShippingLeft: freeShipByCoupon || !threshold || threshold <= afterBundles ? 0 : threshold - afterBundles,
   };
 }
+
+// Împarte comanda pe colete: produsele marcate „helpship" pleacă din depozitul Helpship,
+// restul de la noi. Totalul (cu transport, reduceri, taxe) se împarte proporțional cu valoarea produselor,
+// ca fiecare curier să încaseze doar partea lui la ramburs.
+export function splitParcels(priced) {
+  const isHs = (l) => (l.product?.fulfillment || '') === 'helpship';
+  const hsNet = priced.lines.filter(isHs).reduce((s, l) => s + l.total, 0);
+  const allNet = priced.lines.reduce((s, l) => s + l.total, 0);
+  if (!hsNet) return { mode: 'own', own: priced.total, hs: 0 };
+  if (hsNet >= allNet) return { mode: 'helpship', own: 0, hs: priced.total };
+  const hs = Math.round(priced.total * hsNet / allNet);
+  return { mode: 'mixt', own: priced.total - hs, hs };
+}

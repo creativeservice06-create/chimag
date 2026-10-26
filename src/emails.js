@@ -37,7 +37,7 @@ function itemsTable(base, items, images) {
     const img = abs(base, images.get(i.product_id));
     return `<tr>
       <td width="72" style="padding:10px 0;border-bottom:1px solid ${C.line};vertical-align:top;">${img ? `<img src="${esc(img)}" width="64" height="64" alt="" style="display:block;width:64px;height:64px;object-fit:cover;border-radius:10px;background:${C.bg};border:1px solid ${C.line};">` : ''}</td>
-      <td style="padding:10px 12px;border-bottom:1px solid ${C.line};font-size:15px;line-height:1.4;vertical-align:top;">${esc(i.title)}<br><span style="color:${C.muted};font-size:13px;">${i.qty} buc. × ${money(i.unit_price)}</span></td>
+      <td style="padding:10px 12px;border-bottom:1px solid ${C.line};font-size:15px;line-height:1.4;vertical-align:top;">${esc(i.title)}<br><span style="color:${C.muted};font-size:13px;">${i.qty} buc. × ${money(i.unit_price)}${i.fulfillment === 'helpship' ? ' · <span style="color:#8a5a00;font-weight:700;">Helpship</span>' : ''}</span></td>
       <td align="right" style="padding:10px 0;border-bottom:1px solid ${C.line};font-size:15px;font-weight:700;white-space:nowrap;vertical-align:top;">${money(i.total)}</td>
     </tr>`;
   }).join('');
@@ -69,6 +69,19 @@ function summaryStrip(o) {
   </tr></table>`;
 }
 
+// comandă în 2 colete (o parte pleacă din depozitul Helpship)
+function splitBox(o, admin = false) {
+  if (o.fulfillment_mode !== 'mixt' && !(admin && o.fulfillment_mode === 'helpship')) return '';
+  const cod = !(o.payment_method === 'card' && o.payment_status === 'platita');
+  const text = o.fulfillment_mode === 'helpship'
+    ? 'Toată comanda se livrează din depozitul Helpship (AWB-ul îl generează depozitul).'
+    : admin
+      ? `2 colete: Helpship ${money(o.hs_total)} · colet propriu ${money(o.own_total)} (AWB din admin).`
+      : `Produsele pleacă din depozite diferite, așa că vei primi 2 colete, fiecare cu AWB-ul lui.${cod ? ` Plătești fiecare colet curierului care ți-l aduce: <strong>${money(o.hs_total)}</strong> și <strong>${money(o.own_total)}</strong>.` : ''}`;
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;background:#fff8e8;border:1px solid #f3dca6;border-radius:12px;${FONT}"><tr><td style="padding:12px 14px;font-size:14px;line-height:1.5;color:#5c4100;">
+    <strong>📦 ${admin ? 'Livrare' : 'Comanda ta vine în 2 colete'}</strong><br>${text}</td></tr></table>`;
+}
+
 function addressBox(o) {
   const place = [o.address, o.city, o.county ? `jud. ${o.county}` : '', o.postal_code].filter(Boolean).map(esc).join(', ');
   const contact = [o.phone, o.email].filter(Boolean).map(esc).join(' · ');
@@ -89,7 +102,7 @@ export function adminNewOrderEmail(s, base, o, items, images) {
       preheader: `${o.customer_name}, ${o.city} – ${money(o.total)}`,
       title: `Comandă nouă ${o.number}`,
       intro: `${esc(o.customer_name)} din ${esc(o.city)} · ${formatDate(o.created_at)}${o.coupon_code ? ` · cod <strong>${esc(o.coupon_code)}</strong>` : ''}${o.utm_source ? ` · sursa ${esc(o.utm_source)}${o.utm_campaign ? ` / ${esc(o.utm_campaign)}` : ''}` : ''}`,
-      body: summaryStrip(o) + itemsTable(base, items, images) + totalsTable(o) + addressBox(o),
+      body: summaryStrip(o) + splitBox(o, true) + itemsTable(base, items, images) + totalsTable(o) + addressBox(o),
       cta: { label: 'Deschide comanda în admin', href: `${base}/admin/comenzi/${o.id}` },
     }),
     text: `Comandă nouă ${o.number}\n\n${textItems(items)}\n\nTotal: ${money(o.total)}\nClient: ${o.customer_name}, ${o.phone}\n${o.address}, ${o.city}, ${o.county}\n\n${base}/admin/comenzi/${o.id}`,
@@ -103,7 +116,7 @@ export function customerOrderEmail(s, base, o, items, images) {
       preheader: `Mulțumim! Total ${money(o.total)}. Îți scriem când o expediem.`,
       title: `Mulțumim, ${o.customer_name.split(' ')[0]}! Am primit comanda.`,
       intro: 'Îți scriem din nou când o expediem, cu numărul AWB pentru urmărire.',
-      body: summaryStrip(o) + itemsTable(base, items, images) + totalsTable(o) + addressBox(o),
+      body: summaryStrip(o) + splitBox(o) + itemsTable(base, items, images) + totalsTable(o) + addressBox(o),
       cta: { label: 'Vezi statusul comenzii', href: `${base}/multumim/${o.token}` },
     }),
     text: `Mulțumim! Am primit comanda ${o.number}.\n\n${textItems(items)}\n\nTotal: ${money(o.total)}\n\nStatusul comenzii: ${base}/multumim/${o.token}`,
@@ -120,8 +133,13 @@ const STATUS_COPY = {
 export const STATUS_EMAILS = Object.keys(STATUS_COPY);
 
 export function customerStatusEmail(s, base, o, items, images) {
-  const c = STATUS_COPY[o.status];
+  let c = STATUS_COPY[o.status];
   if (!c) return null;
+  if (o.fulfillment_mode === 'mixt' && o.status === 'expediata') {
+    // la comenzile în 2 colete, emailul de expediere e pentru coletul nostru
+    c = { subject: 'Un colet din comanda {n} e pe drum 🚚', title: 'Un colet e pe drum 🚚', intro: 'Comanda ta vine în 2 colete, iar unul dintre ele tocmai a plecat spre tine. Curierul te sună înainte de livrare.' };
+    items = items.filter((i) => i.fulfillment !== 'helpship');
+  }
   const awb = o.status === 'expediata' && o.awb
     ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;background:${C.tint};border-radius:12px;${FONT}"><tr><td style="padding:14px 16px;font-size:15px;">AWB: <strong>${esc(o.awb)}</strong>${o.courier ? ` · ${esc(o.courier)}` : ''}${o.tracking_url ? `<br><a href="${esc(o.tracking_url)}" style="color:${C.blue};font-weight:700;">Urmărește coletul</a>` : ''}</td></tr></table>`
     : '';
@@ -133,6 +151,22 @@ export function customerStatusEmail(s, base, o, items, images) {
       cta: { label: 'Vezi comanda', href: `${base}/multumim/${o.token}` },
     }),
     text: `${c.title}\n${c.intro}\n${o.awb ? `AWB: ${o.awb} ${o.tracking_url || ''}\n` : ''}\nComanda: ${base}/multumim/${o.token}`,
+  };
+}
+
+export function parcelShippedEmail(s, base, o, items, images) {
+  const awb = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;background:${C.tint};border-radius:12px;${FONT}"><tr><td style="padding:14px 16px;font-size:15px;">AWB: <strong>${esc(o.hs_awb)}</strong>${o.hs_courier ? ` · ${esc(o.hs_courier)}` : ''}${o.hs_tracking_url ? `<br><a href="${esc(o.hs_tracking_url)}" style="color:${C.blue};font-weight:700;">Urmărește coletul</a>` : ''}</td></tr></table>`;
+  const cod = !(o.payment_method === 'card' && o.payment_status === 'platita');
+  return {
+    subject: `Un colet din comanda ${o.number} e pe drum 🚚`,
+    html: layout(s, base, {
+      preheader: 'Unul dintre cele două colete ale comenzii tale a plecat spre tine.',
+      title: 'Un colet e pe drum 🚚',
+      intro: `Comanda ta vine în 2 colete. Acesta conține produsele de mai jos${cod ? ` și îl plătești curierului: <strong style="color:${C.ink}">${money(o.hs_total)}</strong>` : ''}. Celălalt colet are AWB-ul lui și te anunțăm separat despre el.`,
+      body: awb + itemsTable(base, items, images),
+      cta: { label: 'Vezi comanda', href: `${base}/multumim/${o.token}` },
+    }),
+    text: `Un colet din comanda ${o.number} e pe drum. AWB ${o.hs_awb} ${o.hs_tracking_url || ''}`,
   };
 }
 

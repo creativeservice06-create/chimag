@@ -1,0 +1,11 @@
+ALTER TABLE products ADD COLUMN fulfillment TEXT NOT NULL DEFAULT '';
+ALTER TABLE order_items ADD COLUMN fulfillment TEXT NOT NULL DEFAULT '';
+ALTER TABLE orders ADD COLUMN fulfillment_mode TEXT NOT NULL DEFAULT 'own';
+ALTER TABLE orders ADD COLUMN own_total INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE orders ADD COLUMN hs_total INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE orders ADD COLUMN hs_status TEXT NOT NULL DEFAULT '';
+ALTER TABLE orders ADD COLUMN hs_awb TEXT NOT NULL DEFAULT '';
+ALTER TABLE orders ADD COLUMN hs_courier TEXT NOT NULL DEFAULT '';
+ALTER TABLE orders ADD COLUMN hs_tracking_url TEXT NOT NULL DEFAULT '';
+ALTER TABLE orders ADD COLUMN hs_error TEXT NOT NULL DEFAULT '';
+UPDATE products SET fulfillment = 'helpship' WHERE slug = 'lampa-de-veghe-capybara';

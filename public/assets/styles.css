@@ -1052,3 +1052,9 @@ section[id], #produse, #categorii, #intrebari, #cum-comanzi { scroll-margin-top:
   .filter-chips { margin: -6px calc(var(--gutter) * -1) 16px; padding-left: var(--gutter); padding-right: var(--gutter); }
   .chip { padding: 7px 14px; font-size: .86rem; }
 }
+
+/* comandă în 2 colete */
+.split-note { display: grid; gap: 4px; margin: 4px 0 14px; padding: 14px 16px; border-radius: var(--radius); background: #fff8e8; border: 1px solid #f3dca6; color: #6b4a00; font-size: .92rem; line-height: 1.45; }
+.split-note strong { color: #4f3600; font-size: .98rem; }
+.split-note[hidden] { display: none; }
+.parcel-tag { display: inline-block; margin: 2px 0 4px; padding: 2px 8px; border-radius: 999px; background: #fff3d6; color: #7a5300; font-size: .74rem; font-weight: 700; }

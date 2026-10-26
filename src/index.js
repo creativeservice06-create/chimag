@@ -1,6 +1,6 @@
 import { htmlResponse, json, redirect, normalizePhone, isEmail, slugify } from './lib/util.js';
 import { getSettings, listProducts, getProductBySlug, getProductById, getReviews, getOrder, getOrderItems, updateOrder, addOrderEvent } from './lib/db.js';
-import { priceCart, bundlePct } from './lib/pricing.js';
+import { priceCart, bundlePct, splitParcels } from './lib/pricing.js';
 import { createOrder, markPaid } from './lib/orders.js';
 import { createCheckoutSession, verifyWebhook } from './lib/stripe.js';
 import { sendServerPurchase } from './lib/tracking.js';
@@ -246,9 +246,11 @@ async function route(request, env, ctx) {
         id: l.product.id, slug: l.product.slug, title: l.product.title, image: l.product.images[0] || '/img/placeholder.svg',
         qty: l.qty, unitPrice: l.unitPrice, pct: l.pct, lineDiscount: l.lineDiscount, total: l.total, isBump: l.isBump,
         nextTier: l.isBump ? null : nextBundleTier(l.product, l.qty),
+        parcel: l.product.fulfillment === 'helpship' ? 'helpship' : 'own',
       })).filter((l) => !l.isBump || body.bump),
       subtotal: p.subtotal, discount: p.discount, couponDiscount: p.couponDiscount, coupon: p.coupon,
       shipping: p.shipping, codFee: p.codFee, total: p.total, freeShippingLeft: p.freeShippingLeft, errors: p.errors,
+      split: splitParcels(p),
     });
   }
 

@@ -438,6 +438,7 @@ export function checkoutPage({ settings, bump, loggedIn = false }) {
       </form>
 
       <div class="co-final">
+        <div class="split-note" data-split-note hidden></div>
         <p class="form-error" data-form-error hidden></p>
         <button type="submit" form="checkout-form" class="btn btn-primary btn-xl btn-block" data-submit>Finalizează comanda</button>
         <p class="legal-note">Plasând comanda ești de acord cu <a href="/pagina/termeni" target="_blank">termenii și condițiile</a> și confirmi că ai citit <a href="/pagina/confidentialitate" target="_blank">politica de confidențialitate</a>. Comanda implică obligația de plată. Ai dreptul la retur în ${settings.return_days || 14} zile (dreptul de retragere) – vezi <a href="/pagina/retur" target="_blank">condițiile de retur</a>.</p>
@@ -473,10 +474,13 @@ export function thankYouPage({ settings, order, items, payment }) {
         <p>Numărul comenzii: <strong>${order.number}</strong>.</p>
       </div>`}
 
+    ${order.fulfillment_mode === 'mixt' ? html`<div class="split-note"><strong>📦 Comanda ta vine în 2 colete separate</strong><span>Produsele pleacă din depozite diferite, așa că vei primi două colete, fiecare cu AWB-ul lui.${isCard && paid ? '' : html` Plătești fiecare colet curierului care ți-l aduce: <b>${money(order.hs_total)}</b> și <b>${money(order.own_total)}</b>.`}</span></div>` : ''}
+
     <section class="order-status card">
       <h2>Status</h2>
       <p class="status-line"><span class="status status-${order.status}">${ORDER_STATUSES[order.status]}</span>
       ${order.awb ? html` · AWB ${order.tracking_url ? html`<a href="${order.tracking_url}" target="_blank" rel="noopener">${order.awb}</a>` : order.awb}${order.courier ? ` (${order.courier})` : ''}` : ''}</p>
+      ${order.hs_awb ? html`<p class="status-line">Al doilea colet: AWB ${order.hs_tracking_url ? html`<a href="${order.hs_tracking_url}" target="_blank" rel="noopener">${order.hs_awb}</a>` : order.hs_awb}${order.hs_courier ? ` (${order.hs_courier})` : ''}</p>` : ''}
       <p class="muted">Păstrează această pagină: poți reveni oricând aici ca să vezi statusul comenzii.</p>
     </section>
 

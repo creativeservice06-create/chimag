@@ -407,6 +407,7 @@
               '<div class="qty qty-pill" data-line="' + l.id + '"><button type="button" data-d="-1" aria-label="Scade cantitatea">−</button><input value="' + l.qty + '" readonly aria-label="Cantitate"><button type="button" data-d="1" aria-label="Crește cantitatea">+</button></div>';
             return '<li class="cart-item"><a class="cart-thumb" href="/p/' + esc(l.slug) + '"><img src="' + esc(l.image) + '" alt="" width="88" height="88"></a>' +
               '<div class="cart-info"><h3><a href="/p/' + esc(l.slug) + '">' + esc(l.title) + '</a></h3>' +
+              ((p.split || {}).mode === 'mixt' ? '<span class="parcel-tag">' + (l.parcel === 'helpship' ? 'Coletul 1' : 'Coletul 2') + '</span>' : '') +
               '<p class="cart-unit">' + money(l.unitPrice) + ' / buc.' + (l.pct && !l.isBump ? ' · <span class="line-save">economisești ' + money(gross - l.total) + '</span>' : '') + '</p>' +
               '<div class="cart-row">' + ctrl + '<div class="cart-price"><strong>' + money(l.total) + '</strong>' + (l.total < gross ? '<s>' + money(gross) + '</s>' : '') + '</div></div>' +
               '</div>' +
@@ -417,6 +418,18 @@
         totalsEl.innerHTML = totalsHtml(p);
         if (couponEl) couponEl.innerHTML = couponHtml(p);
         if (p.coupon && p.coupon.ok) updatePromoBar(p.coupon);
+        // comandă cu produse din depozite diferite: clientul află că vine în 2 colete
+        var splitEl = $('[data-split-note]');
+        if (splitEl) {
+          var sp = p.split || {};
+          if (sp.mode === 'mixt') {
+            var cod = opts().payment !== 'card';
+            splitEl.innerHTML = '<strong>📦 Comanda ta ajunge în 2 colete separate</strong>' +
+              '<span>Produsele pleacă din depozite diferite, așa că vei primi două colete, fiecare cu AWB-ul lui. ' +
+              (cod ? 'Plătești fiecare colet curierului care ți-l aduce: <b>' + money(sp.hs) + '</b> și <b>' + money(sp.own) + '</b>. Totalul rămâne același, ' + money(p.total) + '.' : 'Totalul plătit rămâne același.') + '</span>';
+            splitEl.hidden = false;
+          } else splitEl.hidden = true;
+        }
         submitBtn.disabled = !!p.errors.length;
         submitBtn.textContent = (opts().payment === 'card' ? 'Plătește acum ' : 'Finalizează comanda · ') + money(p.total);
         if (!tracked && p.lines.length) {

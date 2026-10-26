@@ -115,7 +115,7 @@ function ordersTable(orders, selectable = true) {
     <thead><tr>${selectable ? html`<th><input type="checkbox" data-check-all aria-label="Selectează tot"></th>` : ''}<th>Comandă</th><th>Data</th><th>Client</th><th>Localitate</th><th class="r">Total</th><th>Plată</th><th>Status</th><th>AWB</th></tr></thead>
     <tbody>${orders.map((o) => html`<tr>
       ${selectable ? html`<td><input type="checkbox" name="ids" value="${o.id}" form="bulk" aria-label="Selectează ${o.number}"></td>` : ''}
-      <td><a href="/admin/comenzi/${o.id}"><b>${o.number}</b></a></td>
+      <td><a href="/admin/comenzi/${o.id}"><b>${o.number}</b></a>${o.fulfillment_mode === 'helpship' ? html`<br><span class="chip chip-hs">Helpship</span>` : o.fulfillment_mode === 'mixt' ? html`<br><span class="chip chip-hs">2 colete</span>` : ''}</td>
       <td class="nowrap">${formatDate(o.created_at)}</td>
       <td>${o.customer_name}<br><a class="muted" href="tel:${o.phone}">${o.phone}</a></td>
       <td>${o.city}<br><span class="muted">${o.county}</span></td>
@@ -187,8 +187,8 @@ export function orderView({ order: o, items, events, settings, provider }) {
     <div>
       <section class="panel">
         <h2>Produse</h2>
-        <table class="tbl"><thead><tr><th>Produs</th><th>SKU</th><th class="r">Cant.</th><th class="r">Preț</th><th class="r">Total</th></tr></thead><tbody>
-        ${items.map((i) => html`<tr><td>${i.title}</td><td class="muted">${i.sku}</td><td class="r">${i.qty}</td><td class="r">${money(i.unit_price)}</td><td class="r">${money(i.total)}${i.line_discount ? html`<br><small class="muted">−${money(i.line_discount)}</small>` : ''}</td></tr>`)}
+        <table class="tbl"><thead><tr><th>Produs</th><th>SKU</th><th>Livrează</th><th class="r">Cant.</th><th class="r">Preț</th><th class="r">Total</th></tr></thead><tbody>
+        ${items.map((i) => html`<tr><td>${i.title}</td><td class="muted">${i.sku}</td><td>${i.fulfillment === 'helpship' ? html`<span class="chip chip-hs">Helpship</span>` : html`<span class="muted">Noi</span>`}</td><td class="r">${i.qty}</td><td class="r">${money(i.unit_price)}</td><td class="r">${money(i.total)}${i.line_discount ? html`<br><small class="muted">−${money(i.line_discount)}</small>` : ''}</td></tr>`)}
         </tbody></table>
         <dl class="sum">
           <div><dt>Subtotal</dt><dd>${money(o.subtotal)}</dd></div>
@@ -198,6 +198,7 @@ export function orderView({ order: o, items, events, settings, provider }) {
           ${o.cod_fee ? html`<div><dt>Taxă ramburs</dt><dd>${money(o.cod_fee)}</dd></div>` : ''}
           <div class="grand"><dt>Total</dt><dd>${money(o.total)}</dd></div>
           ${o.payment_method === 'ramburs' ? html`<div><dt>De încasat ramburs</dt><dd><b>${money(o.payment_status === 'platita' ? 0 : o.total)}</b></dd></div>` : ''}
+          ${o.fulfillment_mode === 'mixt' ? html`<div><dt>· colet Helpship</dt><dd>${money(o.hs_total)}</dd></div><div><dt>· colet propriu</dt><dd>${money(o.own_total)}</dd></div>` : ''}
         </dl>
       </section>
 
@@ -219,8 +220,18 @@ export function orderView({ order: o, items, events, settings, provider }) {
     </div>
 
     <div>
-      <section class="panel">
-        <h2>Livrare</h2>
+      ${o.fulfillment_mode !== 'own' ? html`<section class="panel hs-panel">
+        <h2>Helpship ${o.fulfillment_mode === 'mixt' ? '· coletul 1' : ''}</h2>
+        ${o.fulfillment_mode === 'mixt'
+          ? html`<p>Produsele marcate „Helpship” pleacă din depozitul lor. Ramburs colet: <b>${money(o.payment_status === 'platita' ? 0 : o.hs_total)}</b></p>
+            ${o.hs_awb ? html`<p class="awb">AWB <b>${o.hs_awb}</b>${o.hs_courier ? ` · ${o.hs_courier}` : ''}${o.hs_tracking_url ? html` · <a href="${o.hs_tracking_url}" target="_blank">urmărește</a>` : ''}</p>` : html`<p class="muted">Așteaptă AWB de la depozit${o.hs_status ? ` · ${o.hs_status}` : ''}.</p>`}`
+          : html`<p>Toată comanda se livrează din depozitul Helpship. AWB-ul îl generează depozitul și apare aici automat.</p>`}
+        ${o.hs_error ? html`<p class="flash err">${o.hs_error}</p>` : ''}
+      </section>` : ''}
+
+      ${o.fulfillment_mode !== 'helpship' ? html`<section class="panel">
+        <h2>Livrare${o.fulfillment_mode === 'mixt' ? html` · coletul 2 (de la noi)` : ''}</h2>
+        ${o.fulfillment_mode === 'mixt' ? html`<p>Doar produsele marcate „Noi”. Ramburs colet: <b>${money(o.payment_status === 'platita' ? 0 : o.own_total)}</b></p>` : ''}
         <p class="muted">Furnizor: <b>${providerObj.label}</b></p>
         ${o.awb ? html`
           <p class="awb">AWB <b>${o.awb}</b>${o.courier ? ` · ${o.courier}` : ''}</p>
@@ -239,7 +250,7 @@ export function orderView({ order: o, items, events, settings, provider }) {
             <div class="span2"><button class="btn">Salvează AWB</button></div>
           </form>
         </details>
-      </section>
+      </section>` : html`${o.awb ? html`<section class="panel"><h2>Livrare</h2><p class="awb">AWB <b>${o.awb}</b>${o.courier ? ` · ${o.courier}` : ''}</p>${o.tracking_url ? html`<a class="btn" href="${o.tracking_url}" target="_blank">Urmărește coletul</a>` : ''}</section>` : ''}`}
 
       <section class="panel">
         <h2>Plată</h2>
@@ -355,6 +366,10 @@ export function productFormView({ product: p, reviews = [], hasR2 }) {
           <h2 class="span2">Afișare</h2>
           <label>Etichetă<input name="badge" value="${p.badge || ''}" placeholder="ex: Best seller"></label>
           <label>Categorie<input name="category" value="${p.category || ''}"></label>
+          <label class="span2">Cine livrează<select name="fulfillment">
+            <option value="" ${!p.fulfillment ? 'selected' : ''}>Noi (generez AWB din admin)</option>
+            <option value="helpship" ${p.fulfillment === 'helpship' ? 'selected' : ''}>Helpship (comanda pleacă automat la depozit)</option>
+          </select></label>
           <label>Adresă (slug)<input name="slug" value="${p.slug || ''}" placeholder="se generează din nume"></label>
           <label>Ordine afișare<input name="sort" type="number" value="${p.sort ?? 0}"></label>
           <label class="check"><input type="checkbox" name="active" value="1" ${p.active !== 0 ? 'checked' : ''}> Activ în magazin</label>

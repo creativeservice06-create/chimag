@@ -1,36 +1,45 @@
 import { addOrderEvent, getOrder, getOrderItems, nextOrderNumber, updateOrder, ORDER_STATUSES } from './db.js';
 import { randomToken } from './util.js';
+import { splitParcels } from './pricing.js';
 import { getProvider } from '../shipping/providers.js';
 import { trackingUrlFor } from '../shipping/common.js';
 import { notifyStatus } from './notify.js';
 
 export async function createOrder(env, { customer, priced, paymentMethod, meta }) {
   const number = await nextOrderNumber(env);
+  const split = splitParcels(priced);
   const token = randomToken(16);
   const row = await env.DB.prepare(`INSERT INTO orders
     (number, token, status, payment_method, payment_status, customer_name, phone, email, county, city, address, postal_code, notes,
      subtotal, discount, shipping, cod_fee, total, utm_source, utm_medium, utm_campaign, fbclid, ttclid, fbp, ip, user_agent,
-     coupon_code, coupon_discount, customer_id)
-    VALUES (?, ?, 'noua', ?, 'neplatita', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     coupon_code, coupon_discount, customer_id, fulfillment_mode, own_total, hs_total)
+    VALUES (?, ?, 'noua', ?, 'neplatita', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     RETURNING id`)
     .bind(number, token, paymentMethod, customer.name, customer.phone, customer.email, customer.county, customer.city,
       customer.address, customer.postalCode, customer.notes, priced.subtotal, priced.discount, priced.shipping, priced.codFee,
       priced.total, meta.utm_source, meta.utm_medium, meta.utm_campaign, meta.fbclid, meta.ttclid, meta.fbp, meta.ip, meta.ua,
-      priced.coupon?.ok ? priced.coupon.code : '', priced.coupon?.ok ? priced.couponDiscount : 0, meta.customerId || 0)
+      priced.coupon?.ok ? priced.coupon.code : '', priced.coupon?.ok ? priced.couponDiscount : 0, meta.customerId || 0,
+      split.mode, split.own, split.hs)
     .first();
   const orderId = row.id;
 
   const stmts = [];
   for (const l of priced.lines) {
-    stmts.push(env.DB.prepare(`INSERT INTO order_items (order_id, product_id, title, sku, qty, unit_price, line_discount, total)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
-      .bind(orderId, l.product.id, l.product.title + (l.isBump ? ' (ofertă la comandă)' : ''), l.product.sku || '', l.qty, l.unitPrice, l.lineDiscount, l.total));
+    stmts.push(env.DB.prepare(`INSERT INTO order_items (order_id, product_id, title, sku, qty, unit_price, line_discount, total, fulfillment)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .bind(orderId, l.product.id, l.product.title + (l.isBump ? ' (ofertă la comandă)' : ''), l.product.sku || '', l.qty, l.unitPrice, l.lineDiscount, l.total, l.product.fulfillment || ''));
     if (l.product.track_stock) {
       stmts.push(env.DB.prepare('UPDATE products SET stock = MAX(0, stock - ?) WHERE id = ?').bind(l.qty, l.product.id));
     }
   }
   stmts.push(env.DB.prepare('INSERT INTO order_events(order_id, message) VALUES (?, ?)')
     .bind(orderId, `Comandă plasată (${paymentMethod === 'card' ? 'plată cu cardul' : 'plată ramburs'})`));
+  if (split.mode === 'mixt') {
+    stmts.push(env.DB.prepare('INSERT INTO order_events(order_id, message) VALUES (?, ?)')
+      .bind(orderId, `Comandă în 2 colete: Helpship ${(split.hs / 100).toFixed(2)} lei, colet propriu ${(split.own / 100).toFixed(2)} lei`));
+  } else if (split.mode === 'helpship') {
+    stmts.push(env.DB.prepare('INSERT INTO order_events(order_id, message) VALUES (?, ?)').bind(orderId, 'Comanda se livrează integral prin Helpship.'));
+  }
   if (priced.coupon?.ok) {
     stmts.push(env.DB.prepare('UPDATE coupons SET used_count = used_count + 1 WHERE code = ?').bind(priced.coupon.code));
     stmts.push(env.DB.prepare('INSERT INTO order_events(order_id, message) VALUES (?, ?)')
@@ -79,8 +88,11 @@ export async function generateAwb(env, settings, orderId, { ctx = null } = {}) {
   if (order.payment_method === 'card' && order.payment_status !== 'platita') {
     return { ok: false, error: 'Comanda cu cardul nu este încă plătită.' };
   }
+  if (order.fulfillment_mode === 'helpship') return { ok: false, error: 'Comanda se livrează prin Helpship; AWB-ul îl generează depozitul.' };
   const provider = getProvider(settings.shipping_provider);
-  const items = await getOrderItems(env, orderId);
+  let items = await getOrderItems(env, orderId);
+  const parcel = order.fulfillment_mode === 'mixt' ? { ...order, total: order.own_total } : order;
+  if (order.fulfillment_mode === 'mixt') items = items.filter((i) => i.fulfillment !== 'helpship');
   // greutatea produselor, pentru calculul coletului
   const ids = items.map((i) => i.product_id).filter(Boolean);
   if (ids.length) {
@@ -89,7 +101,7 @@ export async function generateAwb(env, settings, orderId, { ctx = null } = {}) {
     for (const i of items) i.weight_g = w.get(i.product_id) || 500;
   }
   try {
-    const r = await provider.create(env, settings, order, items);
+    const r = await provider.create(env, settings, parcel, items);
     if (r.pending) {
       await updateOrder(env, orderId, { shipping_provider: provider.id, shipping_error: '' });
       await addOrderEvent(env, orderId, r.message || 'Trimisă către furnizorul de livrare.');

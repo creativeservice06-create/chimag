@@ -1,3 +1,13 @@
+// dimensiunile coletului (cm): cel mai lung și cel mai lat produs, înălțimile adunate; null dacă lipsesc
+function parcelDims(items) {
+  if (!items.length || items.some((i) => !(i.length_cm && i.width_cm && i.height_cm))) return null;
+  return {
+    length: Math.max(...items.map((i) => i.length_cm)),
+    width: Math.max(...items.map((i) => i.width_cm)),
+    height: Math.round(items.reduce((s, i) => s + i.height_cm * i.qty, 0) * 10) / 10,
+  };
+}
+
 // Format neutru al unei expedieri, din care fiecare adaptor își construiește cererea.
 export function buildShipment(order, items, settings) {
   const weightG = items.reduce((s, i) => s + (i.weight_g || 500) * i.qty, 0) || 500;
@@ -20,6 +30,7 @@ export function buildShipment(order, items, settings) {
       postalCode: order.postal_code || '',
     },
     parcels: 1,
+    dimensions: parcelDims(items),
     weightKg: Math.max(0.1, Math.round(weightG / 100) / 10),
     contents: settings.parcel_contents || 'Produse',
     declaredValue: order.total / 100,

@@ -101,9 +101,12 @@ export async function generateAwb(env, settings, orderId, { ctx = null } = {}) {
   // greutatea produselor, pentru calculul coletului
   const ids = items.map((i) => i.product_id).filter(Boolean);
   if (ids.length) {
-    const { results } = await env.DB.prepare(`SELECT id, weight_g FROM products WHERE id IN (${ids.map(() => '?').join(',')})`).bind(...ids).all();
-    const w = new Map((results || []).map((r) => [r.id, r.weight_g]));
-    for (const i of items) i.weight_g = w.get(i.product_id) || 500;
+    const { results } = await env.DB.prepare(`SELECT id, weight_g, length_cm, width_cm, height_cm FROM products WHERE id IN (${ids.map(() => '?').join(',')})`).bind(...ids).all();
+    const w = new Map((results || []).map((r) => [r.id, r]));
+    for (const i of items) {
+      const p = w.get(i.product_id) || {};
+      i.weight_g = p.weight_g || 500; i.length_cm = p.length_cm || 0; i.width_cm = p.width_cm || 0; i.height_cm = p.height_cm || 0;
+    }
   }
   try {
     const r = await provider.create(env, settings, parcel, items);

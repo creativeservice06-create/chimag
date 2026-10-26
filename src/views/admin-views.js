@@ -357,6 +357,14 @@ export function productFormView({ product: p, reviews = [], hasR2 }) {
           <label>SKU / cod<input name="sku" value="${p.sku || ''}"></label>
           <label>Stoc<input name="stock" type="number" min="0" value="${p.stock ?? 0}"></label>
           <label>Greutate (grame)<input name="weight_g" type="number" min="1" value="${p.weight_g ?? 500}"></label>
+          <div class="span2 dims">
+            <span class="dims-label">Dimensiuni colet (cm) <small>– cu ambalaj, cum ajunge la curier</small></span>
+            <div class="dims-row">
+              <label>Lungime<input name="length_cm" inputmode="decimal" value="${p.length_cm || ''}" placeholder="ex: 15"></label>
+              <label>Lățime<input name="width_cm" inputmode="decimal" value="${p.width_cm || ''}" placeholder="ex: 10"></label>
+              <label>Înălțime<input name="height_cm" inputmode="decimal" value="${p.height_cm || ''}" placeholder="ex: 10"></label>
+            </div>
+          </div>
           <label class="check span2"><input type="checkbox" name="track_stock" value="1" ${p.track_stock !== 0 ? 'checked' : ''}> Urmărește stocul (nu se mai poate comanda la stoc 0)</label>
           <p class="hint span2">Legea cere ca prețul tăiat să fie cel mai mic preț practicat în ultimele 30 de zile înainte de reducere.</p>
         </section>

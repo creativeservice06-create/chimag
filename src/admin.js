@@ -522,6 +522,8 @@ function parseSections(text) {
   }).filter(Boolean).slice(0, 12);
 }
 
+const dim = (v) => Math.min(500, Math.max(0, Math.round((Number(String(v || '').replace(',', '.')) || 0) * 10) / 10));
+
 function parseSpecs(text) {
   return parseLines(text).map((l) => { const i = l.indexOf(':'); return i > 0 ? { k: l.slice(0, i).trim().slice(0, 60), v: l.slice(i + 1).trim().slice(0, 300) } : null; })
     .filter((x) => x && x.k && x.v).slice(0, 30);
@@ -557,6 +559,7 @@ async function saveProduct(request, env, id) {
     compare_at_price: toBani(form.get('compare_at_price')), cost_price: toBani(form.get('cost_price')),
     sku: String(form.get('sku') || '').trim().slice(0, 60), stock: Math.max(0, Math.floor(Number(form.get('stock')) || 0)),
     track_stock: form.get('track_stock') ? 1 : 0, weight_g: Math.max(1, Math.floor(Number(form.get('weight_g')) || 500)),
+    length_cm: dim(form.get('length_cm')), width_cm: dim(form.get('width_cm')), height_cm: dim(form.get('height_cm')),
     images: JSON.stringify(images.slice(0, 20)), benefits: JSON.stringify(parseLines(form.get('benefits')).slice(0, 20)),
     faq: JSON.stringify(parseFaq(form.get('faq')).slice(0, 30)), bundles: JSON.stringify(parseBundles(form.get('bundles'))),
     sections: JSON.stringify(parseSections(form.get('sections'))),

@@ -64,6 +64,7 @@ function toSmartShip(s) {
     },
     parcels: s.parcels,
     weight: s.weightKg,
+    ...(s.dimensions ? { length: s.dimensions.length, width: s.dimensions.width, height: s.dimensions.height } : {}),
     content: s.contents,
     declared_value: s.declaredValue,
     cod_amount: s.codAmount,

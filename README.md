@@ -189,3 +189,11 @@ seed/                     setări inițiale + produse demo
 - **Facturare automată** (SmartBill sau Oblio) – factura emisă la generarea AWB-ului, pusă în colet.
 - **Email/SMS de confirmare** către client (ex. prin Resend sau un furnizor de SMS).
 - Confirmare telefonică a comenzilor ramburs înainte de expediere – scade mult rata de refuz.
+
+## Helpship (depozit)
+
+- La fiecare produs, în admin, alegi **Cine livrează**: „Noi" sau „Helpship".
+- Comenzile cu produse Helpship pleacă automat la Helpship (API v2, `POST /api/Order`), doar cu produsele lor și doar cu suma lor de ramburs. Comenzile cu produse din ambele surse se împart în 2 colete (clientul e anunțat la finalizare, pe pagina de mulțumire și pe email).
+- La fiecare 30 de minute (cron), site-ul trimite comenzile rămase netrimise și aduce AWB-ul / statusul (`GET /api/Order/{id}`). Anularea unei comenzi o anulează și la Helpship.
+- Admin → Setări → Helpship: alegi dacă trimitem imediat sau doar după confirmare.
+- Secrete în Cloudflare: `HELPSHIP_CLIENT_ID`, `HELPSHIP_CLIENT_SECRET`, `HELPSHIP_ACCOUNT_ID` (opțional `HELPSHIP_API_URL`, `HELPSHIP_TOKEN_URL` pentru mediul de test). Fără ele legătura e oprită.

@@ -15,6 +15,7 @@ import { hmac, timingSafeEqual } from './lib/auth.js';
 import { getCookie } from './lib/util.js';
 import { spinWheel, wheelConfig, wheelState } from './lib/coupons.js';
 import { checkWheelUnlock, checkWheelUnlocks } from './lib/wheel-notify.js';
+import { syncHelpship, sendToHelpship } from './lib/helpship.js';
 
 // următorul prag de reducere la cantitate pentru un produs din coș (pentru mesajul „mai adaugă 1 și ai −10%")
 function nextBundleTier(product, qty) {
@@ -62,7 +63,7 @@ export default {
   },
 
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(Promise.allSettled([syncTracking(env), checkWheelUnlocks(env)]));
+    ctx.waitUntil(Promise.allSettled([syncTracking(env), checkWheelUnlocks(env), syncHelpship(env)]));
   },
 };
 
@@ -390,7 +391,8 @@ async function placeOrder(request, env, ctx) {
   ctx.waitUntil((async () => {
     const order = await getOrder(env, created.id);
     const items = await getOrderItems(env, created.id);
-    await Promise.allSettled([sendServerPurchase(env, settings, order, items, base), notifyOrderPlaced(env, settings, order)]);
+    await Promise.allSettled([sendServerPurchase(env, settings, order, items, base), notifyOrderPlaced(env, settings, order),
+      order.fulfillment_mode !== 'own' && settings.helpship_send !== 'confirmed' ? sendToHelpship(env, settings, order.id) : null]);
   })());
   return json({ redirect: `/multumim/${created.token}` });
 }

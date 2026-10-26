@@ -113,9 +113,14 @@ export async function handleAdmin(request, env, ctx, path) {
     if (!order) return redirect(withFlash('/admin/comenzi', 'err', 'Comanda nu există.'));
     const items = await getOrderItems(env, order.id);
     const { results: events } = await env.DB.prepare('SELECT * FROM order_events WHERE order_id = ? ORDER BY id DESC').bind(order.id).all();
-    return render(env, url, { title: order.number, active: 'comenzi', body: orderView({ order, items, events: events || [], settings }) });
+    return render(env, url, { title: order.number, active: 'comenzi', body: orderView({ order, items, events: events || [], settings, hsOn: !!(env.HELPSHIP_CLIENT_ID && env.HELPSHIP_CLIENT_SECRET && env.HELPSHIP_ACCOUNT_ID) }) });
   }
 
+  if ((m = path.match(/^\/admin\/comenzi\/(\d+)\/helpship$/)) && method === 'POST') {
+    const { sendToHelpship } = await import('./lib/helpship.js');
+    const r = await sendToHelpship(env, await getSettings(env), Number(m[1]), { force: true });
+    return redirect(withFlash(`/admin/comenzi/${m[1]}`, r.ok ? 'ok' : 'err', r.ok ? 'Comanda a fost trimisă la Helpship.' : r.error));
+  }
   if ((m = path.match(/^\/admin\/comenzi\/(\d+)\/(status|client|awb|awb-anulare|awb-manual|incasat)$/)) && method === 'POST') {
     const id = Number(m[1]);
     const back = `/admin/comenzi/${id}`;
@@ -405,7 +410,7 @@ export async function handleAdmin(request, env, ctx, path) {
   if (path === '/admin/setari' && method === 'GET') {
     const products = await listProducts(env, { activeOnly: false });
     const secrets = {
-      smartship: !!(env.SMARTSHIP_API_URL && env.SMARTSHIP_API_KEY), helpship: !!(env.HELPSHIP_API_URL && env.HELPSHIP_API_KEY),
+      smartship: !!(env.SMARTSHIP_API_URL && env.SMARTSHIP_API_KEY), helpship: !!(env.HELPSHIP_API_URL && env.HELPSHIP_API_KEY), helpshipApi: !!(env.HELPSHIP_CLIENT_ID && env.HELPSHIP_CLIENT_SECRET && env.HELPSHIP_ACCOUNT_ID),
       warehouse: !!env.WAREHOUSE_API_KEY, stripe: !!env.STRIPE_SECRET_KEY, stripeWebhook: !!env.STRIPE_WEBHOOK_SECRET,
       fbCapi: !!env.FB_CAPI_TOKEN, ttEvents: !!env.TIKTOK_EVENTS_TOKEN,
     };
@@ -424,6 +429,7 @@ export async function handleAdmin(request, env, ctx, path) {
     values.return_days = String(Math.max(14, Number(form.get('return_days')) || 14));
     values.bump_discount_pct = String(Math.min(90, Math.max(0, Number(form.get('bump_discount_pct')) || 0)));
     values.auto_awb_on_confirm = form.get('auto_awb_on_confirm') ? '1' : '0';
+    values.helpship_send = form.get('helpship_send') === 'confirmed' ? 'confirmed' : 'placed';
     values.card_enabled = form.get('card_enabled') ? '1' : '0';
     values.notify_orders = form.get('notify_orders') ? '1' : '0';
     values.customer_emails = form.get('customer_emails') ? '1' : '0';

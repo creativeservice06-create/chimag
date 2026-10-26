@@ -162,7 +162,7 @@ export function ordersView({ orders, status, q, counts, page, hasMore }) {
   </nav>`;
 }
 
-export function orderView({ order: o, items, events, settings, provider }) {
+export function orderView({ order: o, items, events, settings, provider, hsOn = false }) {
   const providerObj = PROVIDERS[o.shipping_provider || settings.shipping_provider] || PROVIDERS.test;
   const quick = {
     noua: [['confirmata', 'Confirmă comanda', 'primary'], ['anulata', 'Anulează', '']],
@@ -227,6 +227,8 @@ export function orderView({ order: o, items, events, settings, provider }) {
             ${o.hs_awb ? html`<p class="awb">AWB <b>${o.hs_awb}</b>${o.hs_courier ? ` · ${o.hs_courier}` : ''}${o.hs_tracking_url ? html` · <a href="${o.hs_tracking_url}" target="_blank">urmărește</a>` : ''}</p>` : html`<p class="muted">Așteaptă AWB de la depozit${o.hs_status ? ` · ${o.hs_status}` : ''}.</p>`}`
           : html`<p>Toată comanda se livrează din depozitul Helpship. AWB-ul îl generează depozitul și apare aici automat.</p>`}
         ${o.hs_error ? html`<p class="flash err">${o.hs_error}</p>` : ''}
+        <p class="muted">${o.hs_order_id ? html`Trimisă la depozit${o.hs_sent_at ? ` · ${formatDate(o.hs_sent_at)}` : ''}${o.hs_status ? ` · status: ${o.hs_status}` : ''}` : hsOn ? 'Încă netrimisă la depozit.' : 'Legătura cu Helpship nu este încă configurată.'}</p>
+        ${hsOn && o.status !== 'anulata' ? html`<form method="post" action="/admin/comenzi/${o.id}/helpship"><button class="btn" ${o.hs_order_id ? raw('data-confirm="Comanda a fost deja trimisă. O retrimiți (poate crea un duplicat la depozit)?"') : ''}>${o.hs_order_id ? 'Retrimite la Helpship' : 'Trimite acum la Helpship'}</button></form>` : ''}
       </section>` : ''}
 
       ${o.fulfillment_mode !== 'helpship' ? html`<section class="panel">
@@ -465,6 +467,15 @@ export function settingsView({ settings: s, products, secrets, siteUrl }) {
         <p>Chei API: SmartShip ${ok(secrets.smartship)} · Helpship (push) ${ok(secrets.helpship)} · API depozit ${ok(secrets.warehouse)}</p>
         <p>API pentru depozit (Helpship sau alt partener): <code>${siteUrl}/api/fulfillment/orders</code>, autentificare <code>Authorization: Bearer WAREHOUSE_API_KEY</code>. Detalii în README.</p>
       </div>
+    </section>
+    <section class="panel form-grid">
+      <h2 class="span2">Helpship (depozit)</h2>
+      <p class="span2">Legătura: ${secrets.helpshipApi ? html`<b class="ok-txt">configurată</b>` : html`<b class="err-txt">oprită</b> – adaugă în Cloudflare secretele <code>HELPSHIP_CLIENT_ID</code>, <code>HELPSHIP_CLIENT_SECRET</code> și <code>HELPSHIP_ACCOUNT_ID</code>`}.</p>
+      <label class="span2">Când trimitem comanda la Helpship<select name="helpship_send">
+        <option value="placed" ${s.helpship_send !== 'confirmed' ? 'selected' : ''}>Imediat ce e plasată (cardul: după plată)</option>
+        <option value="confirmed" ${s.helpship_send === 'confirmed' ? 'selected' : ''}>Doar după ce o confirm eu (status Confirmată)</option>
+      </select></label>
+      <p class="hint span2">Pleacă doar produsele marcate „Helpship” la „Cine livrează”. Dacă o comandă are și alte produse, se împarte în 2 colete. AWB-ul și statusul vin automat de la depozit (verificare la 30 de minute).</p>
     </section>
     <section class="panel form-grid">
       <h2 class="span2">Plăți</h2>

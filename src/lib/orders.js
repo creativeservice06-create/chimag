@@ -68,8 +68,13 @@ export async function setStatus(env, settings, orderId, status, { by = 'admin', 
     await restoreStock(env, orderId);
     await addOrderEvent(env, orderId, 'Stocul produselor a fost readăugat.');
   }
+  if (order.fulfillment_mode && order.fulfillment_mode !== 'own') {
+    const hs = await import('./helpship.js');
+    if (status === 'confirmata' && !order.hs_order_id) await hs.sendToHelpship(env, settings, orderId).catch(() => {});
+    if (status === 'anulata') await hs.cancelAtHelpship(env, orderId).catch(() => {});
+  }
   let awbResult = null;
-  if (status === 'confirmata' && settings.auto_awb_on_confirm === '1' && !order.awb) {
+  if (status === 'confirmata' && settings.auto_awb_on_confirm === '1' && !order.awb && order.fulfillment_mode !== 'helpship') {
     awbResult = await generateAwb(env, settings, orderId, { ctx });
   }
   const updated = await getOrder(env, orderId);
@@ -152,5 +157,10 @@ export async function markPaid(env, orderId, sessionId) {
   if (!order || order.payment_status === 'platita') return order;
   await updateOrder(env, orderId, { payment_status: 'platita', stripe_session_id: sessionId || order.stripe_session_id });
   await addOrderEvent(env, orderId, 'Plata cu cardul a fost confirmată de Stripe.');
+  if (order.fulfillment_mode && order.fulfillment_mode !== 'own') {
+    const { getSettings } = await import('./db.js');
+    const settings = await getSettings(env);
+    if (settings.helpship_send !== 'confirmed') await (await import('./helpship.js')).sendToHelpship(env, settings, orderId).catch(() => {});
+  }
   return getOrder(env, orderId);
 }

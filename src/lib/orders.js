@@ -25,9 +25,9 @@ export async function createOrder(env, { customer, priced, paymentMethod, meta }
 
   const stmts = [];
   for (const l of priced.lines) {
-    stmts.push(env.DB.prepare(`INSERT INTO order_items (order_id, product_id, title, sku, qty, unit_price, line_discount, total, fulfillment)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-      .bind(orderId, l.product.id, l.product.title + (l.isBump ? ' (ofertă la comandă)' : ''), l.product.sku || '', l.qty, l.unitPrice, l.lineDiscount, l.total, l.product.fulfillment || ''));
+    stmts.push(env.DB.prepare(`INSERT INTO order_items (order_id, product_id, title, sku, qty, unit_price, line_discount, total, fulfillment, unit_cost)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .bind(orderId, l.product.id, l.product.title + (l.isBump ? ' (ofertă la comandă)' : ''), l.product.sku || '', l.qty, l.unitPrice, l.lineDiscount, l.total, l.product.fulfillment || '', l.product.cost_price || 0));
     if (l.product.track_stock) {
       stmts.push(env.DB.prepare('UPDATE products SET stock = MAX(0, stock - ?) WHERE id = ?').bind(l.qty, l.product.id));
     }

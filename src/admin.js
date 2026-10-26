@@ -58,7 +58,12 @@ export async function handleAdmin(request, env, ctx, path) {
   let m;
 
   // ---------- Panou ----------
-  if (path === '/admin' && method === 'GET') return render(env, url, { title: 'Panou', active: 'panou', body: dashboardView(await dashboardData(env)) });
+  if (path === '/admin' && method === 'GET') {
+    const { resolveRange, profitData } = await import('./lib/profit.js');
+    const range = resolveRange(url.searchParams);
+    const profit = await profitData(env, await getSettings(env), range);
+    return render(env, url, { title: 'Panou', active: 'panou', body: dashboardView({ ...(await dashboardData(env)), profit, range }) });
+  }
 
   // ---------- Comenzi ----------
   if (path === '/admin/comenzi' && method === 'GET') {
@@ -425,7 +430,7 @@ export async function handleAdmin(request, env, ctx, path) {
       'sender_city', 'sender_address', 'parcel_contents'];
     const values = {};
     for (const k of text) values[k] = String(form.get(k) ?? '').trim().slice(0, 500);
-    for (const k of ['shipping_cost', 'free_shipping_threshold', 'cod_fee']) values[k] = String(Math.max(0, toBani(form.get(k))));
+    for (const k of ['shipping_cost', 'free_shipping_threshold', 'cod_fee', 'cost_courier', 'cost_helpship']) values[k] = String(Math.max(0, toBani(form.get(k))));
     values.return_days = String(Math.max(14, Number(form.get('return_days')) || 14));
     values.bump_discount_pct = String(Math.min(90, Math.max(0, Number(form.get('bump_discount_pct')) || 0)));
     values.auto_awb_on_confirm = form.get('auto_awb_on_confirm') ? '1' : '0';

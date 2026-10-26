@@ -398,8 +398,8 @@ export function checkoutPage({ settings, bump, loggedIn = false }) {
           </div>
           <div class="field-row">
             <div class="field">
-              <label for="f-email">Email <span class="opt">(recomandat)</span></label>
-              <input id="f-email" name="email" type="email" autocomplete="email" placeholder="primești confirmarea și AWB-ul">
+              <label for="f-email">Email</label>
+              <input id="f-email" name="email" type="email" autocomplete="email" inputmode="email" required placeholder="primești confirmarea și AWB-ul">
             </div>
             <div class="field">
               <label for="f-zip">Cod poștal <span class="opt">(opțional)</span></label>

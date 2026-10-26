@@ -1,4 +1,4 @@
-import { htmlResponse, json, redirect, normalizePhone, isEmail, slugify } from './lib/util.js';
+import { htmlResponse, json, redirect, normalizePhone, isEmail, isFakePhone, emailProblem, slugify } from './lib/util.js';
 import { getSettings, listProducts, getProductBySlug, getProductById, getReviews, getOrder, getOrderItems, updateOrder, addOrderEvent } from './lib/db.js';
 import { priceCart, bundlePct, splitParcels } from './lib/pricing.js';
 import { createOrder, markPaid } from './lib/orders.js';
@@ -331,10 +331,10 @@ async function placeOrder(request, env, ctx) {
     postalCode: clean(c.postalCode, 10), notes: clean(c.notes, 500),
   };
   if (customer.name.length < 3) return json({ error: 'Scrie numele complet.' }, 400);
-  if (!customer.phone) return json({ error: 'Numărul de telefon nu este valid.' }, 400);
+  if (!customer.phone || isFakePhone(customer.phone)) return json({ error: 'Numărul de telefon nu este valid.' }, 400);
   if (!JUDETE.includes(customer.county)) return json({ error: 'Alege județul din listă.' }, 400);
   if (customer.city.length < 2 || customer.address.length < 5) return json({ error: 'Completează localitatea și adresa.' }, 400);
-  if (customer.email && !isEmail(customer.email)) return json({ error: 'Adresa de email nu este validă.' }, 400);
+  { const ep = emailProblem(customer.email); if (ep) return json({ error: ep }, 400); }
 
   const settings = await getSettings(env);
   const paymentMethod = body.payment === 'card' && settings.card_enabled === '1' && env.STRIPE_SECRET_KEY ? 'card' : 'ramburs';

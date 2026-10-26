@@ -65,6 +65,22 @@ export function normalizePhone(p) {
 
 export const isEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(e || ''));
 
+// Numere evident false: aceeași cifră repetată sau cifre consecutive (0711111111, 0712345678, 0700000000).
+export function isFakePhone(p) {
+  const rest = String(p || '').slice(2);
+  return /^(\d)\1+$/.test(rest) || '0123456789'.includes(rest) || '9876543210'.includes(rest) || /^0{4,}/.test(rest);
+}
+
+// Email strict pentru comenzi: format corect + greșeli frecvente de tastare la domeniu.
+const EMAIL_TYPOS = /@(gmial|gmal|gmai|gnail|gamil|gmaill|yaho|yahooo|yhoo|hotmial|hotmal|outlok)\.|@gmail\.(co|cm|con|om|ro)$|@yahoo\.(cm|con|co)$|\.(con|cmo|comm)$/i;
+export function emailProblem(e) {
+  const v = String(e || '').trim();
+  if (!v) return 'Scrie adresa de email.';
+  if (!/^[a-z0-9._%+-]+@[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}$/i.test(v) || v.includes('..')) return 'Adresa de email nu este validă.';
+  if (EMAIL_TYPOS.test(v)) return 'Verifică adresa de email, pare să aibă o greșeală de scriere.';
+  return '';
+}
+
 export async function sha256Hex(text) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');

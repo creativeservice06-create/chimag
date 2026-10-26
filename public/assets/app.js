@@ -476,11 +476,15 @@
       var errors = {};
       if (v('name').length < 3 || v('name').indexOf(' ') === -1) errors.name = 'Scrie numele și prenumele.';
       var phone = v('phone').replace(/[^\d+]/g, '').replace(/^\+40|^0040/, '0');
-      if (!/^0[2-7]\d{8}$/.test(phone)) errors.phone = 'Număr de telefon invalid (ex: 0722 123 456).';
+      var rest = phone.slice(2);
+      if (!/^0[2-7]\d{8}$/.test(phone) || /^(\d)\1+$/.test(rest) || '0123456789'.indexOf(rest) > -1 || '9876543210'.indexOf(rest) > -1 || /^0{4,}/.test(rest)) errors.phone = 'Număr de telefon invalid (ex: 0722 123 456).';
       if (!v('county')) errors.county = 'Alege județul.';
       if (v('city').length < 2) errors.city = 'Scrie localitatea.';
       if (v('address').length < 5) errors.address = 'Scrie adresa completă (stradă și număr).';
-      if (v('email') && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v('email'))) errors.email = 'Adresa de email nu pare corectă.';
+      var em = v('email');
+      if (!em) errors.email = 'Scrie adresa de email.';
+      else if (!/^[a-z0-9._%+-]+@[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}$/i.test(em) || em.indexOf('..') > -1) errors.email = 'Adresa de email nu este validă.';
+      else if (/@(gmial|gmal|gmai|gnail|gamil|gmaill|yaho|yahooo|yhoo|hotmial|hotmal|outlok)\.|@gmail\.(co|cm|con|om|ro)$|@yahoo\.(cm|con|co)$|\.(con|cmo|comm)$/i.test(em)) errors.email = 'Verifică adresa de email, pare să aibă o greșeală de scriere.';
       ['name', 'phone', 'county', 'city', 'address', 'email'].forEach(function (n) { setErr(n, errors[n]); });
       var first = Object.keys(errors)[0];
       if (first) form.elements[first].focus();

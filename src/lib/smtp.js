@@ -104,7 +104,7 @@ export async function smtpSend(cfg, messages) {
 const encodeHeader = (s) => (/^[\x20-\x7e]*$/.test(s) ? s : `=?UTF-8?B?${b64(s)}?=`);
 const wrap76 = (s) => s.replace(/(.{76})/g, '$1\r\n');
 
-export function buildMime({ fromName, fromAddr, to, subject, text, html, replyTo }) {
+export function buildMime({ fromName, fromAddr, to, subject, text, html, replyTo, attachments = [] }) {
   const boundary = 'chimag-' + crypto.randomUUID();
   const domain = fromAddr.split('@')[1] || 'chimag.ro';
   const headers = [
@@ -115,8 +115,9 @@ export function buildMime({ fromName, fromAddr, to, subject, text, html, replyTo
     `Date: ${new Date().toUTCString()}`,
     `Message-ID: <${crypto.randomUUID()}@${domain}>`,
     'MIME-Version: 1.0',
-    `Content-Type: multipart/alternative; boundary="${boundary}"`,
   ];
+  const mixed = 'chimag-m-' + crypto.randomUUID();
+  headers.push(attachments.length ? `Content-Type: multipart/mixed; boundary="${mixed}"` : `Content-Type: multipart/alternative; boundary="${boundary}"`);
   const part = (type, content) => [
     `--${boundary}`,
     `Content-Type: ${type}; charset=UTF-8`,
@@ -124,6 +125,17 @@ export function buildMime({ fromName, fromAddr, to, subject, text, html, replyTo
     '',
     wrap76(b64(content)),
   ].join('\r\n');
+  const alt = [part('text/plain', text || ''), part('text/html', html || `<pre>${text || ''}</pre>`), `--${boundary}--`, ''].join('\r\n');
+  if (!attachments.length) return headers.join('\r\n') + '\r\n\r\n' + alt;
+  const binB64 = (bytes) => { let bin = ''; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000)); return btoa(bin); };
+  const files = attachments.map((a) => [
+    `--${mixed}`,
+    `Content-Type: ${a.type || 'application/octet-stream'}; name="${a.name}"`,
+    'Content-Transfer-Encoding: base64',
+    `Content-Disposition: attachment; filename="${a.name}"`,
+    '',
+    wrap76(binB64(a.content)),
+  ].join('\r\n'));
   return headers.join('\r\n') + '\r\n\r\n' +
-    [part('text/plain', text || ''), part('text/html', html || `<pre>${text || ''}</pre>`), `--${boundary}--`, ''].join('\r\n');
+    [`--${mixed}`, `Content-Type: multipart/alternative; boundary="${boundary}"`, '', alt, ...files, `--${mixed}--`, ''].join('\r\n');
 }

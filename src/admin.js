@@ -144,10 +144,10 @@ export async function handleAdmin(request, env, ctx, path) {
     const inv = await import('./lib/invoices.js');
     const { resolveRange } = await import('./lib/profit.js');
     if ((m = path.match(/^\/admin\/facturi\/(\d+)$/))) {
-      const { invoicePage } = await import('./views/invoice-view.js');
       const one = await inv.getInvoiceById(env, Number(m[1]));
       if (!one) return redirect(withFlash('/admin/facturi', 'err', 'Factura nu există.'));
-      return htmlResponse(invoicePage(one, { admin: true }), 200, { 'cache-control': 'no-store', 'x-robots-tag': 'noindex' });
+      const { invoicePdfResponse } = await import('./lib/invoice-pdf.js');
+      return invoicePdfResponse(env, one, url.searchParams.has('descarca'));
     }
     const range = resolveRange(url.searchParams);
     const list = await inv.listInvoices(env, range.from, range.to);

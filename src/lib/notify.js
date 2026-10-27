@@ -22,10 +22,11 @@ export async function notifyStatus(env, settings, order) {
   if (settings.customer_emails === '0' || !order.email || !STATUS_EMAILS.includes(order.status)) return;
   const base = baseUrl(env);
   const items = await getOrderItems(env, order.id);
-  const inv = await env.DB.prepare("SELECT full_number, token FROM invoices WHERE order_id = ? AND kind = 'factura'").bind(order.id).first().catch(() => null);
-  const mail = customerStatusEmail(settings, base, order, items, await itemImages(env, items), ['expediata', 'livrata'].includes(order.status) ? inv : null);
+  const inv = await env.DB.prepare("SELECT * FROM invoices WHERE order_id = ? AND kind = 'factura'").bind(order.id).first().catch(() => null);
+  const withInv = ['expediata', 'livrata'].includes(order.status) ? inv : null;
+  const mail = customerStatusEmail(settings, base, order, items, await itemImages(env, items), withInv);
   if (!mail) return;
-  const r = await safe(sendMail(env, settings, { to: order.email, ...mail }));
+  const r = await safe(sendMail(env, settings, { to: order.email, ...mail, attachments: withInv ? await pdfAttachment(env, settings, withInv) : [] }));
   if (r.ok) await env.DB.prepare('INSERT INTO order_events(order_id, message) VALUES (?, ?)').bind(order.id, `Email trimis clientului: ${mail.subject}`).run();
 }
 
@@ -48,7 +49,16 @@ export async function notifyParcelShipped(env, settings, order) {
 // factura emisă manual din admin (la cele automate, linkul e în emailul de expediere/livrare)
 export async function notifyInvoice(env, settings, order, inv) {
   if (settings.customer_emails === '0' || !order.email) return false;
-  const r = await safe(sendMail(env, settings, { to: order.email, ...invoiceEmail(settings, baseUrl(env), order, inv) }));
+  const r = await safe(sendMail(env, settings, { to: order.email, ...invoiceEmail(settings, baseUrl(env), order, inv), attachments: await pdfAttachment(env, settings, inv) }));
   if (r.ok) await env.DB.prepare('INSERT INTO order_events(order_id, message) VALUES (?, ?)').bind(order.id, `Email trimis clientului: factura ${inv.full_number}`).run();
   return !!r.ok;
+}
+
+// factura PDF atașată la email (dacă generarea dă greș, emailul pleacă oricum, cu linkul facturii)
+async function pdfAttachment(env, settings, inv) {
+  try {
+    const { invoicePdf, invoicePdfName } = await import('./invoice-pdf.js');
+    const content = await invoicePdf(env, inv, { storeName: settings.store_name, site: baseUrl(env).replace(/^https?:\/\//, '') || 'www.chimag.ro' });
+    return [{ name: invoicePdfName(inv), type: 'application/pdf', content }];
+  } catch (e) { console.log('pdf', e?.message || e); return []; }
 }

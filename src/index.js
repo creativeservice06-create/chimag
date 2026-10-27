@@ -193,11 +193,10 @@ async function route(request, env, ctx) {
   // Factura pentru client (link secret, din email și din pagina comenzii)
   if (method === 'GET' && (m = path.match(/^\/factura\/([a-f0-9]{32})$/))) {
     const { getInvoiceByToken } = await import('./lib/invoices.js');
-    const { invoicePage } = await import('./views/invoice-view.js');
     const inv = await getInvoiceByToken(env, m[1]);
     if (!inv) return notFound(env, request);
-    const o = await env.DB.prepare('SELECT token FROM orders WHERE id = ?').bind(inv.order_id).first();
-    return htmlResponse(invoicePage(inv, { orderToken: o?.token || '' }), 200, { 'cache-control': 'no-store', 'x-robots-tag': 'noindex' });
+    const { invoicePdfResponse } = await import('./lib/invoice-pdf.js');
+    return invoicePdfResponse(env, inv, url.searchParams.has('descarca'));
   }
 
   if (path === '/comanda' && (method === 'GET' || method === 'POST')) {
@@ -463,4 +462,5 @@ async function contactMessage(request, env, ctx) {
   })());
   return reply(true);
 }
+
 

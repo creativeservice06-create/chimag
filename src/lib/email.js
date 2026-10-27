@@ -23,7 +23,7 @@ export function emailStatus(env) {
 }
 
 /** Trimite un email oricui (client sau administrator). */
-export async function sendMail(env, settings, { to, subject, html, text, replyTo }) {
+export async function sendMail(env, settings, { to, subject, html, text, replyTo, attachments }) {
   const list = (Array.isArray(to) ? to : [to]).map((t) => String(t || '').trim()).filter(Boolean);
   if (!list.length) return { ok: false, error: 'Lipsește destinatarul.' };
   const fromName = settings.store_name || 'Chimag';
@@ -31,7 +31,7 @@ export async function sendMail(env, settings, { to, subject, html, text, replyTo
 
   if (smtp) {
     try {
-      const raw = buildMime({ fromName, fromAddr: smtp.user, to: list, subject, text, html, replyTo });
+      const raw = buildMime({ fromName, fromAddr: smtp.user, to: list, subject, text, html, replyTo, attachments });
       await smtpSend(smtp, [{ from: smtp.user, to: list, raw }]);
       return { ok: true, via: 'smtp' };
     } catch (e) {

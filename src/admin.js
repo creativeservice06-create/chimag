@@ -9,7 +9,7 @@ import { getProvider } from './shipping/providers.js';
 import { JUDETE } from './lib/judete.js';
 import {
   adminLayout, loginView, dashboardView, ordersView, orderView, labelView, productsView, productFormView, settingsView, couponsView, messagesView,
-  customersView, customerFormView, customerView, invoicesView,
+  customersView, customerFormView, customerView, invoicesView, emailsView,
 } from './views/admin-views.js';
 import { COUPON_TYPES, CODE_TYPES, normalizeCode } from './lib/coupons.js';
 import { emailStatus, sendEmail } from './lib/email.js';
@@ -403,6 +403,30 @@ export async function handleAdmin(request, env, ctx, path) {
     else await env.DB.prepare('UPDATE messages SET is_read = ? WHERE id = ?').bind(m[2] === 'citit' ? 1 : 0, id).run();
     return redirect('/admin/mesaje');
   }
+  // ---------- Previzualizare emailuri ----------
+  if (path.startsWith('/admin/emailuri')) {
+    const { PREVIEWS, buildPreview } = await import('./lib/email-preview.js');
+    const base = (env.SITE_URL || url.origin).replace(/\/$/, '');
+    if (path === '/admin/emailuri' && method === 'GET') {
+      return render(env, url, { title: 'Emailuri', active: 'mesaje', body: emailsView({ previews: PREVIEWS, to: settings.contact_email, emailOk: emailStatus(env).ok }) });
+    }
+    if ((m = path.match(/^\/admin\/emailuri\/([a-z]+)$/)) && PREVIEWS[m[1]]) {
+      const pv = await buildPreview(env, settings, base, m[1]);
+      if (method === 'GET') return new Response(pv.mail.html, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-robots-tag': 'noindex' } });
+      if (method === 'POST') {
+        let attachments = [];
+        if (pv.invoice) {
+          try {
+            const { invoicePdf, invoicePdfName } = await import('./lib/invoice-pdf.js');
+            attachments = [{ name: invoicePdfName(pv.invoice), type: 'application/pdf', content: await invoicePdf(env, pv.invoice, { storeName: settings.store_name, site: base.replace(/^https?:\/\//, '') }) }];
+          } catch { /* trimitem fără PDF */ }
+        }
+        const r = await sendEmail(env, settings, { ...pv.mail, subject: `[TEST] ${pv.mail.subject}`, attachments });
+        return redirect(withFlash('/admin/emailuri', r.ok ? 'ok' : 'err', r.ok ? `Emailul de test „${PREVIEWS[m[1]].label}” a fost trimis la ${settings.contact_email}. Verifică și folderul Spam.` : `Emailul nu a plecat: ${r.error}`));
+      }
+    }
+  }
+
   if (path === '/admin/mesaje/test-email' && method === 'POST') {
     const r = await sendEmail(env, settings, testEmail(settings, (env.SITE_URL || url.origin).replace(/\/$/, '')));
     return redirect(withFlash('/admin/mesaje', r.ok ? 'ok' : 'err', r.ok ? `Email de test trimis la ${settings.contact_email}. Verifică și folderul Spam.` : `Emailul nu a plecat: ${r.error}`));

@@ -27,7 +27,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0, msgCount
 <meta name="robots" content="noindex">
 <title>${title} · Admin Chimag</title>
 <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/assets/admin.css?v=12">
+<link rel="stylesheet" href="/assets/admin.css?v=13">
 <meta name="theme-color" content="#0e192a">
 <script src="/assets/admin.js?v=2" defer></script>
 </head><body>
@@ -826,7 +826,7 @@ export function couponsView({ settings: s, coupons, stats, filter }) {
 export function messagesView({ messages, email, settings: s }) {
   return html`
   <header class="page-head"><h1>Mesaje</h1>
-    <form method="post" action="/admin/mesaje/test-email"><button class="btn" ${email.ok ? '' : 'disabled'}>Trimite un email de test</button></form>
+    <div class="btn-row"><a class="btn" href="/admin/emailuri">Previzualizare emailuri</a><form method="post" action="/admin/mesaje/test-email"><button class="btn" ${email.ok ? '' : 'disabled'}>Trimite un email de test</button></form></div>
   </header>
   <p class="hint">${email.ok
     ? html`Mesajele noi și comenzile se trimit pe email la <b>${s.contact_email || '(nesetat)'}</b> prin ${email.via}.`
@@ -939,4 +939,19 @@ export function customerView({ c, orders, events, stats, emailOk }) {
       </section>
     </div>
   </div>`;
+}
+
+export function emailsView({ previews, to, emailOk }) {
+  return html`
+  <header class="page-head"><div><a class="back" href="/admin/mesaje">Mesaje</a><h1>Emailurile magazinului</h1>
+    <div class="muted" style="margin-top:6px">Vezi cum arată fiecare email și trimite-ți-l ca test${to ? html` la <b>${to}</b>` : ''}. Datele sunt de exemplu (client Ion Popescu, AWB 1234567890 Sameday).</div></div></header>
+  ${!emailOk ? html`<p class="flash err">Trimiterea de email nu e configurată, așa că poți doar previzualiza.</p>` : ''}
+  <section class="panel">
+    <ul class="email-list">${Object.entries(previews).map(([k, p]) => html`<li>
+      <div><b>${p.label}</b><span class="muted">${p.who === 'tu' ? 'către tine' : 'către client'} · ${p.when}</span></div>
+      <div class="btn-row">
+        <a class="btn" href="/admin/emailuri/${k}" target="_blank">Vezi</a>
+        <form method="post" action="/admin/emailuri/${k}"><button class="btn primary" ${emailOk && to ? '' : 'disabled'}>Trimite-mi testul</button></form>
+      </div></li>`)}</ul>
+  </section>`;
 }

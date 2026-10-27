@@ -459,3 +459,9 @@ input[type=date]::-webkit-date-and-time-value { text-align: left; }
   .card2 .panel-head .legend { width: 100%; }
   .y-axis { font-size: .62rem; }
 }
+.email-list { list-style: none; margin: 0; padding: 0; display: grid; }
+.email-list li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.email-list li:last-child { border-bottom: 0; }
+.email-list li > div:first-child { display: grid; gap: 2px; }
+.email-list .muted { font-size: .85rem; }
+@media (max-width: 600px) { .email-list .btn-row { width: 100%; } .email-list .btn-row > * { flex: 1; } .email-list .btn-row form .btn { width: 100%; } }

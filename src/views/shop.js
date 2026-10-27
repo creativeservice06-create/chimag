@@ -185,6 +185,21 @@ export function homePage({ settings, products, categories = [], bestsellers = []
 }
 
 // ---------------- Pagina de produs ----------------
+// iconița potrivită pentru un avantaj, după cuvintele din text
+const BENEFIT_ICONS = [
+  [/electric|priz|baterie|usb|reîncărc|acumulator|curent/i, 'battery'],
+  [/culor|color|nuanț/i, 'palette'],
+  [/temporiz|somn|noapte|adoarme|veghe/i, 'moon'],
+  [/secund|minut|rapid|repede|instant/i, 'clock'],
+  [/curăț|demont|spăl|igien/i, 'sparkle'],
+  [/ușoar|portabil|rucsac|călător|compact|buzunar|torpedou|\bg\b/i, 'box'],
+  [/silicon|moale|sigur|rezistent|durabil|nu se sparge/i, 'shield'],
+];
+function benefitIcon(text, i) {
+  const hit = BENEFIT_ICONS.find(([re]) => re.test(text));
+  return icons[hit ? hit[1] : ['sparkle', 'shield', 'clock', 'box'][i % 4]];
+}
+
 export function productPage({ settings, product: p, reviews, related = [], siteUrl }) {
   const off = pctOff(p);
   const avg = reviews.length ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : 0;
@@ -294,7 +309,7 @@ export function productPage({ settings, product: p, reviews, related = [], siteU
   ${p.benefits.length ? html`<section class="pdp-highlights" aria-label="Pe scurt despre produs"><div class="wrap">
     <ul class="hl-grid">${p.benefits.slice(0, 4).map((b, i) => {
       const [t, ...rest] = String(b).split(/,\s*|\s+–\s+|:\s*/);
-      return html`<li><span class="hl-ico">${[icons.sparkle, icons.palette, icons.moon, icons.battery][i % 4](24)}</span><strong>${t}</strong>${rest.length ? html`<span>${rest.join(', ')}</span>` : ''}</li>`;
+      return html`<li><span class="hl-ico">${benefitIcon(b, i)(24)}</span><strong>${t}</strong>${rest.length ? html`<span>${rest.join(', ')}</span>` : ''}</li>`;
     })}</ul>
   </div></section>` : ''}
 

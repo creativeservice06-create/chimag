@@ -33,7 +33,7 @@ function productCard(p) {
         <p class="pcard-price"><strong>${money(p.price)}</strong>${p.compare_at_price > p.price ? html`<s>${money(p.compare_at_price)}</s>` : ''}</p>
       </div>
     </a>
-    ${out ? '' : html`<button type="button" class="pcard-add" data-quick-add="${p.id}" data-title="${p.title}" aria-label="Adaugă în coș: ${p.title}">${icons.cart(20)}<span>Adaugă</span></button>`}
+    ${out ? '' : html`<button type="button" class="pcard-add" data-quick-add="${p.id}" data-title="${p.title}" data-price="${p.price}" aria-label="Adaugă în coș: ${p.title}">${icons.cart(20)}<span>Adaugă</span></button>`}
   </div>`;
 }
 

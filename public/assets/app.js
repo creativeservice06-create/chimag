@@ -185,7 +185,8 @@
     var pid = Number(b.getAttribute('data-quick-add'));
     addToCart(pid, 1);
     b.classList.add('added'); setTimeout(function () { b.classList.remove('added'); }, 1400);
-    if (typeof track === 'function') track('AddToCart', { contents: [{ id: String(pid), quantity: 1 }] });
+    var pr = Number(b.getAttribute('data-price')) / 100 || 0;
+    if (typeof track === 'function') track('AddToCart', { value: pr, contents: [{ id: String(pid), quantity: 1, price: pr, name: b.getAttribute('data-title') || '' }] });
     toast('Adăugat în coș: ' + esc(b.getAttribute('data-title') || 'produs') + '. <a href="/cos">Vezi coșul</a>');
   });
   function updateCount(animate) {

@@ -276,7 +276,6 @@ export function productPage({ settings, product: p, reviews, related = [], siteU
         </ul>
 
         <div class="pdp-acc">
-          ${specs.length ? html`<details><summary>Specificații</summary><dl class="specs">${specs.map((x) => html`<div><dt>${x.k}</dt><dd>${x.v}</dd></div>`)}</dl></details>` : ''}
           <details><summary>Livrare și plată</summary><div>
             <p>${settings.delivery_text}. Primești pe email numărul AWB ca să urmărești coletul.</p>
             <p>Plătești la livrare, curierului${settings.card_enabled === '1' ? ', sau online cu cardul' : ''}. Transportul costă ${money(settings.shipping_cost)}${threshold ? html`, iar peste ${money(threshold)} este gratuit` : ''}.</p>
@@ -289,28 +288,62 @@ export function productPage({ settings, product: p, reviews, related = [], siteU
       </div>
     </div>
 
-    ${(p.sections || []).length ? html`<div class="story">
-      ${p.description ? html`<section class="story-intro"><h2>Despre produs</h2>${paragraphs(p.description)}</section>` : ''}
-      ${p.sections.map((s, i) => html`<section class="story-row ${i % 2 ? 'rev' : ''}">
-        ${s.image ? html`<div class="story-media"><img src="${s.image}" alt="${s.title || p.title}" width="800" height="800" loading="lazy"></div>` : ''}
-        <div class="story-text">${s.title ? html`<h2>${s.title}</h2>` : ''}${paragraphs(s.text || '')}</div>
-      </section>`)}
-    </div>` : ''}
-
-
-    <div class="pdp-details">
-      ${p.description && !(p.sections || []).length ? html`<section class="prose"><h2>Despre produs</h2>${paragraphs(p.description)}</section>` : ''}
-      ${p.faq.length ? html`<section class="faq"><h2>Întrebări frecvente</h2>${p.faq.map((f) => html`<details><summary>${f.q}</summary><div>${paragraphs(f.a)}</div></details>`)}</section>` : ''}
-      ${reviews.length ? html`<section id="recenzii" class="reviews">
-        <h2>Ce spun clienții</h2>
-        <div class="reviews-summary">${stars(avg, 20)} <strong>${avg.toFixed(1)} din 5</strong> <span>din ${reviews.length} ${reviews.length === 1 ? 'recenzie' : 'recenzii'}</span></div>
-        <div class="review-list">${reviews.map((r) => html`<article class="review">
-          <header>${stars(r.rating, 14)}<strong>${r.name}</strong>${r.city ? html`<span>${r.city}</span>` : ''}</header>
-          ${paragraphs(r.text)}
-        </article>`)}</div>
-      </section>` : ''}
-    </div>
   </div>
+
+  ${p.benefits.length ? html`<section class="pdp-highlights" aria-label="Pe scurt despre produs"><div class="wrap">
+    <ul class="hl-grid">${p.benefits.slice(0, 4).map((b, i) => {
+      const [t, ...rest] = String(b).split(/,\s*|\s+–\s+|:\s*/);
+      return html`<li><span class="hl-ico">${[icons.sparkle, icons.palette, icons.moon, icons.battery][i % 4](24)}</span><strong>${t}</strong>${rest.length ? html`<span>${rest.join(', ')}</span>` : ''}</li>`;
+    })}</ul>
+  </div></section>` : ''}
+
+  ${p.description ? html`<section class="pdp-about"><div class="wrap about-grid">
+    <div class="about-head">
+      <p class="eyebrow">Despre produs</p>
+      <h2>${p.subtitle || p.title}</h2>
+    </div>
+    <div class="about-body">${paragraphs(p.description)}</div>
+  </div></section>` : ''}
+
+  ${(p.sections || []).length ? html`<section class="pdp-story"><div class="wrap story2">
+    ${p.sections.map((sec, i) => html`<article class="s2-row ${i % 2 ? 'rev' : ''}">
+      ${sec.image ? html`<div class="s2-media"><img src="${sec.image}" alt="${sec.title || p.title}" width="900" height="900" loading="lazy"></div>` : ''}
+      <div class="s2-text">
+        <span class="s2-num">${String(i + 1).padStart(2, '0')}</span>
+        ${sec.title ? html`<h2>${sec.title}</h2>` : ''}
+        ${paragraphs(sec.text || '')}
+      </div>
+    </article>`)}
+  </div></section>` : ''}
+
+  ${specs.length ? html`<section class="pdp-specs"><div class="wrap specs-grid">
+    <div class="specs-head">
+      <p class="eyebrow">Detalii tehnice</p>
+      <h2>Specificații</h2>
+      <p class="muted">Tot ce trebuie să știi înainte să comanzi.</p>
+    </div>
+    <dl class="specs2">${specs.map((x) => html`<div><dt>${x.k}</dt><dd>${x.v}</dd></div>`)}</dl>
+  </div></section>` : ''}
+
+  ${p.faq.length || reviews.length ? html`<div class="wrap pdp-bottom">
+    ${p.faq.length ? html`<section class="faq2">
+      <div class="faq2-head">
+        <p class="eyebrow">Întrebări frecvente</p>
+        <h2>Ai întrebări? Avem răspunsuri.</h2>
+        <p class="muted">Nu găsești ce cauți? Scrie-ne și îți răspundem rapid.</p>
+        <a class="btn btn-ghost" href="/pagina/contact">${icons.mail(18)} Scrie-ne</a>
+      </div>
+      <div class="faq faq2-list">${p.faq.map((f) => html`<details><summary>${f.q}</summary><div>${paragraphs(f.a)}</div></details>`)}</div>
+    </section>` : ''}
+    ${reviews.length ? html`<section id="recenzii" class="reviews">
+      <h2>Ce spun clienții</h2>
+      <div class="reviews-summary">${stars(avg, 20)} <strong>${avg.toFixed(1)} din 5</strong> <span>din ${reviews.length} ${reviews.length === 1 ? 'recenzie' : 'recenzii'}</span></div>
+      <div class="review-list">${reviews.map((r) => html`<article class="review">
+        <header>${stars(r.rating, 14)}<strong>${r.name}</strong>${r.city ? html`<span>${r.city}</span>` : ''}</header>
+        ${paragraphs(r.text)}
+      </article>`)}</div>
+    </section>` : ''}
+  </div>` : ''}
 
   ${related.length ? html`<section class="wrap related">
     <h2>Te-ar mai putea interesa</h2>

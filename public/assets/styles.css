@@ -1148,3 +1148,70 @@ a.oi-link:hover .oi-name { color: var(--brand); }
 .oi-name { display: grid; gap: 2px; font-weight: 600; line-height: 1.35; min-width: 0; }
 .oi-name small { font-weight: 400; color: var(--muted); font-size: .85rem; }
 .order-items strong { white-space: nowrap; }
+
+/* ================= Pagina produsului v3: partea de prezentare ================= */
+.pdp-highlights { margin-top: 56px; }
+.hl-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.hl-grid li { display: grid; gap: 6px; align-content: start; padding: 22px 20px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); }
+.hl-ico { width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; background: #fff; color: var(--brand); box-shadow: 0 6px 16px -8px rgba(21,94,204,.45); margin-bottom: 8px; }
+.hl-grid strong { font: 800 1.05rem/1.3 var(--font-display); letter-spacing: -0.01em; }
+.hl-grid span:not(.hl-ico) { color: var(--muted); font-size: .93rem; line-height: 1.5; }
+
+.eyebrow { text-transform: none; }
+.pdp-about { margin-top: 72px; }
+.about-grid { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 64px; align-items: start; }
+.about-head h2 { font: 800 clamp(1.5rem, 2.4vw, 2rem)/1.2 var(--font-display); letter-spacing: -0.025em; margin: 0; }
+.about-body p { font-size: 1.06rem; line-height: 1.7; color: var(--muted); margin: 0 0 14px; }
+.about-body p:first-child { font-size: 1.22rem; line-height: 1.6; color: var(--ink); font-weight: 500; }
+
+.pdp-story { margin-top: 72px; padding: 72px 0; background: linear-gradient(180deg, #fbf7f1 0%, #fdfbf8 100%); border-top: 1px solid #f1e8dc; border-bottom: 1px solid #f1e8dc; }
+.story2 { display: grid; gap: 40px; }
+.s2-row { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); align-items: center; background: #fff; border-radius: 28px; overflow: hidden; box-shadow: 0 30px 60px -40px rgba(60,40,10,.35); border: 1px solid #f0e8dd; }
+.s2-row.rev .s2-media { order: 2; }
+.s2-media { height: 100%; min-height: 380px; }
+.s2-media img { display: block; width: 100%; height: 100%; aspect-ratio: 1; object-fit: cover; }
+.s2-text { padding: 48px 56px; }
+.s2-num { display: inline-grid; place-items: center; min-width: 44px; height: 30px; padding: 0 10px; border-radius: 999px; background: #fff4dc; color: #8a5a00; font: 800 .85rem/1 var(--font-display); letter-spacing: .04em; margin-bottom: 18px; }
+.s2-text h2 { font: 800 clamp(1.5rem, 2.4vw, 2.05rem)/1.18 var(--font-display); letter-spacing: -0.02em; margin: 0 0 16px; }
+.s2-text p { color: var(--muted); font-size: 1.06rem; line-height: 1.7; margin: 0 0 12px; }
+.s2-text p:last-child { margin-bottom: 0; }
+
+.pdp-specs { margin-top: 72px; }
+.specs-grid { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 64px; align-items: start; }
+.specs-head h2, .faq2-head h2 { font: 800 clamp(1.6rem, 2.6vw, 2.1rem)/1.15 var(--font-display); letter-spacing: -0.02em; margin: 0 0 10px; }
+.specs2 { margin: 0; border: 1px solid var(--line); border-radius: 20px; overflow: hidden; background: #fff; }
+.specs2 div { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 16px; padding: 15px 22px; }
+.specs2 div + div { border-top: 1px solid var(--line); }
+.specs2 div:nth-child(odd) { background: var(--surface); }
+.specs2 dt { color: var(--muted); font-weight: 600; font-size: .95rem; }
+.specs2 dd { margin: 0; font-weight: 600; }
+
+.pdp-bottom { padding-top: 72px; padding-bottom: 64px; display: grid; gap: 56px; }
+.faq2 { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 64px; align-items: start; }
+.faq2-head .btn { margin-top: 18px; }
+.faq2-list { background: #fff; border: 1px solid var(--line); border-radius: 20px; padding: 4px 24px; }
+.faq2-list details:last-child { border-bottom: 0; }
+.faq2-list summary { padding-top: 18px; padding-bottom: 18px; }
+.related { border-top: 0; }
+
+@media (max-width: 900px) {
+  .pdp-highlights { margin-top: 36px; }
+  .hl-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .hl-grid li { padding: 16px 14px; border-radius: 16px; }
+  .hl-ico { width: 40px; height: 40px; border-radius: 12px; margin-bottom: 4px; }
+  .hl-grid strong { font-size: .97rem; }
+  .hl-grid span:not(.hl-ico) { font-size: .85rem; }
+  .pdp-about, .pdp-specs { margin-top: 48px; }
+  .about-grid, .specs-grid, .faq2 { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+  .about-body p:first-child { font-size: 1.1rem; }
+  .pdp-story { margin-top: 48px; padding: 40px 0; }
+  .story2 { gap: 22px; }
+  .s2-row, .s2-row.rev { grid-template-columns: minmax(0, 1fr); border-radius: 22px; }
+  .s2-row.rev .s2-media { order: 0; }
+  .s2-media { min-height: 0; }
+  .s2-text { padding: 24px 22px 26px; }
+  .s2-num { margin-bottom: 12px; }
+  .specs2 div { padding: 13px 16px; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); }
+  .pdp-bottom { padding-top: 48px; gap: 40px; }
+  .faq2-list { padding: 2px 16px; }
+}

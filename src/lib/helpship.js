@@ -116,22 +116,26 @@ export async function sendToHelpship(env, settings, orderId, { force = false } =
 // caută în răspuns numărul AWB și curierul (câmpurile pot avea nume diferite)
 function findTracking(o) {
   if (!o || typeof o !== 'object') return {};
-  let awb = '', courier = '', status = '';
+  let awb = '', courier = '', status = '', tracking = '';
   const walk = (x, depth) => {
     if (!x || typeof x !== 'object' || depth > 3) return;
     for (const [k, v] of Object.entries(x)) {
       if (typeof v === 'string' || typeof v === 'number') {
         if (!awb && /^(trackingNumber|trackingCode|awb|awbNumber)$/i.test(k) && String(v).trim()) awb = String(v).trim();
         if (!courier && /^(carrierName|courierName|deliveryServiceName|carrier|courier)$/i.test(k) && String(v).trim()) courier = String(v).trim();
-        if (!status && /^(trackingStatus|status)$/i.test(k)) status = String(v);
+        if (!tracking && /^trackingStatus$/i.test(k)) tracking = String(v);
+        if (!status && /^(status|orderStatus)$/i.test(k)) status = String(v);
       } else walk(v, depth + 1);
     }
   };
   walk(o, 0);
-  return { awb, courier, status };
+  return { awb, courier, status, tracking };
 }
 
+// statusul coletului la Helpship (trackingStatus) → statusul comenzii la noi.
+// „Fulfilled” la Helpship = coletul a plecat din depozit; „Delivered” = clientul l-a primit.
 const DONE = { Delivered: 'livrata', Returned: 'retur' };
+const finalStatus = (t) => DONE[t.tracking] || (t.status === 'Refused' ? 'refuzata' : '');
 
 // Rulează din cron: trimite comenzile rămase netrimise și aduce AWB-ul / statusul pentru cele trimise.
 export async function syncHelpship(env) {
@@ -143,23 +147,28 @@ export async function syncHelpship(env) {
   for (const r of pending || []) await sendToHelpship(env, settings, r.id).catch(() => {});
 
   const { results: sent } = await env.DB.prepare(`SELECT * FROM orders WHERE fulfillment_mode != 'own' AND hs_order_id NOT IN ('', 'trimisa')
-    AND status NOT IN ('anulata', 'livrata', 'retur') AND created_at > datetime('now', '-30 days') ORDER BY updated_at ASC LIMIT 25`).all();
+    AND status NOT IN ('anulata', 'livrata', 'retur', 'refuzata') AND created_at > datetime('now', '-30 days') ORDER BY updated_at ASC LIMIT 25`).all();
   for (const order of sent || []) {
     try {
       const t = findTracking(await api(env, 'GET', `/api/Order/${order.hs_order_id}`));
       const fields = {};
-      if (t.status && t.status !== order.hs_status) fields.hs_status = t.status.slice(0, 40);
+      const label = [t.status, t.tracking].filter(Boolean).join(' · ');
+      if (label && label !== order.hs_status) fields.hs_status = label.slice(0, 60);
       if (t.awb && t.awb !== (order.fulfillment_mode === 'mixt' ? order.hs_awb : order.awb)) {
         const url = trackingUrlFor(t.courier, t.awb);
         if (order.fulfillment_mode === 'mixt') Object.assign(fields, { hs_awb: t.awb, hs_courier: t.courier, hs_tracking_url: url });
         else Object.assign(fields, { awb: t.awb, courier: t.courier, tracking_url: url, shipping_provider: 'helpship' });
       }
-      if (!Object.keys(fields).length) continue;
-      await updateOrder(env, order.id, fields);
+      const next = order.fulfillment_mode === 'helpship' ? finalStatus(t) : '';
+      if (!Object.keys(fields).length && !next) continue;
+      if (Object.keys(fields).length) await updateOrder(env, order.id, fields);
       if (fields.hs_awb || fields.awb) await addOrderEvent(env, order.id, `Helpship: AWB ${t.awb}${t.courier ? ` (${t.courier})` : ''}`);
       if (fields.hs_awb && !order.hs_awb) await notifyParcelShipped(env, settings, { ...order, ...fields }).catch(() => {});
       if (fields.awb && order.fulfillment_mode === 'helpship' && ['noua', 'confirmata'].includes(order.status)) await setStatus(env, settings, order.id, 'expediata', { by: 'Helpship' });
-      if (order.fulfillment_mode === 'helpship' && DONE[t.status]) await setStatus(env, settings, order.id, DONE[t.status], { by: 'Helpship' });
+      if (next && next !== order.status) {
+        if (next === 'livrata' && ['noua', 'confirmata'].includes(order.status)) await setStatus(env, settings, order.id, 'expediata', { by: 'Helpship' });
+        await setStatus(env, settings, order.id, next, { by: 'Helpship' });
+      }
     } catch (e) {
       console.log('helpship sync', order.number, e.message);
     }

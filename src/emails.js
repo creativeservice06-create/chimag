@@ -143,12 +143,15 @@ export function customerStatusEmail(s, base, o, items, images, invoice = null) {
   const awb = o.status === 'expediata' && o.awb
     ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;background:${C.tint};border-radius:12px;${FONT}"><tr><td style="padding:14px 16px;font-size:15px;">AWB: <strong>${esc(o.awb)}</strong>${o.courier ? ` · ${esc(o.courier)}` : ''}${o.tracking_url ? `<br><a href="${esc(o.tracking_url)}" style="color:${C.blue};font-weight:700;">Urmărește coletul</a>` : ''}</td></tr></table>`
     : '';
+  if (invoice && o.status === 'livrata') {
+    c = { subject: 'Comanda {n} a fost livrată · factura ta', title: c.title, intro: `${c.intro} Mai jos găsești factura comenzii, o poți descărca oricând.` };
+  }
   return {
     subject: c.subject.replace('{n}', o.number),
     html: layout(s, base, {
       preheader: c.intro, title: c.title, intro: c.intro,
       body: awb + (invoice ? invoiceBox(base, invoice) : '') + summaryStrip(o) + itemsTable(base, items, images) + totalsTable(o),
-      cta: { label: 'Vezi comanda', href: `${base}/multumim/${o.token}` },
+      cta: invoice && o.status === 'livrata' ? { label: 'Descarcă factura', href: `${base}/factura/${invoice.token}` } : { label: 'Vezi comanda', href: `${base}/multumim/${o.token}` },
     }),
     text: `${c.title}\n${c.intro}\n${o.awb ? `AWB: ${o.awb} ${o.tracking_url || ''}\n` : ''}${invoice ? `Factura ${invoice.full_number}: ${base}/factura/${invoice.token}\n` : ''}\nComanda: ${base}/multumim/${o.token}`,
   };

@@ -27,7 +27,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0, msgCount
 <meta name="robots" content="noindex">
 <title>${title} · Admin Chimag</title>
 <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/assets/admin.css?v=9">
+<link rel="stylesheet" href="/assets/admin.css?v=12">
 <meta name="theme-color" content="#0e192a">
 <script src="/assets/admin.js?v=2" defer></script>
 </head><body>
@@ -112,13 +112,19 @@ function dashChart(series) {
   if (series.length < 2) return '';
   const max = Math.max(1, ...series.map((x) => x.revenue));
   const fmtDay = (d) => d.slice(8, 10) + '.' + d.slice(5, 7);
-  const every = Math.ceil(series.length / 15);
-  return html`<div class="chart" role="img" aria-label="Vânzări și profit pe zile">
-    <div class="chart-max muted">${money(max)}</div>
-    <div class="chart-cols">${series.map((x, i) => html`<div class="col" title="${fmtDay(x.day)} · vânzări ${money(x.revenue)} · profit ${money(x.profit)} · ${x.orders} ${x.orders === 1 ? 'comandă' : 'comenzi'}">
-      <div class="col-bars"><span class="b-rev" style="height:${Math.round((x.revenue / max) * 100)}%"></span><span class="b-prof ${x.profit < 0 ? 'neg' : ''}" style="height:${Math.round((Math.abs(x.profit) / max) * 100)}%"></span></div>
-      <small>${i % every === 0 ? fmtDay(x.day).slice(0, 2) : ''}</small></div>`)}</div>
-    <div class="legend"><span><i class="lg-rev"></i>Vânzări</span><span><i class="lg-prof"></i>Profit</span></div>
+  const every = Math.ceil(series.length / 12);
+  const everyM = Math.ceil(series.length / 5); // pe telefon, mai puține etichete
+  const short = (bani) => { const l = bani / 100; return l >= 1000 ? `${String(Math.round(l / 100) / 10).replace('.', ',')}k` : String(Math.round(l)); };
+  return html`<div class="chart2">
+    <div class="y-axis">${[1, 0.5, 0].map((f) => html`<span>${f ? `${short(max * f)} lei` : '0'}</span>`)}</div>
+    <div class="plot">
+      <div class="grid"><i></i><i></i><i></i></div>
+      <div class="chart-cols">${series.map((x, i) => html`<div class="col ${i > series.length * 0.7 ? 'tip-left' : ''}" tabindex="0">
+        <div class="col-bars"><span class="b-rev" style="height:${Math.round((x.revenue / max) * 100)}%"></span><span class="b-prof ${x.profit < 0 ? 'neg' : ''}" style="height:${Math.round((Math.abs(x.profit) / max) * 100)}%"></span></div>
+        <small class="${i % everyM === 0 ? 'lm' : ''}">${i % every === 0 || i % everyM === 0 ? fmtDay(x.day) : ''}</small>
+        <div class="tip"><b>${fmtDay(x.day)}</b><span>Vânzări <b>${money(x.revenue)}</b></span><span>Profit <b>${money(x.profit)}</b></span><span>${x.orders} ${x.orders === 1 ? 'comandă' : 'comenzi'}</span></div>
+      </div>`)}</div>
+    </div>
   </div>`;
 }
 
@@ -181,7 +187,12 @@ export function dashboardView(d) {
   const prevPpo = prev.orders ? Math.round(prev.net / prev.orders) : 0;
   const newCount = d.statusCounts.noua || 0;
   const maxProd = Math.max(1, ...p.products.map((x) => x.revenue));
-  const kpi = (label, value, sub, dl = '') => html`<div class="kpi"><h2>${label} ${dl}</h2><p class="kpi-main">${value}</p><p class="kpi-sub">${sub}</p></div>`;
+  const kpi = (ic, tone, label, value, sub, dl = '') => html`<div class="kpi2">
+    <div class="kpi2-top"><span class="kpi2-ic t-${tone}">${icons[ic](18)}</span><span class="kpi2-label">${label}</span></div>
+    <p class="kpi2-val">${value}</p>
+    <div class="kpi2-foot">${dl}<span>${sub}</span></div></div>`;
+  const STATUS_TONE = { noua: '#f6b73c', confirmata: '#155ecc', expediata: '#5b8def', livrata: '#1d7a4f', refuzata: '#d9534f', retur: '#e88a86', anulata: '#b9c2cf' };
+  const stTotal = Object.values(st.status).reduce((a2, n) => a2 + n, 0);
   return html`
   <header class="page-head dash-head">
     <div><h1>Panou</h1><p class="muted">Vânzările, costurile și profitul magazinului tău.</p></div>
@@ -190,47 +201,51 @@ export function dashboardView(d) {
 
   ${profitPanel(p, r, prev)}
 
-  <section class="kpis kpis-6">
-    ${kpi('Comenzi', p.orders, `${prev.orders} în perioada anterioară`, delta(p.orders, prev.orders))}
-    ${kpi('Coș mediu', money(aov), 'valoarea medie a unei comenzi', delta(aov, prevAov))}
-    ${kpi('Profit pe comandă', money(ppo), 'cât câștigi, în medie', delta(ppo, prevPpo))}
-    ${kpi('Produse vândute', units, `${p.products.length} ${p.products.length === 1 ? 'produs diferit' : 'produse diferite'}`, delta(units, prevUnits))}
-    ${kpi('Rată de livrare', st.deliveryRate == null ? '–' : `${st.deliveryRate}%`, `${st.delivered} livrate · ${st.refused} refuzate/retur`)}
-    ${kpi('Clienți', st.customers, st.customers ? `${st.returning} ${st.returning === 1 ? 'a mai cumpărat' : 'au mai cumpărat'} înainte` : 'clienți unici în perioadă')}
+  <div class="section-title"><h2>Analitici</h2><span class="muted">pentru perioada aleasă, comparat cu perioada anterioară</span></div>
+  <section class="kpi2-grid">
+    ${kpi('cart', 'blue', 'Comenzi', p.orders, `față de ${prev.orders} anterior`, delta(p.orders, prev.orders))}
+    ${kpi('cash', 'indigo', 'Coș mediu', money(aov), 'pe comandă', delta(aov, prevAov))}
+    ${kpi('star', 'green', 'Profit pe comandă', money(ppo), 'în medie', delta(ppo, prevPpo))}
+    ${kpi('box', 'amber', 'Produse vândute', units, `${p.products.length} ${p.products.length === 1 ? 'produs diferit' : 'produse diferite'}`, delta(units, prevUnits))}
+    ${kpi('truck', 'teal', 'Rată de livrare', st.deliveryRate == null ? '–' : `${st.deliveryRate}%`, `${st.delivered} livrate · ${st.refused} refuzate`)}
+    ${kpi('user', 'rose', 'Clienți', st.customers, `${st.returning} ${st.returning === 1 ? 'revenit' : 'reveniți'}`)}
   </section>
 
-  <section class="panel">
-    <div class="panel-head"><h2>Vânzări și profit pe zile</h2></div>
+  <section class="panel card2">
+    <div class="panel-head"><div><h2>Vânzări și profit pe zile</h2><p class="muted small">Atinge sau ține cursorul pe o zi ca să vezi cifrele.</p></div>
+      <div class="legend"><span><i class="lg-rev"></i>Vânzări</span><span><i class="lg-prof"></i>Profit</span></div></div>
     ${p.series.length > 1 ? dashChart(p.series) : html`<p class="muted">Alege o perioadă mai lungă de o zi ca să vezi evoluția.</p>`}
   </section>
 
   <div class="two-col">
-    <section class="panel">
-      <div class="panel-head"><h2>Produse în perioadă</h2><a href="/admin/produse" class="muted">Toate produsele</a></div>
-      ${p.products.length ? html`<ul class="prod-rank">${p.products.map((x) => html`<li>
+    <section class="panel card2">
+      <div class="panel-head"><h2>Top produse</h2><a href="/admin/produse" class="muted">Toate produsele</a></div>
+      ${p.products.length ? html`<ol class="prod-rank">${p.products.map((x, i) => html`<li>
+        <span class="rank">${i + 1}</span>
         <img src="${x.img || '/img/placeholder.svg'}" alt="" width="52" height="52" loading="lazy">
         <div class="pr-main">
-          <div class="pr-top">${x.id ? html`<a href="/admin/produse/${x.id}"><b>${x.title}</b></a>` : html`<b>${x.title}</b>`}<b class="${x.revenue - x.cost < 0 ? 'err-txt' : 'ok-txt'}">${money(x.revenue - x.cost)}</b></div>
-          <div class="pr-sub muted"><span>${x.qty} buc. · vânzări ${money(x.revenue)} · cost ${money(x.cost)}</span><span>marjă ${pct(x.revenue - x.cost, x.revenue)}</span></div>
+          <div class="pr-top">${x.id ? html`<a href="/admin/produse/${x.id}">${x.title}</a>` : html`<span>${x.title}</span>`}<b class="${x.revenue - x.cost < 0 ? 'err-txt' : 'ok-txt'}">${money(x.revenue - x.cost)}</b></div>
+          <div class="pr-sub muted"><span>${x.qty} buc. · ${money(x.revenue)} vânzări</span><span>marjă ${pct(x.revenue - x.cost, x.revenue)}</span></div>
           <div class="share-bar"><span style="width:${Math.max(2, Math.round((x.revenue / maxProd) * 100))}%"></span></div>
-        </div></li>`)}</ul>` : html`<p class="muted">Nicio vânzare în perioada aleasă.</p>`}
+        </div></li>`)}</ol>` : html`<p class="muted">Nicio vânzare în perioada aleasă.</p>`}
     </section>
-    <section class="panel">
-      <div class="panel-head"><h2>Comenzi pe status</h2><span class="muted">în perioadă</span></div>
-      <ul class="status-list">${Object.entries(ORDER_STATUSES).map(([k, v]) => html`<li><a href="/admin/comenzi?status=${k}">${statusChip(k)}<b>${st.status[k] || 0}</b></a></li>`)}</ul>
-      <h3 class="mt">Metode de plată</h3>
+    <section class="panel card2">
+      <div class="panel-head"><h2>Comenzi pe status</h2><span class="muted">${stTotal} în perioadă</span></div>
+      ${stTotal ? html`<div class="stack" role="img" aria-label="Distribuția comenzilor pe status">${Object.keys(ORDER_STATUSES).filter((k) => st.status[k]).map((k) => html`<span style="width:${(st.status[k] / stTotal) * 100}%;background:${STATUS_TONE[k]}" title="${ORDER_STATUSES[k]}: ${st.status[k]}"></span>`)}</div>` : ''}
+      <ul class="legend-grid">${Object.entries(ORDER_STATUSES).map(([k, v]) => html`<li><a href="/admin/comenzi?status=${k}"><i style="background:${STATUS_TONE[k]}"></i><span>${v}</span><b>${st.status[k] || 0}</b><small class="muted">${stTotal ? pct(st.status[k] || 0, stTotal) : ''}</small></a></li>`)}</ul>
+      <h3 class="sub-h">Metode de plată</h3>
       ${shareList(st.pay, { label: (x) => PAY_NAMES[x.m] || x.m })}
     </section>
   </div>
 
   <div class="two-col">
-    <section class="panel">
-      <div class="panel-head"><h2>De unde vin comenzile</h2></div>
+    <section class="panel card2">
+      <div class="panel-head"><h2>Surse de trafic</h2><span class="muted">de unde vin comenzile</span></div>
       ${shareList(st.sources, { label: (x) => SOURCE_NAMES[x.source] || x.source })}
-      <p class="hint mt">Sursa vine din linkurile reclamelor (utm_source, fbclid, ttclid).</p>
+      <p class="hint mt">Se recunosc automat după linkurile reclamelor (utm_source, fbclid, ttclid).</p>
     </section>
-    <section class="panel">
-      <div class="panel-head"><h2>Top județe</h2></div>
+    <section class="panel card2">
+      <div class="panel-head"><h2>Top județe</h2><span class="muted">după vânzări</span></div>
       ${shareList(st.counties, { label: (x) => x.county })}
     </section>
   </div>

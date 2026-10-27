@@ -284,6 +284,7 @@ export function productPage({ settings, product: p, reviews, related = [], siteU
             <p>Ai ${settings.return_days || 14} zile să returnezi produsul, fără să ne spui motivul. Îți dăm banii înapoi după ce primim coletul.</p>
             <p><a href="/pagina/retur">Vezi condițiile de retur</a></p>
           </div></details>
+          ${specs.length ? html`<details><summary>Specificații</summary><dl class="specs">${specs.map((x) => html`<div><dt>${x.k}</dt><dd>${x.v}</dd></div>`)}</dl></details>` : ''}
         </div>
       </div>
     </div>
@@ -316,23 +317,10 @@ export function productPage({ settings, product: p, reviews, related = [], siteU
     </article>`)}
   </div></section>` : ''}
 
-  ${specs.length ? html`<section class="pdp-specs"><div class="wrap specs-grid">
-    <div class="specs-head">
-      <p class="eyebrow">Detalii tehnice</p>
-      <h2>Specificații</h2>
-      <p class="muted">Tot ce trebuie să știi înainte să comanzi.</p>
-    </div>
-    <dl class="specs2">${specs.map((x) => html`<div><dt>${x.k}</dt><dd>${x.v}</dd></div>`)}</dl>
-  </div></section>` : ''}
 
   ${p.faq.length || reviews.length ? html`<div class="wrap pdp-bottom">
     ${p.faq.length ? html`<section class="faq2">
-      <div class="faq2-head">
-        <p class="eyebrow">Întrebări frecvente</p>
-        <h2>Ai întrebări? Avem răspunsuri.</h2>
-        <p class="muted">Nu găsești ce cauți? Scrie-ne și îți răspundem rapid.</p>
-        <a class="btn btn-ghost" href="/pagina/contact">${icons.mail(18)} Scrie-ne</a>
-      </div>
+      <div class="faq2-head"><h2>Întrebări frecvente</h2></div>
       <div class="faq faq2-list">${p.faq.map((f) => html`<details><summary>${f.q}</summary><div>${paragraphs(f.a)}</div></details>`)}</div>
     </section>` : ''}
     ${reviews.length ? html`<section id="recenzii" class="reviews">

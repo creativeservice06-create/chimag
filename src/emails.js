@@ -136,7 +136,7 @@ export function customerOrderEmail(s, base, o, items, images) {
     html: layout(s, base, {
       preheader: `Mulțumim! Total ${money(o.total)}. Îți scriem când o expediem.`,
       title: `Mulțumim, ${o.customer_name.split(' ')[0]}! Am primit comanda.`,
-      intro: 'Îți scriem din nou când o expediem, cu numărul AWB pentru urmărire.',
+      intro: 'Îți scriem din nou când comanda e confirmată și pleacă spre tine, împreună cu numărul AWB pentru urmărire.',
       body: summaryStrip(o) + splitBox(o) + itemsTable(base, items, images) + totalsTable(o) + addressBox(o),
       cta: { label: 'Vezi statusul comenzii', href: `${base}/multumim/${o.token}` },
     }),
@@ -145,8 +145,8 @@ export function customerOrderEmail(s, base, o, items, images) {
 }
 
 const STATUS_COPY = {
-  confirmata: { subject: 'Comanda {n} a fost confirmată', title: 'Comanda ta e confirmată ✅', intro: 'O pregătim pentru expediere. Îți trimitem numărul AWB imediat ce pleacă spre tine.' },
-  expediata: { subject: 'Comanda {n} a fost expediată 🚚', title: 'Comanda ta e pe drum 🚚', intro: 'Coletul a plecat spre tine. Curierul te sună înainte de livrare.' },
+  // confirmarea și AWB-ul vin împreună, într-un singur email (nu mai trimitem email separat la „Confirmată”)
+  expediata: { subject: 'Comanda {n} e confirmată și a plecat spre tine 🚚', title: 'Comanda ta e confirmată și pe drum 🚚', intro: 'Am confirmat comanda și coletul a plecat deja spre tine. Mai jos ai numărul AWB, ca să-l poți urmări. Curierul te sună înainte de livrare.' },
   livrata: { subject: 'Comanda {n} a fost livrată', title: 'Comanda ta a fost livrată 🎉', intro: 'Sperăm să te bucuri de produse! Dacă ai orice problemă, scrie-ne și o rezolvăm.' },
   anulata: { subject: 'Comanda {n} a fost anulată', title: 'Comanda ta a fost anulată', intro: 'Dacă nu tu ai cerut anularea sau vrei să plasezi din nou comanda, scrie-ne și te ajutăm.' },
   retur: { subject: 'Am primit returul pentru comanda {n}', title: 'Am primit produsele returnate', intro: 'Verificăm produsele și îți returnăm banii în cel mult 14 zile, conform politicii de retur.' },
@@ -158,7 +158,7 @@ export function customerStatusEmail(s, base, o, items, images, invoice = null) {
   if (!c) return null;
   if (o.fulfillment_mode === 'mixt' && o.status === 'expediata') {
     // la comenzile în 2 colete, emailul de expediere e pentru coletul nostru
-    c = { subject: 'Un colet din comanda {n} e pe drum 🚚', title: 'Un colet e pe drum 🚚', intro: 'Comanda ta vine în 2 colete, iar unul dintre ele tocmai a plecat spre tine. Curierul te sună înainte de livrare.' };
+    c = { subject: 'Comanda {n} e confirmată · un colet e pe drum 🚚', title: 'Comanda ta e confirmată · un colet e pe drum 🚚', intro: 'Am confirmat comanda. Ea vine în 2 colete, iar unul dintre ele tocmai a plecat spre tine. Curierul te sună înainte de livrare.' };
     items = items.filter((i) => i.fulfillment !== 'helpship');
   }
   const awb = o.status === 'expediata' && o.awb
@@ -206,13 +206,14 @@ export function parcelShippedEmail(s, base, o, items, images) {
   const awb = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;background:${C.tint};border-radius:12px;${FONT}"><tr><td style="padding:14px 16px;font-size:15px;">AWB: <strong>${esc(o.hs_awb)}</strong>${o.hs_courier ? ` · ${esc(o.hs_courier)}` : ''}${o.hs_tracking_url ? `<br><a href="${esc(o.hs_tracking_url)}" style="color:${C.blue};font-weight:700;">Urmărește coletul</a>` : ''}</td></tr></table>`;
   const cod = !(o.payment_method === 'card' && o.payment_status === 'platita');
   return {
-    subject: `Un colet din comanda ${o.number} e pe drum 🚚`,
+    subject: `Comanda ${o.number} e confirmată · un colet e pe drum 🚚`,
     html: layout(s, base, {
       preheader: 'Unul dintre cele două colete ale comenzii tale a plecat spre tine.',
-      title: 'Un colet e pe drum 🚚',
-      intro: `Comanda ta vine în 2 colete. Acesta conține produsele de mai jos${cod ? ` și îl plătești curierului: <strong style="color:${C.ink}">${money(o.hs_total)}</strong>` : ''}. Celălalt colet are AWB-ul lui și te anunțăm separat despre el.`,
+      title: 'Comanda ta e confirmată · un colet e pe drum 🚚',
+      intro: `Am confirmat comanda. Ea vine în 2 colete. Acesta conține produsele de mai jos${cod ? ` și îl plătești curierului: <strong style="color:${C.ink}">${money(o.hs_total)}</strong>` : ''}. Celălalt colet are AWB-ul lui și te anunțăm separat despre el.`,
       body: awb + itemsTable(base, items, images),
       cta: { label: 'Vezi comanda', href: `${base}/multumim/${o.token}` },
+      cta2: o.hs_tracking_url ? { label: 'Urmărește coletul', href: o.hs_tracking_url } : null,
     }),
     text: `Un colet din comanda ${o.number} e pe drum. AWB ${o.hs_awb} ${o.hs_tracking_url || ''}`,
   };

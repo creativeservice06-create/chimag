@@ -20,6 +20,11 @@ export async function notifyOrderPlaced(env, settings, order) {
 
 export async function notifyStatus(env, settings, order) {
   if (settings.customer_emails === '0' || !order.email || !STATUS_EMAILS.includes(order.status)) return;
+  // „confirmată + pe drum” pleacă doar împreună cu AWB-ul (dacă AWB-ul se adaugă mai târziu, emailul pleacă atunci)
+  if (order.status === 'expediata' && !order.awb) {
+    await env.DB.prepare('INSERT INTO order_events(order_id, message) VALUES (?, ?)').bind(order.id, 'Emailul de expediere către client pleacă după ce comanda are AWB.').run();
+    return;
+  }
   const base = baseUrl(env);
   const items = await getOrderItems(env, order.id);
   const inv = await env.DB.prepare("SELECT * FROM invoices WHERE order_id = ? AND kind = 'factura'").bind(order.id).first().catch(() => null);

@@ -313,7 +313,7 @@ export function ordersView({ orders, status, q, counts, page, hasMore }) {
 export function orderView({ order: o, items, events, settings, provider, hsOn = false, invoices = [], invProblem = '' }) {
   const providerObj = PROVIDERS[o.shipping_provider || settings.shipping_provider] || PROVIDERS.test;
   const quick = {
-    noua: [['confirmata', 'Confirmă comanda', 'primary'], ['anulata', 'Anulează', '']],
+    noua: [['confirmata', 'Confirmă comanda', 'primary'], ['anulata', 'Anulează', '']], // clientul primește emailul abia când comanda are AWB
     confirmata: [['expediata', 'Marchează Expediată', ''], ['anulata', 'Anulează', '']],
     expediata: [['livrata', 'Livrată', 'primary'], ['refuzata', 'Refuzată', '']],
     refuzata: [['retur', 'Retur primit în depozit', '']],
@@ -321,7 +321,8 @@ export function orderView({ order: o, items, events, settings, provider, hsOn = 
   return html`
   <header class="page-head">
     <div><a class="back" href="/admin/comenzi">Comenzi</a><h1>${o.number} ${statusChip(o.status)}</h1>
-    <p class="muted">Plasată ${formatDate(o.created_at)} · ${payChip(o)}</p></div>
+    <p class="muted">Plasată ${formatDate(o.created_at)} · ${payChip(o)}</p>
+    ${['noua', 'confirmata'].includes(o.status) ? html`<p class="hint">Clientul nu primește email la confirmare. Primește unul singur, „confirmată și pe drum”, cu AWB-ul, când pleacă coletul.</p>` : ''}</div>
     <div class="actions">
       ${quick.map(([s, label, cls]) => html`<form method="post" action="/admin/comenzi/${o.id}/status"><input type="hidden" name="status" value="${s}"><button class="btn ${cls}" ${s === 'anulata' ? raw('data-confirm="Sigur anulezi comanda? Stocul se readaugă."') : ''}>${label}</button></form>`)}
       <form method="post" action="/admin/comenzi/${o.id}/status" class="inline">

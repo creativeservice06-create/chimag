@@ -226,7 +226,7 @@ export async function handleAdmin(request, env, ctx, path) {
         return redirect(withFlash(back, r.ok ? 'ok' : 'err', r.ok ? 'AWB anulat.' : r.error));
       }
       case 'awb-manual':
-        await setManualAwb(env, id, form.get('awb'), form.get('courier'));
+        await setManualAwb(env, id, form.get('awb'), form.get('courier'), { ctx });
         return redirect(withFlash(back, 'ok', 'AWB salvat.'));
       case 'incasat':
         await updateOrder(env, id, { payment_status: 'platita' });

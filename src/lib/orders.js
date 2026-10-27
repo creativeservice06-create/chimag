@@ -156,11 +156,21 @@ export async function cancelAwb(env, settings, orderId) {
   return { ok: true };
 }
 
-export async function setManualAwb(env, orderId, awb, courier) {
+export async function setManualAwb(env, orderId, awb, courier, { ctx = null } = {}) {
   awb = String(awb || '').trim();
   courier = String(courier || '').trim();
+  const before = await getOrder(env, orderId);
   await updateOrder(env, orderId, { awb, courier, tracking_url: trackingUrlFor(courier, awb), shipping_error: '' });
   await addOrderEvent(env, orderId, awb ? `AWB setat manual: ${awb}${courier ? ` (${courier})` : ''}` : 'AWB șters manual.');
+  if (!awb || before?.awb) return;
+  // primul AWB: comanda devine „Expediată” și clientul primește emailul „confirmată și pe drum”, cu AWB-ul
+  const { getSettings } = await import('./db.js');
+  const settings = await getSettings(env);
+  if (['noua', 'confirmata'].includes(before.status)) await setStatus(env, settings, orderId, 'expediata', { ctx });
+  else if (before.status === 'expediata') {
+    const p = notifyStatus(env, settings, await getOrder(env, orderId));
+    if (ctx) ctx.waitUntil(p); else await p;
+  }
 }
 
 export async function markPaid(env, orderId, sessionId) {

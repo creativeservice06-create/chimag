@@ -10,6 +10,21 @@ export const TIKTOK_PURCHASE_EVENT = 'Purchase';
 const e164 = (phone) => (phone?.startsWith('0') ? '+40' + phone.slice(1) : phone || '');
 const norm = (s) => String(s || '').trim().toLowerCase();
 
+// Identificatori criptați (SHA-256) pentru TikTok, aceiași în browser și pe server
+export async function tiktokIdentity(order) {
+  const e = e164(order.phone);
+  const [email, phone, external] = await Promise.all([
+    order.email ? sha256Hex(norm(order.email)) : null,
+    e ? sha256Hex(e) : null, // TikTok: telefon în format E.164, cu +
+    e ? sha256Hex(e.replace('+', '')) : null,
+  ]);
+  const out = {};
+  if (email) out.email = email;
+  if (phone) out.phone_number = phone;
+  if (external) out.external_id = external;
+  return out;
+}
+
 export async function sendServerPurchase(env, settings, order, items, siteUrl) {
   const tasks = [];
   const value = order.total / 100;
@@ -50,8 +65,8 @@ export async function sendServerPurchase(env, settings, order, items, siteUrl) {
   }
 
   if (env.TIKTOK_EVENTS_TOKEN && settings.tiktok_pixel_id) {
-    const user = { phone: ph, external_id: ph, ip: order.ip || undefined, user_agent: order.user_agent || undefined, ttclid: order.ttclid || undefined, ttp: order.ttp || undefined };
-    if (em) user.email = em;
+    const id = await tiktokIdentity(order);
+    const user = { phone: id.phone_number, external_id: id.external_id, email: id.email, ip: order.ip || undefined, user_agent: order.user_agent || undefined, ttclid: order.ttclid || undefined, ttp: order.ttp || undefined };
     const body = {
       event_source: 'web', event_source_id: settings.tiktok_pixel_id,
       data: [{

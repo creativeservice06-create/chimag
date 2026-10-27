@@ -187,9 +187,11 @@ async function route(request, env, ctx) {
     const { results: events } = await env.DB.prepare("SELECT message, created_at FROM order_events WHERE order_id = ? AND message LIKE 'Status:%' ORDER BY id").bind(order.id).all();
     const { itemImages } = await import('./emails.js');
     const products = await itemImages(env, items);
+    const { tiktokIdentity } = await import('./lib/tracking.js');
+    const identify = await tiktokIdentity(order);
     return htmlResponse(layout({
       settings, siteUrl: siteUrl(env, request), title: `Comanda ${order.number}`,
-      body: thankYouPage({ settings, order, items, payment: url.searchParams.get('plata'), invoices: invoices || [], events: events || [], products }),
+      body: thankYouPage({ settings, order, items, payment: url.searchParams.get('plata'), invoices: invoices || [], events: events || [], products, identify }),
     }), 200, { 'cache-control': 'no-store', 'x-robots-tag': 'noindex' });
   }
 

@@ -472,7 +472,7 @@ function orderProgress(order, events) {
   ${stopped ? html`<p class="progress-stop">${stopped}</p>` : ''}`;
 }
 
-export function thankYouPage({ settings, order, items, payment, invoices = [], events = [], products = new Map() }) {
+export function thankYouPage({ settings, order, items, payment, invoices = [], events = [], products = new Map(), identify = null }) {
   const isCard = order.payment_method === 'card';
   const paid = order.payment_status === 'platita';
   const fresh = Date.now() - Date.parse(order.created_at.replace(' ', 'T') + 'Z') < 1000 * 60 * 60 * 6;
@@ -480,6 +480,7 @@ export function thankYouPage({ settings, order, items, payment, invoices = [], e
     eventId: order.number, value: order.total / 100, currency: 'RON',
     contents: items.map((i) => ({ id: String(i.product_id), quantity: i.qty, price: i.unit_price / 100, name: i.title })),
     ttEvent: TIKTOK_PURCHASE_EVENT,
+    identify: identify || undefined, // email/telefon criptate, pentru potrivirea cu reclamele TikTok
   };
   // pentru card, evenimentul Purchase pleacă doar după plată
   const trackPurchase = fresh && (!isCard || paid);

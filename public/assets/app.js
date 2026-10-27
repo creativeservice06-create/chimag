@@ -105,6 +105,7 @@
         }, eventId ? { eventID: eventId } : undefined);
       }
       if (window.ttq) {
+        if (data.identify) { try { window.ttq.identify(data.identify); } catch (e) { /* */ } }
         window.ttq.track(data.ttEvent || TT_NAMES[name] || name, {
           value: data.value, currency: 'RON', content_type: 'product',
           contents: (data.contents || []).map(function (c) { return { content_id: c.id, quantity: c.quantity, price: c.price, content_name: c.name }; }),

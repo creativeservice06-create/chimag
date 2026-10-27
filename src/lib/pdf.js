@@ -146,7 +146,9 @@ export class PdfDoc {
       const t = f.ttf, k = 1000 / t.upm;
       const tag = 'CHIMAG'.slice(0, 6) + '+';
       const baseName = `${tag}PJS-${f.key}`;
-      const fileId = add(await stream(`/Length1 ${t.bytes.length}`, t.bytes));
+      // fontul comprimat e același la fiecare factură: îl comprimăm o singură dată (economisim timp de procesare)
+      if (!t.packed) t.packed = await deflate(t.bytes);
+      const fileId = add(concat([str(`<< /Length1 ${t.bytes.length} /Length ${t.packed.length} /Filter /FlateDecode >>\nstream\n`), t.packed, str('\nendstream')]));
       const descId = add(str(`<< /Type /FontDescriptor /FontName /${baseName} /Flags 32 /FontBBox [${t.bbox.map((v) => Math.round(v * k)).join(' ')}] /ItalicAngle 0 /Ascent ${Math.round(t.ascent * k)} /Descent ${Math.round(t.descent * k)} /CapHeight ${Math.round(t.capHeight * k)} /StemV ${f.key === 'B' ? 140 : 80} /FontFile2 ${fileId} 0 R >>`));
       const gids = [...f.used.keys()].sort((a, b) => a - b);
       const W = gids.map((g) => `${g} [${Math.round(t.advance(g) * k)}]`).join(' ');

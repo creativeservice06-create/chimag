@@ -12,7 +12,11 @@ async function loadFonts(env) {
   const get = async (name) => {
     const r = await env.ASSETS.fetch(new Request(`https://assets.local/assets/fonts/${name}`));
     if (!r.ok) throw new Error(`fontul ${name} lipsește`);
-    return parseTTF(new Uint8Array(await r.arrayBuffer()));
+    const ttf = parseTTF(new Uint8Array(await r.arrayBuffer()));
+    // varianta deja comprimată a fontului (generată o dată, în public/assets/fonts/*.ttf.z) – evită comprimarea pe server
+    const z = await env.ASSETS.fetch(new Request(`https://assets.local/assets/fonts/${name}.z`)).catch(() => null);
+    if (z && z.ok) ttf.packed = new Uint8Array(await z.arrayBuffer());
+    return ttf;
   };
   FONTS = { R: await get('pjs-Regular.ttf'), B: await get('pjs-Bold.ttf') };
   return FONTS;

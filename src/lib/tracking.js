@@ -4,7 +4,8 @@ import { sha256Hex } from './util.js';
 // Folosesc același event_id ca pixelul din browser, deci Facebook/TikTok le deduplică.
 // Se activează doar dacă există FB_CAPI_TOKEN / TIKTOK_EVENTS_TOKEN și ID-ul pixelului în setări.
 
-export const TIKTOK_PURCHASE_EVENT = 'CompletePayment';
+// TikTok a redenumit CompletePayment în Purchase (2025); folosim numele nou
+export const TIKTOK_PURCHASE_EVENT = 'Purchase';
 
 const e164 = (phone) => (phone?.startsWith('0') ? '+40' + phone.slice(1) : phone || '');
 const norm = (s) => String(s || '').trim().toLowerCase();
@@ -49,7 +50,7 @@ export async function sendServerPurchase(env, settings, order, items, siteUrl) {
   }
 
   if (env.TIKTOK_EVENTS_TOKEN && settings.tiktok_pixel_id) {
-    const user = { phone: ph, ip: order.ip || undefined, user_agent: order.user_agent || undefined, ttclid: order.ttclid || undefined };
+    const user = { phone: ph, external_id: ph, ip: order.ip || undefined, user_agent: order.user_agent || undefined, ttclid: order.ttclid || undefined, ttp: order.ttp || undefined };
     if (em) user.email = em;
     const body = {
       event_source: 'web', event_source_id: settings.tiktok_pixel_id,

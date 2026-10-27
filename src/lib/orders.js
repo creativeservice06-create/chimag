@@ -11,13 +11,13 @@ export async function createOrder(env, { customer, priced, paymentMethod, meta }
   const token = randomToken(16);
   const row = await env.DB.prepare(`INSERT INTO orders
     (number, token, status, payment_method, payment_status, customer_name, phone, email, county, city, address, postal_code, notes,
-     subtotal, discount, shipping, cod_fee, total, utm_source, utm_medium, utm_campaign, fbclid, ttclid, fbp, ip, user_agent,
+     subtotal, discount, shipping, cod_fee, total, utm_source, utm_medium, utm_campaign, fbclid, ttclid, fbp, ttp, ip, user_agent,
      coupon_code, coupon_discount, customer_id, fulfillment_mode, own_total, hs_total)
-    VALUES (?, ?, 'noua', ?, 'neplatita', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, 'noua', ?, 'neplatita', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     RETURNING id`)
     .bind(number, token, paymentMethod, customer.name, customer.phone, customer.email, customer.county, customer.city,
       customer.address, customer.postalCode, customer.notes, priced.subtotal, priced.discount, priced.shipping, priced.codFee,
-      priced.total, meta.utm_source, meta.utm_medium, meta.utm_campaign, meta.fbclid, meta.ttclid, meta.fbp, meta.ip, meta.ua,
+      priced.total, meta.utm_source, meta.utm_medium, meta.utm_campaign, meta.fbclid, meta.ttclid, meta.fbp, meta.ttp || '', meta.ip, meta.ua,
       priced.coupon?.ok ? priced.coupon.code : '', priced.coupon?.ok ? priced.couponDiscount : 0, meta.customerId || 0,
       split.mode, split.own, split.hs)
     .first();

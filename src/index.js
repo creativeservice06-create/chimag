@@ -372,7 +372,7 @@ async function placeOrder(request, env, ctx) {
   const a = body.attribution || {};
   const meta = {
     utm_source: clean(a.utm_source, 100), utm_medium: clean(a.utm_medium, 100), utm_campaign: clean(a.utm_campaign, 150),
-    fbclid: clean(a.fbclid, 250), ttclid: clean(a.ttclid, 250), fbp: clean(a.fbp, 100),
+    fbclid: clean(a.fbclid, 250), ttclid: clean(a.ttclid, 250), fbp: clean(a.fbp, 100), ttp: clean(a.ttp, 100),
     ip, ua: clean(request.headers.get('user-agent'), 300),
   };
 

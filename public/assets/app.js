@@ -64,6 +64,8 @@
     if (a.ts && Date.now() - a.ts > 1000 * 60 * 60 * 24 * 30) a = {};
     var m = document.cookie.match(/(?:^|; )_fbp=([^;]+)/);
     a.fbp = m ? decodeURIComponent(m[1]) : '';
+    var t = document.cookie.match(/(?:^|; )_ttp=([^;]+)/);
+    a.ttp = t ? decodeURIComponent(t[1]) : '';
     return a;
   }
 
@@ -91,7 +93,7 @@
     queue = [];
   }
   // name: ViewContent | AddToCart | InitiateCheckout | Purchase
-  var TT_NAMES = { ViewContent: 'ViewContent', AddToCart: 'AddToCart', InitiateCheckout: 'InitiateCheckout', Purchase: 'CompletePayment' };
+  var TT_NAMES = { ViewContent: 'ViewContent', AddToCart: 'AddToCart', InitiateCheckout: 'InitiateCheckout', Purchase: 'Purchase' };
   function fire(name, data, eventId) {
     try {
       if (window.fbq) {

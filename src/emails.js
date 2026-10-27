@@ -171,7 +171,7 @@ export function customerStatusEmail(s, base, o, items, images, invoice = null) {
     subject: c.subject.replace('{n}', o.number),
     html: layout(s, base, {
       preheader: c.intro, title: c.title, intro: c.intro,
-      body: awb + (invoice ? invoiceBox(base, invoice) : '') + summaryStrip(o) + itemsTable(base, items, images) + totalsTable(o),
+      body: awb + (invoice ? invoiceBox(base, invoice) : '') + summaryStrip(o) + itemsTable(base, items, images) + totalsTable(o) + addressBox(o),
       cta: invoice && o.status === 'livrata' ? { label: 'Descarcă factura (PDF)', href: `${base}/factura/${invoice.token}?descarca` } : { label: 'Vezi comanda', href: `${base}/multumim/${o.token}` },
       cta2: invoice && o.status === 'livrata' ? { label: 'Vezi comanda pe site', href: `${base}/multumim/${o.token}` }
         : o.status === 'expediata' && o.tracking_url ? { label: 'Urmărește coletul', href: o.tracking_url } : null,
@@ -211,7 +211,7 @@ export function parcelShippedEmail(s, base, o, items, images) {
       preheader: 'Unul dintre cele două colete ale comenzii tale a plecat spre tine.',
       title: 'Comanda ta e confirmată · un colet e pe drum 🚚',
       intro: `Am confirmat comanda. Ea vine în 2 colete. Acesta conține produsele de mai jos${cod ? ` și îl plătești curierului: <strong style="color:${C.ink}">${money(o.hs_total)}</strong>` : ''}. Celălalt colet are AWB-ul lui și te anunțăm separat despre el.`,
-      body: awb + itemsTable(base, items, images),
+      body: awb + itemsTable(base, items, images) + addressBox(o),
       cta: { label: 'Vezi comanda', href: `${base}/multumim/${o.token}` },
       cta2: o.hs_tracking_url ? { label: 'Urmărește coletul', href: o.hs_tracking_url } : null,
     }),

@@ -11,21 +11,38 @@ const abs = (base, url) => (!url ? '' : /^https?:\/\//.test(url) ? url : base + 
 
 function layout(s, base, { preheader = '', title, intro = '', body = '', cta = null, cta2 = null }) {
   const company = [s.company_name, s.company_cui ? `CUI ${s.company_cui}` : '', s.company_reg, s.company_address].filter(Boolean).join(' · ');
-  return `<!doctype html><html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light"><title>${esc(title)}</title></head>
+  return `<!doctype html><html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light"><title>${esc(title)}</title><style>
+  @media only screen and (max-width:520px){
+    .m-outer{padding:0 !important}
+    .m-card{border-radius:0 !important;border-left:0 !important;border-right:0 !important}
+    .m-px{padding-left:16px !important;padding-right:16px !important}
+    .m-h1{font-size:21px !important}
+    .m-intro{font-size:15px !important}
+    .m-cell{padding:10px 8px !important}
+    .m-cell .m-val{font-size:13px !important}
+    .m-cell .m-lbl{font-size:10px !important}
+    .m-img{width:58px !important}
+    .m-img img{width:50px !important;height:50px !important}
+    .m-name{padding-left:10px !important;padding-right:8px !important;font-size:14px !important}
+    .m-price{font-size:14px !important}
+    .m-hide{display:none !important}
+    .m-btn{display:block !important;text-align:center !important;margin:0 0 10px 0 !important;padding:14px 12px !important}
+  }
+</style></head>
 <body style="margin:0;padding:0;background:${C.bg};${FONT}color:${C.ink};">
 <div style="display:none;max-height:0;overflow:hidden;opacity:0">${esc(preheader)}</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${C.bg};padding:16px 8px;"><tr><td align="center">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid ${C.line};">
-  <tr><td style="background:#ffffff;padding:14px 22px;border-bottom:1px solid ${C.line};">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${C.bg};padding:16px 8px;" class="m-outer"><tr><td align="center">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="m-card" style="max-width:600px;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid ${C.line};">
+  <tr><td class="m-px" style="background:#ffffff;padding:14px 22px;border-bottom:1px solid ${C.line};">
     <a href="${esc(base)}" style="text-decoration:none;"><img src="${esc(base)}/img/logo-email-v2.png" width="141" height="46" alt="${esc((s.store_name || 'chimag').toLowerCase())}" style="display:block;border:0;width:141px;height:46px;color:${C.ink};font-size:22px;font-weight:800;${FONT}"></a>
   </td></tr>
-  <tr><td style="padding:24px 22px 6px;">
-    <h1 style="margin:0 0 12px;font-size:24px;line-height:1.25;color:${C.ink};${FONT}">${esc(title)}</h1>
-    ${intro ? `<p style="margin:0 0 16px;font-size:16px;line-height:1.55;color:${C.muted};">${intro}</p>` : ''}
+  <tr><td class="m-px" style="padding:24px 22px 6px;">
+    <h1 class="m-h1" style="margin:0 0 12px;font-size:24px;line-height:1.25;color:${C.ink};${FONT}">${esc(title)}</h1>
+    ${intro ? `<p class="m-intro" style="margin:0 0 16px;font-size:16px;line-height:1.55;color:${C.muted};">${intro}</p>` : ''}
   </td></tr>
-  <tr><td style="padding:0 22px 8px;">${body}</td></tr>
-  ${cta ? `<tr><td style="padding:12px 22px 24px;"><a href="${esc(cta.href)}" style="display:inline-block;background:${C.blue};color:#ffffff;text-decoration:none;font-weight:700;font-size:16px;padding:14px 24px;border-radius:10px;border:2px solid ${C.blue};margin:0 8px 8px 0;${FONT}">${esc(cta.label)}</a>${cta2 ? `<a href="${esc(cta2.href)}" style="display:inline-block;background:#ffffff;color:${C.blue};text-decoration:none;font-weight:700;font-size:16px;padding:14px 22px;border-radius:10px;border:2px solid ${C.blue};margin:0 0 8px;${FONT}">${esc(cta2.label)}</a>` : ''}</td></tr>` : '<tr><td style="padding:8px"></td></tr>'}
-  <tr><td style="background:${C.bg};padding:18px 22px;font-size:13px;line-height:1.6;color:${C.muted};border-top:1px solid ${C.line};">
+  <tr><td class="m-px" style="padding:0 22px 8px;">${body}</td></tr>
+  ${cta ? `<tr><td class="m-px" style="padding:12px 22px 24px;"><a class="m-btn" href="${esc(cta.href)}" style="display:inline-block;background:${C.blue};color:#ffffff;text-decoration:none;font-weight:700;font-size:16px;padding:14px 24px;border-radius:10px;border:2px solid ${C.blue};margin:0 8px 8px 0;${FONT}">${esc(cta.label)}</a>${cta2 ? `<a class="m-btn" href="${esc(cta2.href)}" style="display:inline-block;background:#ffffff;color:${C.blue};text-decoration:none;font-weight:700;font-size:16px;padding:14px 22px;border-radius:10px;border:2px solid ${C.blue};margin:0 0 8px;${FONT}">${esc(cta2.label)}</a>` : ''}</td></tr>` : '<tr><td style="padding:8px"></td></tr>'}
+  <tr><td class="m-px" style="background:${C.bg};padding:18px 22px;font-size:13px;line-height:1.6;color:${C.muted};border-top:1px solid ${C.line};">
     Ai întrebări? Scrie-ne din <a href="${esc(base)}/pagina/contact" style="color:${C.blue};">pagina de contact</a>${s.email ? ` sau la <a href="mailto:${esc(s.email)}" style="color:${C.blue};">${esc(s.email)}</a>` : ''}.<br>
     ${esc(company)} · <a href="${esc(base)}" style="color:${C.muted};">${esc(base.replace(/^https?:\/\//, ''))}</a>
   </td></tr>
@@ -40,9 +57,9 @@ function itemsTable(base, items, images, admin = false) {
     const linkOpen = href ? `<a href="${esc(href)}" style="color:${C.ink};text-decoration:none;">` : '';
     const linkClose = href ? '</a>' : '';
     return `<tr>
-      <td width="72" style="padding:10px 0;border-bottom:1px solid ${C.line};vertical-align:top;">${img ? `${linkOpen}<img src="${esc(img)}" width="64" height="64" alt="${esc(i.title)}" style="display:block;width:64px;height:64px;object-fit:cover;border-radius:10px;background:${C.bg};border:1px solid ${C.line};">${linkClose}` : ''}</td>
-      <td style="padding:10px 12px;border-bottom:1px solid ${C.line};font-size:15px;line-height:1.4;vertical-align:top;">${linkOpen}${esc(i.title)}${linkClose}<br><span style="color:${C.muted};font-size:13px;">${i.qty} buc. × ${money(i.unit_price)}${admin && i.fulfillment === 'helpship' ? ' · <span style="color:#8a5a00;font-weight:700;">Helpship</span>' : ''}</span></td>
-      <td align="right" style="padding:10px 0;border-bottom:1px solid ${C.line};font-size:15px;font-weight:700;white-space:nowrap;vertical-align:top;">${money(i.total)}</td>
+      <td width="72" class="m-img" style="padding:10px 0;border-bottom:1px solid ${C.line};vertical-align:top;">${img ? `${linkOpen}<img src="${esc(img)}" width="64" height="64" alt="${esc(i.title)}" style="display:block;width:64px;height:64px;object-fit:cover;border-radius:10px;background:${C.bg};border:1px solid ${C.line};">${linkClose}` : ''}</td>
+      <td class="m-name" style="padding:10px 12px;border-bottom:1px solid ${C.line};font-size:15px;line-height:1.4;vertical-align:top;">${linkOpen}${esc(i.title)}${linkClose}<br><span style="color:${C.muted};font-size:13px;">${i.qty} buc. × ${money(i.unit_price)}${admin && i.fulfillment === 'helpship' ? ' · <span style="color:#8a5a00;font-weight:700;">Helpship</span>' : ''}</span></td>
+      <td align="right" class="m-price" style="padding:10px 0;border-bottom:1px solid ${C.line};font-size:15px;font-weight:700;white-space:nowrap;vertical-align:top;">${money(i.total)}</td>
     </tr>`;
   }).join('');
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="${FONT}">${rows}</table>`;
@@ -63,9 +80,9 @@ function totalsTable(o) {
 
 // rând cu numărul comenzii, data și plata (3 coloane scurte, încap și pe telefon)
 function summaryStrip(o) {
-  const cell = (label, value, last) => `<td width="33%" style="padding:12px 14px;${last ? '' : `border-right:1px solid ${C.line};`}vertical-align:top;">
-    <div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:${C.muted};">${label}</div>
-    <div style="margin-top:3px;font-size:15px;font-weight:700;color:${C.ink};white-space:nowrap;">${value}</div></td>`;
+  const cell = (label, value, last) => `<td width="33%" class="m-cell" style="padding:12px 14px;${last ? '' : `border-right:1px solid ${C.line};`}vertical-align:top;">
+    <div class="m-lbl" style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:${C.muted};">${label}</div>
+    <div class="m-val" style="margin-top:3px;font-size:15px;font-weight:700;color:${C.ink};white-space:nowrap;">${value}</div></td>`;
   const date = formatDate(o.created_at).split(',')[0];
   const pay = o.payment_method === 'card' ? (o.payment_status === 'platita' ? 'Card, plătită' : 'Card') : 'Ramburs';
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 18px;border:1px solid ${C.line};border-radius:12px;${FONT}"><tr>
@@ -165,9 +182,9 @@ export function customerStatusEmail(s, base, o, items, images, invoice = null) {
 
 const invoiceBox = (base, inv) => `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;border:1px solid ${C.line};border-radius:12px;${FONT}"><tr>
   <td width="44" style="padding:14px 0 14px 16px;font-size:26px;vertical-align:middle;">🧾</td>
-  <td style="padding:14px 16px 14px 10px;font-size:15px;line-height:1.45;vertical-align:middle;"><strong>Factura ${esc(inv.full_number)}</strong><br>
+  <td style="padding:14px 16px 14px 10px;font-size:15px;line-height:1.45;vertical-align:middle;"><a href="${esc(base)}/factura/${esc(inv.token)}" style="color:${C.ink};text-decoration:none;"><strong>Factura ${esc(inv.full_number)}</strong></a><br>
     <span style="color:${C.muted};font-size:13px;">PDF atașat la acest email</span></td>
-  <td align="right" style="padding:14px 16px;white-space:nowrap;vertical-align:middle;"><a href="${esc(base)}/factura/${esc(inv.token)}" style="color:${C.blue};font-weight:700;font-size:14px;">Deschide</a></td>
+  <td align="right" class="m-hide" style="padding:14px 16px;white-space:nowrap;vertical-align:middle;"><a href="${esc(base)}/factura/${esc(inv.token)}" style="color:${C.blue};font-weight:700;font-size:14px;">Deschide</a></td>
 </tr></table>`;
 
 export function invoiceEmail(s, base, o, inv) {

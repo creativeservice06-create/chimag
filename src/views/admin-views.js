@@ -23,7 +23,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0, msgCount
 <meta name="robots" content="noindex">
 <title>${title} · Admin Chimag</title>
 <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/assets/admin.css?v=4">
+<link rel="stylesheet" href="/assets/admin.css?v=6">
 <script src="/assets/admin.js?v=1" defer></script>
 </head><body>
 <div class="shell">
@@ -46,7 +46,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0, msgCount
 
 export function loginView(error) {
   return html`<html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex"><title>Autentificare · Admin</title><link rel="stylesheet" href="/assets/admin.css?v=4"></head>
+<meta name="robots" content="noindex"><title>Autentificare · Admin</title><link rel="stylesheet" href="/assets/admin.css?v=6"></head>
 <body class="login-body"><form class="login" method="post" action="/admin/login">
   <div class="brand">${logoMark()}<span>chimag</span></div>
   <h1>Administrare</h1>
@@ -68,46 +68,64 @@ const pct = (a, b) => (b ? `${String(Math.round((a / b) * 1000) / 10).replace('.
 function profitPanel(p, r) {
   if (!p) return '';
   const qs = (extra) => `/admin?${new URLSearchParams({ ...(r.scope === 'livrate' ? { comenzi: 'livrate' } : {}), ...extra })}`;
+  const scopeQs = (scope) => `/admin?${new URLSearchParams({ ...(r.preset ? { perioada: r.preset } : { de_la: r.from, pana_la: r.to }), ...(scope === 'livrate' ? { comenzi: 'livrate' } : {}) })}`;
   const max = Math.max(1, ...p.series.map((x) => Math.abs(x.profit)));
   const fmtDay = (d) => d.slice(8, 10) + '.' + d.slice(5, 7);
+  const units = p.products.reduce((s, x) => s + x.qty, 0);
+  const shipSet = p.costsSet.courier || p.costsSet.helpship;
+  const cost = p.cost + (shipSet ? p.shippingCost : 0);
+  const marjaTotal = p.collected ? pct(p.net, p.collected) : '–';
+  const sum = (k) => p.products.reduce((s, x) => s + x[k], 0);
   return html`<section class="panel profit-panel">
     <div class="profit-head">
-      <h2>Profit</h2>
+      <h2>Vânzări și profit</h2>
       <div class="chips">${PRESETS.map(([k, label]) => html`<a class="chip-link ${r.preset === k ? 'on' : ''}" href="${qs({ perioada: k })}">${label}</a>`)}</div>
     </div>
     <form method="get" action="/admin" class="profit-range">
       <label>De la<input type="date" name="de_la" value="${r.from}"></label>
       <label>Până la<input type="date" name="pana_la" value="${r.to}"></label>
-      <label>Comenzi<select name="comenzi"><option value="toate" ${r.scope !== 'livrate' ? 'selected' : ''}>Toate (fără anulate, refuzate, retur)</option><option value="livrate" ${r.scope === 'livrate' ? 'selected' : ''}>Doar livrate</option></select></label>
+      ${r.scope === 'livrate' ? html`<input type="hidden" name="comenzi" value="livrate">` : ''}
       <button class="btn primary">Arată</button>
     </form>
-    <p class="muted">Perioada ${fmtDay(r.from)}.${r.from.slice(0, 4)} – ${fmtDay(r.to)}.${r.to.slice(0, 4)} · ${p.orders} ${p.orders === 1 ? 'comandă' : 'comenzi'}</p>
-
-    <div class="kpis profit-kpis">
-      <div class="kpi"><h2>Profit estimat</h2><p class="kpi-main ${p.net < 0 ? 'err-txt' : 'ok-txt'}">${money(p.net)}</p><p class="kpi-sub">după cost produse${p.costsSet.courier || p.costsSet.helpship ? ' și livrare' : ''}</p></div>
-      <div class="kpi"><h2>Profit din produse</h2><p class="kpi-main">${money(p.gross)}</p><p class="kpi-sub">marjă ${String(p.margin).replace('.', ',')}%</p></div>
-      <div class="kpi"><h2>Vânzări produse</h2><p class="kpi-main">${money(p.productRevenue)}</p><p class="kpi-sub">după reduceri · încasări totale ${money(p.collected)}</p></div>
-      <div class="kpi"><h2>Cost produse</h2><p class="kpi-main">${money(p.cost)}</p><p class="kpi-sub">prețul cu care le cumperi</p></div>
+    <div class="scope-tabs" role="tablist">
+      <a class="${r.scope !== 'livrate' ? 'on' : ''}" href="${scopeQs('toate')}">Toate comenzile <small>fără anulate, refuzate, retururi</small></a>
+      <a class="${r.scope === 'livrate' ? 'on' : ''}" href="${scopeQs('livrate')}">Doar livrate <small>banii deja încasați</small></a>
     </div>
+    <p class="muted">${fmtDay(r.from)}.${r.from.slice(0, 4)} – ${fmtDay(r.to)}.${r.to.slice(0, 4)} · ${p.orders} ${p.orders === 1 ? 'comandă' : 'comenzi'} · ${units} ${units === 1 ? 'produs vândut' : 'produse vândute'}</p>
 
-    <dl class="sum profit-sum">
-      <div><dt>Vânzări produse (după reduceri)</dt><dd>${money(p.productRevenue)}</dd></div>
-      <div><dt>− Cost achiziție produse</dt><dd>−${money(p.cost)}</dd></div>
-      <div><dt>+ Transport încasat de la clienți</dt><dd>${money(p.shippingIn)}</dd></div>
-      <div><dt>− Cost livrare (${p.parcels} ${p.parcels === 1 ? 'colet' : 'colete'})</dt><dd>${p.costsSet.courier || p.costsSet.helpship ? html`−${money(p.shippingCost)}` : html`<span class="muted">nesetat</span>`}</dd></div>
-      <div class="grand"><dt>Profit estimat</dt><dd>${money(p.net)}</dd></div>
-    </dl>
-    ${!p.costsSet.courier && !p.costsSet.helpship ? html`<p class="hint">Ca să vezi profitul real, trece în <a href="/admin/setari">Setări → Livrare</a> cât plătești tu curierului și Helpship pe colet. Până atunci, transportul încasat de la clienți intră integral la profit.</p>` : ''}
-    ${p.missingCost.length ? html`<p class="flash err">Lipsește costul de achiziție la: ${p.missingCost.join(', ')}. Completează-l la produs, altfel profitul apare mai mare decât e.</p>` : ''}
+    <div class="eq">
+      <div class="eq-card">
+        <h3>${r.scope === 'livrate' ? 'Încasat' : 'Vânzări'}</h3>
+        <p class="eq-val">${money(p.collected)}</p>
+        <p class="eq-sub">tot ce plătesc clienții: produse ${money(p.productRevenue)} + transport ${money(p.shippingIn)}</p>
+      </div>
+      <span class="eq-op" aria-hidden="true">−</span>
+      <div class="eq-card">
+        <h3>Cost de achiziție</h3>
+        <p class="eq-val">${money(cost)}</p>
+        <p class="eq-sub">${shipSet ? html`produse ${money(p.cost)} + livrare ${money(p.shippingCost)} (${p.parcels} ${p.parcels === 1 ? 'colet' : 'colete'})` : html`cât te-au costat cele ${units} ${units === 1 ? 'produs vândut' : 'produse vândute'}`}</p>
+      </div>
+      <span class="eq-op" aria-hidden="true">=</span>
+      <div class="eq-card eq-profit ${p.net < 0 ? 'neg' : ''}">
+        <h3>Profit</h3>
+        <p class="eq-val">${money(p.net)}</p>
+        <p class="eq-sub">rămâne la tine · ${marjaTotal} din vânzări</p>
+      </div>
+    </div>
+    ${!shipSet ? html`<p class="hint">Costul livrării nu e scăzut din profit. Dacă vrei să apară, trece în <a href="/admin/setari">Setări → Livrare și prețuri</a> cât plătești pe colet (curier și Helpship).</p>` : ''}
+    ${p.missingCost.length ? html`<p class="flash err">Lipsește costul de achiziție la: ${p.missingCost.join(', ')}. Completează-l la produs (Produse → „Cost achiziție”), altfel profitul apare mai mare decât e.</p>` : ''}
+
+    <h3>Pe produse</h3>
+    ${p.products.length ? html`<div class="tbl-wrap"><table class="tbl profit-tbl"><thead><tr><th>Produs</th><th class="r">Buc. vândute</th><th class="r">Vânzări</th><th class="r">Cost / buc.</th><th class="r">Cost total</th><th class="r">Profit</th><th class="r">Marjă</th></tr></thead><tbody>
+      ${p.products.map((x) => html`<tr><td>${x.title}</td><td class="r">${x.qty}</td><td class="r">${money(x.revenue)}</td><td class="r muted">${x.qty ? money(Math.round(x.cost / x.qty)) : '–'}</td><td class="r">${money(x.cost)}</td><td class="r"><b class="${x.revenue - x.cost < 0 ? 'err-txt' : 'ok-txt'}">${money(x.revenue - x.cost)}</b></td><td class="r">${pct(x.revenue - x.cost, x.revenue)}</td></tr>`)}
+    </tbody><tfoot><tr><td><b>Total produse</b></td><td class="r"><b>${units}</b></td><td class="r"><b>${money(sum('revenue'))}</b></td><td></td><td class="r"><b>${money(sum('cost'))}</b></td><td class="r"><b>${money(sum('revenue') - sum('cost'))}</b></td><td class="r"><b>${pct(sum('revenue') - sum('cost'), sum('revenue'))}</b></td></tr>
+      <tr class="muted"><td colspan="5">+ Transport încasat de la clienți${shipSet ? ' − cost livrare' : ''}</td><td class="r">${money(p.shippingIn - (shipSet ? p.shippingCost : 0))}</td><td></td></tr>
+      <tr><td colspan="5"><b>Profit total</b></td><td class="r"><b>${money(p.net)}</b></td><td></td></tr></tfoot></table></div>`
+    : html`<p class="muted">Nicio comandă în perioada aleasă.</p>`}
 
     ${p.series.length > 1 ? html`<h3>Profit pe zile</h3>
-    <div class="bars profit-bars">${p.series.map((x) => html`<div class="bar ${x.profit < 0 ? 'neg' : ''}" title="${fmtDay(x.day)}: ${money(x.profit)} · ${x.orders} comenzi">
+    <div class="bars profit-bars">${p.series.map((x) => html`<div class="bar ${x.profit < 0 ? 'neg' : ''}" title="${fmtDay(x.day)}: profit ${money(x.profit)} · ${x.orders} ${x.orders === 1 ? 'comandă' : 'comenzi'}">
       <span style="height:${Math.round((Math.abs(x.profit) / max) * 100)}%"></span><small>${p.series.length <= 31 ? fmtDay(x.day).slice(0, 2) : ''}</small></div>`)}</div>` : ''}
-
-    <h3>Profit pe produse</h3>
-    ${p.products.length ? html`<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Produs</th><th class="r">Buc.</th><th class="r">Vânzări</th><th class="r">Cost</th><th class="r">Profit</th><th class="r">Marjă</th></tr></thead><tbody>
-      ${p.products.map((x) => html`<tr><td>${x.title}</td><td class="r">${x.qty}</td><td class="r">${money(x.revenue)}</td><td class="r">${money(x.cost)}</td><td class="r"><b>${money(x.revenue - x.cost)}</b></td><td class="r">${pct(x.revenue - x.cost, x.revenue)}</td></tr>`)}
-    </tbody></table></div>` : html`<p class="muted">Nicio comandă în perioada aleasă.</p>`}
   </section>`;
 }
 

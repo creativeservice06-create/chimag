@@ -28,7 +28,10 @@ h2 { font-size: 1rem; margin: 0 0 12px; }
 @media (max-width: 860px) {
   .shell { grid-template-columns: 1fr; background: var(--bg); }
   .side { position: static; height: auto; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 12px; }
-  .side nav { display: flex; overflow-x: auto; flex: 1 1 100%; order: 3; }
+  .side { min-width: 0; }
+  .side nav { display: flex; overflow-x: auto; flex: 1 1 100%; order: 3; min-width: 0; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .side nav a { white-space: nowrap; flex: none; }
+  .page-head .btn { white-space: normal; }
   .side-foot { margin: 0 0 0 auto; display: flex; gap: 14px; padding: 0; }
   .content { padding: 16px 14px 80px; }
 }
@@ -177,3 +180,25 @@ h3.mt { font-size: .95rem; margin-bottom: 4px; }
 .profit-sum { max-width: 520px; }
 .profit-bars .bar.neg span { background: #d9534f; }
 .profit-panel h3 { margin: 22px 0 10px; font-size: 1rem; }
+
+/* Vânzări și profit: ecuația Vânzări − Cost = Profit */
+.scope-tabs { display: inline-flex; gap: 4px; padding: 4px; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; margin: 4px 0 10px; flex-wrap: wrap; }
+.scope-tabs a { display: grid; padding: 7px 14px; border-radius: 7px; text-decoration: none; color: var(--ink); font-weight: 700; line-height: 1.25; }
+.scope-tabs a small { font-weight: 400; color: var(--muted); font-size: .78rem; }
+.scope-tabs a.on { background: #fff; box-shadow: 0 1px 3px rgba(16,29,48,.12); color: var(--brand); }
+.eq { display: grid; grid-template-columns: minmax(0,1fr) auto minmax(0,1fr) auto minmax(0,1fr); align-items: stretch; gap: 10px; margin: 6px 0 12px; }
+.eq-card { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+.eq-card h3 { margin: 0 0 6px; font-size: .9rem; color: var(--muted); font-weight: 700; }
+.eq-val { margin: 0; font-size: 1.75rem; font-weight: 800; letter-spacing: -.01em; white-space: nowrap; }
+.eq-sub { margin: 4px 0 0; color: var(--muted); font-size: .83rem; line-height: 1.4; }
+.eq-op { align-self: center; font-size: 1.8rem; font-weight: 800; color: var(--muted); }
+.eq-profit { background: #effaf4; border-color: #bfe5cf; }
+.eq-profit .eq-val { color: var(--ok); }
+.eq-profit.neg { background: #fbeceb; border-color: #efc9c6; }
+.eq-profit.neg .eq-val { color: var(--danger); }
+.profit-tbl tfoot td { border-top: 1px solid var(--line); padding-top: 8px; }
+.ok-txt { color: var(--ok); }
+@media (max-width: 900px) {
+  .eq { grid-template-columns: 1fr; }
+  .eq-op { justify-self: center; line-height: 1; margin: -4px 0; }
+}

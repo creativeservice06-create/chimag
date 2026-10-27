@@ -3,7 +3,7 @@ import { waLink } from './pages.js';
 import { icons } from './icons.js';
 import { wheelConfig } from '../lib/coupons.js';
 
-const ASSET_V = '53';
+const ASSET_V = '54';
 
 export function layout({ settings, title, description = '', canonical = '', ogImage = '', body, bodyClass = '', jsonLd = null, pageData = null, siteUrl = '', customer = null, categories = [], wheelState = null }) {
   const storeName = settings.store_name || 'Chimag';
@@ -122,11 +122,23 @@ ${wheel.enabled ? html`<div class="wheel-modal" data-wheel-modal hidden role="di
   </div>
 </div>
 <canvas class="confetti" data-confetti aria-hidden="true"></canvas>` : ''}
-<div class="consent" data-consent hidden>
-  <p>Folosim cookie-uri pentru ca magazinul să funcționeze și, cu acordul tău, pentru a măsura reclamele (Facebook, TikTok). <a href="/pagina/cookies">Detalii</a></p>
+<div class="consent" data-consent role="dialog" aria-labelledby="consent-title" aria-describedby="consent-text" hidden>
+  <div class="consent-head">
+    <span class="consent-ico" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.5A9 9 0 1 1 11.5 3a3 3 0 0 0 3.5 3.5 3 3 0 0 0 3 3 3 3 0 0 0 3 3z"/><circle cx="8.5" cy="10.5" r="1" fill="currentColor"/><circle cx="12" cy="15.5" r="1" fill="currentColor"/><circle cx="16" cy="13" r=".8" fill="currentColor"/><circle cx="8" cy="15" r=".7" fill="currentColor"/></svg></span>
+    <div>
+      <h2 id="consent-title">Cookie-uri pe chimag.ro</h2>
+      <p id="consent-text">Folosim cookie-uri necesare pentru coș și comenzi. Cu acordul tău, folosim și cookie-uri de măsurare, ca să vedem ce reclame (Facebook, TikTok) te-au adus aici. <a href="/pagina/cookies">Politica de cookie-uri</a></p>
+    </div>
+  </div>
+  <div class="consent-prefs" data-consent-prefs hidden>
+    <label class="consent-opt"><span><b>Necesare</b><small>Coșul, comanda, contul și securitatea site-ului. Mereu active.</small></span><input type="checkbox" checked disabled aria-label="Cookie-uri necesare, mereu active"><i class="switch" aria-hidden="true"></i></label>
+    <label class="consent-opt"><span><b>Măsurarea reclamelor</b><small>Pixelii Facebook și TikTok: ne arată ce reclame funcționează.</small></span><input type="checkbox" data-consent-ads><i class="switch" aria-hidden="true"></i></label>
+  </div>
   <div class="consent-actions">
-    <button type="button" class="btn btn-ghost btn-sm" data-consent-choice="no">Doar necesare</button>
-    <button type="button" class="btn btn-primary btn-sm" data-consent-choice="yes">Accept toate</button>
+    <button type="button" class="btn btn-ghost" data-consent-settings>Setări</button>
+    <button type="button" class="btn btn-ghost" data-consent-choice="no">Refuz</button>
+    <button type="button" class="btn btn-primary" data-consent-choice="yes">Accept toate</button>
+    <button type="button" class="btn btn-primary" data-consent-save hidden>Salvează alegerea</button>
   </div>
 </div>
 </body>

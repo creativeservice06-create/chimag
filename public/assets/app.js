@@ -123,6 +123,18 @@
     var c = store.get('chimag_consent', null);
     if (c === 'yes') loadPixels();
     else if (c === null && box && (CFG.fbPixel || CFG.ttPixel)) box.hidden = false;
+    var prefs = $('[data-consent-prefs]'), setBtn = $('[data-consent-settings]'), saveBtn = $('[data-consent-save]');
+    if (setBtn) setBtn.addEventListener('click', function () {
+      var open = prefs.hidden;
+      prefs.hidden = !open; saveBtn.hidden = !open; setBtn.hidden = open;
+      var yes = $('[data-consent-choice="yes"]'); if (yes) yes.hidden = open;
+    });
+    if (saveBtn) saveBtn.addEventListener('click', function () {
+      var v = $('[data-consent-ads]') && $('[data-consent-ads]').checked ? 'yes' : 'no';
+      store.set('chimag_consent', v);
+      if (box) box.hidden = true;
+      if (v === 'yes') loadPixels(); else queue = [];
+    });
     $$('[data-consent-choice]').forEach(function (b) {
       b.addEventListener('click', function () {
         var v = b.getAttribute('data-consent-choice');

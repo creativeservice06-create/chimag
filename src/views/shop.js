@@ -334,9 +334,13 @@ export function productPage({ settings, product: p, reviews, related = [], siteU
 
 
   ${p.faq.length || reviews.length ? html`<div class="wrap pdp-bottom">
-    ${p.faq.length ? html`<section class="faq2">
-      <div class="faq2-head"><h2>Întrebări frecvente</h2></div>
-      <div class="faq faq2-list">${p.faq.map((f) => html`<details><summary>${f.q}</summary><div>${paragraphs(f.a)}</div></details>`)}</div>
+    ${p.faq.length ? html`<section class="faq3">
+      <div class="faq3-head">
+        <span class="faq3-ico" aria-hidden="true">?</span>
+        <h2>Întrebări frecvente</h2>
+        <p class="muted">Răspunsuri scurte la ce ne întreabă cel mai des clienții.</p>
+      </div>
+      <div class="faq3-grid">${p.faq.map((f, i) => html`<details class="faq3-item" ${i === 0 ? raw('open') : ''}><summary><span class="faq3-q">${f.q}</span><span class="faq3-tog" aria-hidden="true"></span></summary><div class="faq3-a">${paragraphs(f.a)}</div></details>`)}</div>
     </section>` : ''}
     ${reviews.length ? html`<section id="recenzii" class="reviews">
       <h2>Ce spun clienții</h2>

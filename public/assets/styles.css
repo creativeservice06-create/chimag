@@ -1215,3 +1215,34 @@ a.oi-link:hover .oi-name { color: var(--brand); }
   .pdp-bottom { padding-top: 48px; gap: 40px; }
   .faq2-list { padding: 2px 16px; }
 }
+
+/* Întrebări frecvente pe pagina produsului */
+.faq3 { padding: 56px 48px; border-radius: 28px; background: linear-gradient(180deg, var(--surface) 0%, #fff 100%); border: 1px solid var(--line); }
+.faq3-head { text-align: center; max-width: 620px; margin: 0 auto 32px; }
+.faq3-ico { display: inline-grid; place-items: center; width: 48px; height: 48px; border-radius: 16px; background: var(--brand); color: #fff; font: 800 1.4rem/1 var(--font-display); box-shadow: 0 10px 24px -10px rgba(21,94,204,.6); margin-bottom: 14px; }
+.faq3-head h2 { font: 800 clamp(1.6rem, 2.6vw, 2.1rem)/1.15 var(--font-display); letter-spacing: -0.02em; margin: 0 0 8px; }
+.faq3-head p { margin: 0; }
+.faq3-grid { columns: 2; column-gap: 14px; }
+.faq3-grid .faq3-item { break-inside: avoid; margin-bottom: 14px; display: block; }
+.faq3-item { background: #fff; border: 1px solid var(--line); border-radius: 16px; transition: border-color .2s, box-shadow .2s; }
+.faq3-item:hover { border-color: #c9d6e8; }
+.faq3-item[open] { border-color: #b9cdee; box-shadow: 0 14px 30px -22px rgba(21,94,204,.5); }
+.faq3-item summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 18px 20px; font-weight: 700; }
+.faq3-item summary::-webkit-details-marker { display: none; }
+.faq3-tog { flex: none; position: relative; width: 28px; height: 28px; border-radius: 50%; background: var(--brand-tint); transition: background .2s, transform .2s; }
+.faq3-tog::before, .faq3-tog::after { content: ''; position: absolute; left: 50%; top: 50%; width: 11px; height: 2px; margin: -1px 0 0 -5.5px; background: var(--brand); border-radius: 2px; transition: transform .2s; }
+.faq3-tog::after { transform: rotate(90deg); }
+.faq3-item[open] .faq3-tog { background: var(--brand); }
+.faq3-item[open] .faq3-tog::before, .faq3-item[open] .faq3-tog::after { background: #fff; }
+.faq3-item[open] .faq3-tog::after { transform: rotate(0deg); }
+.faq3-a { padding: 0 20px 18px; color: var(--muted); line-height: 1.65; }
+.faq3-a p { margin: 0 0 8px; } .faq3-a p:last-child { margin: 0; }
+@media (max-width: 900px) {
+  .faq3 { padding: 32px 16px; border-radius: 22px; }
+  .faq3-head { margin-bottom: 20px; }
+  .faq3-ico { width: 42px; height: 42px; border-radius: 14px; }
+  .faq3-grid { columns: 1; }
+  .faq3-grid .faq3-item { margin-bottom: 10px; }
+  .faq3-item summary { padding: 15px 16px; }
+  .faq3-a { padding: 0 16px 15px; }
+}

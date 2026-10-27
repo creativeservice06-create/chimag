@@ -183,10 +183,13 @@ async function route(request, env, ctx) {
     if (!order) return notFound(env, request);
     const settings = await getSettings(env);
     const items = await getOrderItems(env, order.id);
-    const { results: invoices } = await env.DB.prepare('SELECT kind, full_number, issued_on, token FROM invoices WHERE order_id = ? ORDER BY id').bind(order.id).all().catch(() => ({ results: [] }));
+    const { results: invoices } = await env.DB.prepare('SELECT kind, full_number, issued_on, token, total FROM invoices WHERE order_id = ? ORDER BY id').bind(order.id).all().catch(() => ({ results: [] }));
+    const { results: events } = await env.DB.prepare("SELECT message, created_at FROM order_events WHERE order_id = ? AND message LIKE 'Status:%' ORDER BY id").bind(order.id).all();
+    const { itemImages } = await import('./emails.js');
+    const products = await itemImages(env, items);
     return htmlResponse(layout({
       settings, siteUrl: siteUrl(env, request), title: `Comanda ${order.number}`,
-      body: thankYouPage({ settings, order, items, payment: url.searchParams.get('plata'), invoices: invoices || [] }),
+      body: thankYouPage({ settings, order, items, payment: url.searchParams.get('plata'), invoices: invoices || [], events: events || [], products }),
     }), 200, { 'cache-control': 'no-store', 'x-robots-tag': 'noindex' });
   }
 

@@ -1061,3 +1061,48 @@ section[id], #produse, #categorii, #intrebari, #cum-comanzi { scroll-margin-top:
 
 .parcel-list { list-style: none; margin: 10px 0 12px; padding: 0; display: grid; gap: 10px; }
 .parcel-list li { display: grid; gap: 2px; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); font-size: .95rem; }
+
+/* ---------- Pagina comenzii: progres, factură, produse ---------- */
+.card-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 18px; }
+.card-head h2 { margin: 0; }
+.progress { list-style: none; margin: 0 0 16px; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); position: relative; }
+.progress li { position: relative; display: grid; justify-items: center; text-align: center; gap: 4px; padding-top: 0; min-width: 0; }
+.progress li::before { content: ''; position: absolute; top: 13px; left: -50%; width: 100%; height: 3px; background: var(--line); z-index: 0; }
+.progress li:first-child::before { display: none; }
+.progress li.joined::before { background: var(--brand); }
+.progress .dot { position: relative; z-index: 1; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: #fff; border: 3px solid var(--line); color: #fff; }
+.progress li.done .dot { background: var(--brand); border-color: var(--brand); }
+.progress li.current .dot { box-shadow: 0 0 0 5px var(--brand-tint); }
+.progress .lbl { font-weight: 700; font-size: .92rem; color: var(--muted); }
+.progress li.done .lbl { color: var(--ink); }
+.progress .when { font-size: .78rem; color: var(--muted); min-height: 1em; }
+.progress.is-stopped li.done .dot { background: var(--muted); border-color: var(--muted); }
+.progress.is-stopped li.joined::before { background: var(--muted); }
+.progress-stop { margin: -4px 0 12px; padding: 10px 14px; border-radius: var(--radius); background: #fbeceb; color: var(--danger); font-weight: 600; text-align: center; }
+.status-line { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 6px; }
+.status-line:empty { display: none; }
+.small { font-size: .88rem; }
+.invoice-row { display: flex; align-items: center; gap: 14px; padding: 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.invoice-row + .invoice-row { margin-top: 10px; }
+.invoice-ico { flex: none; width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--brand-tint); color: var(--brand); }
+.invoice-meta { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.invoice-meta .muted { font-size: .88rem; }
+.invoice-actions { display: flex; gap: 8px; flex: none; }
+.invoice-actions .btn { padding: 9px 14px; font-size: .95rem; }
+@media (max-width: 560px) {
+  .invoice-row { flex-wrap: wrap; }
+  .invoice-actions { width: 100%; }
+  .invoice-actions .btn { flex: 1; }
+  .progress .lbl { font-size: .8rem; }
+  .progress .when { font-size: .7rem; }
+}
+.order-items { list-style: none; margin: 0 0 6px; padding: 0; display: grid; gap: 4px; }
+.order-items li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.order-items li:last-child { border-bottom: 0; }
+.oi-link { display: flex; align-items: center; gap: 12px; min-width: 0; color: var(--ink); text-decoration: none; }
+a.oi-link:hover .oi-name { color: var(--brand); }
+.oi-img { flex: none; width: 56px; height: 56px; border-radius: 10px; overflow: hidden; background: var(--surface-2); border: 1px solid var(--line); }
+.oi-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.oi-name { display: grid; gap: 2px; font-weight: 600; line-height: 1.35; min-width: 0; }
+.oi-name small { font-weight: 400; color: var(--muted); font-size: .85rem; }
+.order-items strong { white-space: nowrap; }

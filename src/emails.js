@@ -9,7 +9,7 @@ const FONT = "font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-s
 
 const abs = (base, url) => (!url ? '' : /^https?:\/\//.test(url) ? url : base + url);
 
-function layout(s, base, { preheader = '', title, intro = '', body = '', cta = null }) {
+function layout(s, base, { preheader = '', title, intro = '', body = '', cta = null, cta2 = null }) {
   const company = [s.company_name, s.company_cui ? `CUI ${s.company_cui}` : '', s.company_reg, s.company_address].filter(Boolean).join(' · ');
   return `<!doctype html><html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light"><title>${esc(title)}</title></head>
 <body style="margin:0;padding:0;background:${C.bg};${FONT}color:${C.ink};">
@@ -24,7 +24,7 @@ function layout(s, base, { preheader = '', title, intro = '', body = '', cta = n
     ${intro ? `<p style="margin:0 0 16px;font-size:16px;line-height:1.55;color:${C.muted};">${intro}</p>` : ''}
   </td></tr>
   <tr><td style="padding:0 22px 8px;">${body}</td></tr>
-  ${cta ? `<tr><td style="padding:12px 22px 24px;"><a href="${esc(cta.href)}" style="display:inline-block;background:${C.blue};color:#ffffff;text-decoration:none;font-weight:700;font-size:16px;padding:14px 24px;border-radius:10px;${FONT}">${esc(cta.label)}</a></td></tr>` : '<tr><td style="padding:8px"></td></tr>'}
+  ${cta ? `<tr><td style="padding:12px 22px 24px;"><a href="${esc(cta.href)}" style="display:inline-block;background:${C.blue};color:#ffffff;text-decoration:none;font-weight:700;font-size:16px;padding:14px 24px;border-radius:10px;border:2px solid ${C.blue};margin:0 8px 8px 0;${FONT}">${esc(cta.label)}</a>${cta2 ? `<a href="${esc(cta2.href)}" style="display:inline-block;background:#ffffff;color:${C.blue};text-decoration:none;font-weight:700;font-size:16px;padding:14px 22px;border-radius:10px;border:2px solid ${C.blue};margin:0 0 8px;${FONT}">${esc(cta2.label)}</a>` : ''}</td></tr>` : '<tr><td style="padding:8px"></td></tr>'}
   <tr><td style="background:${C.bg};padding:18px 22px;font-size:13px;line-height:1.6;color:${C.muted};border-top:1px solid ${C.line};">
     Ai întrebări? Scrie-ne din <a href="${esc(base)}/pagina/contact" style="color:${C.blue};">pagina de contact</a>${s.email ? ` sau la <a href="mailto:${esc(s.email)}" style="color:${C.blue};">${esc(s.email)}</a>` : ''}.<br>
     ${esc(company)} · <a href="${esc(base)}" style="color:${C.muted};">${esc(base.replace(/^https?:\/\//, ''))}</a>
@@ -34,10 +34,14 @@ function layout(s, base, { preheader = '', title, intro = '', body = '', cta = n
 
 function itemsTable(base, items, images, admin = false) {
   const rows = items.map((i) => {
-    const img = abs(base, images.get(i.product_id));
+    const info = images.get(i.product_id) || {};
+    const img = abs(base, info.img);
+    const href = info.slug ? `${base}/p/${encodeURIComponent(info.slug)}` : '';
+    const linkOpen = href ? `<a href="${esc(href)}" style="color:${C.ink};text-decoration:none;">` : '';
+    const linkClose = href ? '</a>' : '';
     return `<tr>
-      <td width="72" style="padding:10px 0;border-bottom:1px solid ${C.line};vertical-align:top;">${img ? `<img src="${esc(img)}" width="64" height="64" alt="" style="display:block;width:64px;height:64px;object-fit:cover;border-radius:10px;background:${C.bg};border:1px solid ${C.line};">` : ''}</td>
-      <td style="padding:10px 12px;border-bottom:1px solid ${C.line};font-size:15px;line-height:1.4;vertical-align:top;">${esc(i.title)}<br><span style="color:${C.muted};font-size:13px;">${i.qty} buc. × ${money(i.unit_price)}${admin && i.fulfillment === 'helpship' ? ' · <span style="color:#8a5a00;font-weight:700;">Helpship</span>' : ''}</span></td>
+      <td width="72" style="padding:10px 0;border-bottom:1px solid ${C.line};vertical-align:top;">${img ? `${linkOpen}<img src="${esc(img)}" width="64" height="64" alt="${esc(i.title)}" style="display:block;width:64px;height:64px;object-fit:cover;border-radius:10px;background:${C.bg};border:1px solid ${C.line};">${linkClose}` : ''}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid ${C.line};font-size:15px;line-height:1.4;vertical-align:top;">${linkOpen}${esc(i.title)}${linkClose}<br><span style="color:${C.muted};font-size:13px;">${i.qty} buc. × ${money(i.unit_price)}${admin && i.fulfillment === 'helpship' ? ' · <span style="color:#8a5a00;font-weight:700;">Helpship</span>' : ''}</span></td>
       <td align="right" style="padding:10px 0;border-bottom:1px solid ${C.line};font-size:15px;font-weight:700;white-space:nowrap;vertical-align:top;">${money(i.total)}</td>
     </tr>`;
   }).join('');
@@ -53,7 +57,7 @@ function totalsTable(o) {
     ${row('Transport', o.shipping ? money(o.shipping) : 'Gratuit')}
     ${o.cod_fee ? row('Taxă ramburs', money(o.cod_fee)) : ''}
     <tr><td colspan="2" style="border-top:1px solid ${C.line};padding-top:6px"></td></tr>
-    ${row(o.payment_method === 'card' && o.payment_status === 'platita' ? 'Total plătit' : 'Total de plată la livrare', money(o.total), true)}
+    ${row(o.payment_method === 'card' && o.payment_status === 'platita' ? 'Total plătit' : o.status === 'livrata' ? 'Total plătit la livrare' : ['anulata', 'refuzata', 'retur'].includes(o.status) ? 'Total comandă' : 'Total de plată la livrare', money(o.total), true)}
   </table>`;
 }
 
@@ -151,13 +155,20 @@ export function customerStatusEmail(s, base, o, items, images, invoice = null) {
     html: layout(s, base, {
       preheader: c.intro, title: c.title, intro: c.intro,
       body: awb + (invoice ? invoiceBox(base, invoice) : '') + summaryStrip(o) + itemsTable(base, items, images) + totalsTable(o),
-      cta: invoice && o.status === 'livrata' ? { label: 'Descarcă factura', href: `${base}/factura/${invoice.token}` } : { label: 'Vezi comanda', href: `${base}/multumim/${o.token}` },
+      cta: invoice && o.status === 'livrata' ? { label: 'Descarcă factura (PDF)', href: `${base}/factura/${invoice.token}?descarca` } : { label: 'Vezi comanda', href: `${base}/multumim/${o.token}` },
+      cta2: invoice && o.status === 'livrata' ? { label: 'Vezi comanda pe site', href: `${base}/multumim/${o.token}` }
+        : o.status === 'expediata' && o.tracking_url ? { label: 'Urmărește coletul', href: o.tracking_url } : null,
     }),
     text: `${c.title}\n${c.intro}\n${o.awb ? `AWB: ${o.awb} ${o.tracking_url || ''}\n` : ''}${invoice ? `Factura ${invoice.full_number}: ${base}/factura/${invoice.token}\n` : ''}\nComanda: ${base}/multumim/${o.token}`,
   };
 }
 
-const invoiceBox = (base, inv) => `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;border:1px solid ${C.line};border-radius:12px;${FONT}"><tr><td style="padding:12px 16px;font-size:15px;">🧾 Factura <strong>${esc(inv.full_number)}</strong> · <a href="${esc(base)}/factura/${esc(inv.token)}" style="color:${C.blue};font-weight:700;">Vezi și descarcă factura</a></td></tr></table>`;
+const invoiceBox = (base, inv) => `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;border:1px solid ${C.line};border-radius:12px;${FONT}"><tr>
+  <td width="44" style="padding:14px 0 14px 16px;font-size:26px;vertical-align:middle;">🧾</td>
+  <td style="padding:14px 16px 14px 10px;font-size:15px;line-height:1.45;vertical-align:middle;"><strong>Factura ${esc(inv.full_number)}</strong><br>
+    <span style="color:${C.muted};font-size:13px;">PDF atașat la acest email</span></td>
+  <td align="right" style="padding:14px 16px;white-space:nowrap;vertical-align:middle;"><a href="${esc(base)}/factura/${esc(inv.token)}" style="color:${C.blue};font-weight:700;font-size:14px;">Deschide</a></td>
+</tr></table>`;
 
 export function invoiceEmail(s, base, o, inv) {
   return {
@@ -166,10 +177,11 @@ export function invoiceEmail(s, base, o, inv) {
       preheader: `Factura pentru comanda ${o.number} este gata.`,
       title: 'Factura ta 🧾',
       intro: `Factura pentru comanda <strong style="color:${C.ink}">${esc(o.number)}</strong> este gata. O poți deschide, descărca în format PDF sau printa oricând.`,
-      body: invoiceBox(base, inv),
-      cta: { label: 'Vezi factura', href: `${base}/factura/${inv.token}` },
+      body: invoiceBox(base, inv) + summaryStrip(o),
+      cta: { label: 'Descarcă factura (PDF)', href: `${base}/factura/${inv.token}?descarca` },
+      cta2: { label: 'Vezi comanda pe site', href: `${base}/multumim/${o.token}` },
     }),
-    text: `Factura ${inv.full_number} pentru comanda ${o.number}: ${base}/factura/${inv.token}`,
+    text: `Factura ${inv.full_number} pentru comanda ${o.number}: ${base}/factura/${inv.token}\nComanda: ${base}/multumim/${o.token}`,
   };
 }
 
@@ -275,8 +287,11 @@ export async function itemImages(env, items) {
   const ids = [...new Set(items.map((i) => i.product_id).filter(Boolean))];
   const map = new Map();
   if (!ids.length) return map;
-  const { results } = await env.DB.prepare(`SELECT id, images FROM products WHERE id IN (${ids.map(() => '?').join(',')})`).bind(...ids).all();
-  for (const r of results || []) { try { map.set(r.id, JSON.parse(r.images)[0] || ''); } catch { map.set(r.id, ''); } }
+  const { results } = await env.DB.prepare(`SELECT id, slug, images, active FROM products WHERE id IN (${ids.map(() => '?').join(',')})`).bind(...ids).all();
+  for (const r of results || []) {
+    let img = ''; try { img = JSON.parse(r.images)[0] || ''; } catch { /* fără poză */ }
+    map.set(r.id, { img, slug: r.active ? r.slug : '' }); // produsele scoase din magazin nu mai au link
+  }
   return map;
 }
 

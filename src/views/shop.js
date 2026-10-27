@@ -448,7 +448,31 @@ export function checkoutPage({ settings, bump, loggedIn = false }) {
 }
 
 // ---------------- Mulțumim / status comandă ----------------
-export function thankYouPage({ settings, order, items, payment, invoices = [] }) {
+const STEPS = [['noua', 'Plasată'], ['confirmata', 'Confirmată'], ['expediata', 'Expediată'], ['livrata', 'Livrată']];
+const STOPPED = { anulata: 'Comanda a fost anulată.', refuzata: 'Coletul a fost refuzat la livrare.', retur: 'Produsele au fost returnate.' };
+const dayTime = (sql) => {
+  const d = new Date(sql.replace(' ', 'T') + 'Z');
+  return d.toLocaleString('ro-RO', { timeZone: 'Europe/Bucharest', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+};
+
+function orderProgress(order, events) {
+  const when = { noua: order.created_at };
+  for (const e of events) for (const [k, label] of STEPS) if (!when[k] && e.message.includes(`→ ${label}`)) when[k] = e.created_at;
+  const stopped = STOPPED[order.status];
+  const idx = stopped ? -1 : STEPS.findIndex(([k]) => k === order.status);
+  // la o comandă oprită, etapele parcurse sunt cele care au o dată
+  const done = (i) => (stopped ? !!when[STEPS[i][0]] : i <= idx);
+  return html`<ol class="progress ${stopped ? 'is-stopped' : ''}">
+    ${STEPS.map(([k, label], i) => html`<li class="${done(i) ? 'done' : ''} ${i > 0 && done(i) && done(i - 1) ? 'joined' : ''} ${!stopped && i === idx ? 'current' : ''}">
+      <span class="dot">${done(i) ? icons.check(14) : ''}</span>
+      <span class="lbl">${label}</span>
+      <span class="when">${when[k] && done(i) ? dayTime(when[k]) : ''}</span>
+    </li>`)}
+  </ol>
+  ${stopped ? html`<p class="progress-stop">${stopped}</p>` : ''}`;
+}
+
+export function thankYouPage({ settings, order, items, payment, invoices = [], events = [], products = new Map() }) {
   const isCard = order.payment_method === 'card';
   const paid = order.payment_status === 'platita';
   const fresh = Date.now() - Date.parse(order.created_at.replace(' ', 'T') + 'Z') < 1000 * 60 * 60 * 6;
@@ -469,17 +493,18 @@ export function thankYouPage({ settings, order, items, payment, invoices = [] })
         <form method="post" action="/api/comanda/${order.token}/ramburs" class="mt"><button class="btn btn-ghost">Plătesc la livrare (ramburs)</button></form>
       </div>` : html`
       <div class="thanks-head">
-        <span class="thanks-icon">${icons.check(34)}</span>
-        <h1>${fresh ? 'Mulțumim, comanda e plasată!' : `Comanda ${order.number}`}</h1>
-        <p>Numărul comenzii: <strong>${order.number}</strong>.</p>
+        ${STOPPED[order.status] ? '' : html`<span class="thanks-icon">${icons.check(34)}</span>`}
+        <h1>${fresh && ['noua', 'confirmata'].includes(order.status) ? 'Mulțumim, comanda e plasată!' : `Comanda ${order.number}`}</h1>
+        ${fresh && ['noua', 'confirmata'].includes(order.status) ? html`<p>Numărul comenzii: <strong>${order.number}</strong>.</p>` : html`<p class="muted">Plasată pe ${dayTime(order.created_at)}</p>`}
       </div>`}
 
     ${order.fulfillment_mode === 'mixt' ? html`<div class="split-note"><strong>📦 Comanda ta vine în 2 colete separate</strong><span>Produsele pleacă din depozite diferite, așa că vei primi două colete, fiecare cu AWB-ul lui.${isCard && paid ? '' : html` Plătești fiecare colet curierului care ți-l aduce: <b>${money(order.hs_total)}</b> și <b>${money(order.own_total)}</b>.`}</span></div>` : ''}
 
     <section class="order-status card">
-      <h2>Status</h2>
-      <p class="status-line"><span class="status status-${order.status}">${ORDER_STATUSES[order.status]}</span>
-      ${order.fulfillment_mode !== 'mixt' && order.awb ? html` · AWB ${order.tracking_url ? html`<a href="${order.tracking_url}" target="_blank" rel="noopener">${order.awb}</a>` : order.awb}${order.courier ? ` (${order.courier})` : ''}` : ''}</p>
+      <div class="card-head"><h2>Statusul comenzii</h2><span class="status status-${order.status}">${ORDER_STATUSES[order.status]}</span></div>
+      ${orderProgress(order, events)}
+      <p class="status-line">
+      ${order.fulfillment_mode !== 'mixt' && order.awb ? html`${icons.truck(18)} AWB ${order.tracking_url ? html`<a href="${order.tracking_url}" target="_blank" rel="noopener">${order.awb}</a>` : order.awb}${order.courier ? ` (${order.courier})` : ''}` : ''}</p>
       ${order.fulfillment_mode === 'mixt' ? html`<ul class="parcel-list">
         ${[
           ['Coletul 1', items.filter((i) => i.fulfillment === 'helpship'), order.hs_awb, order.hs_tracking_url, order.hs_courier],
@@ -489,26 +514,39 @@ export function thankYouPage({ settings, order, items, payment, invoices = [] })
           <span>${awb ? html`AWB ${url ? html`<a href="${url}" target="_blank" rel="noopener">${awb}</a>` : awb}${courier ? ` (${courier})` : ''}` : html`<span class="muted">În pregătire – AWB-ul apare aici când pleacă coletul</span>`}</span>
         </li>`)}
       </ul>` : ''}
-      <p class="muted">Păstrează această pagină: poți reveni oricând aici ca să vezi statusul comenzii.</p>
+      <p class="muted small">Păstrează această pagină: poți reveni oricând aici ca să vezi statusul comenzii.</p>
     </section>
+
+    ${invoices.length ? html`<section class="card invoice-card">
+      <h2>Factură</h2>
+      ${invoices.map((f) => html`<div class="invoice-row">
+        <span class="invoice-ico">${icons.doc(22)}</span>
+        <span class="invoice-meta"><strong>${f.kind === 'storno' ? 'Factură storno' : 'Factura'} ${f.full_number}</strong>
+          <span class="muted">${f.issued_on.slice(8, 10)}.${f.issued_on.slice(5, 7)}.${f.issued_on.slice(0, 4)} · ${money(f.total)} · PDF</span></span>
+        <span class="invoice-actions">
+          <a class="btn btn-primary" href="/factura/${f.token}?descarca">${icons.download(18)} Descarcă</a>
+          <a class="btn btn-ghost" href="/factura/${f.token}" target="_blank" rel="noopener">Deschide</a>
+        </span>
+      </div>`)}
+    </section>` : ''}
 
     <section class="card">
       <h2>Produse</h2>
-      <ul class="order-lines">${items.map((i) => html`<li><span>${i.qty} × ${i.title}</span><strong>${money(i.total)}</strong></li>`)}</ul>
+      <ul class="order-items">${items.map((i) => {
+        const p = products.get(i.product_id) || {};
+        const inner = html`<span class="oi-img">${p.img ? html`<img src="${p.img}" alt="" width="56" height="56" loading="lazy">` : ''}</span>
+          <span class="oi-name">${i.title}<small>${i.qty} buc. × ${money(i.unit_price)}</small></span>`;
+        return html`<li>${p.slug ? html`<a class="oi-link" href="/p/${p.slug}">${inner}</a>` : html`<span class="oi-link">${inner}</span>`}<strong>${money(i.total)}</strong></li>`;
+      })}</ul>
       <dl class="totals">
         <div><dt>Subtotal</dt><dd>${money(order.subtotal)}</dd></div>
         ${order.discount ? html`<div class="save"><dt>Reducere pachet</dt><dd>−${money(order.discount)}</dd></div>` : ''}
         ${order.coupon_discount ? html`<div class="save"><dt>Cod ${order.coupon_code}</dt><dd>−${money(order.coupon_discount)}</dd></div>` : ''}
         <div><dt>Transport</dt><dd>${order.shipping ? money(order.shipping) : 'Gratuit'}</dd></div>
         ${order.cod_fee ? html`<div><dt>Taxă ramburs</dt><dd>${money(order.cod_fee)}</dd></div>` : ''}
-        <div class="grand"><dt>Total ${isCard && paid ? 'plătit' : 'de plată la livrare'}</dt><dd>${money(order.total)}</dd></div>
+        <div class="grand"><dt>${isCard && paid ? 'Total plătit' : order.status === 'livrata' ? 'Total plătit la livrare' : ['anulata', 'refuzata', 'retur'].includes(order.status) ? 'Total comandă' : 'Total de plată la livrare'}</dt><dd>${money(order.total)}</dd></div>
       </dl>
     </section>
-
-    ${invoices.length ? html`<section class="card">
-      <h2>Factură</h2>
-      <ul class="order-lines">${invoices.map((f) => html`<li><span>${f.kind === 'storno' ? 'Factură storno' : 'Factura'} ${f.full_number} · ${f.issued_on.slice(8, 10)}.${f.issued_on.slice(5, 7)}.${f.issued_on.slice(0, 4)}</span><a href="/factura/${f.token}" target="_blank" rel="noopener"><strong>Vezi / descarcă</strong></a></li>`)}</ul>
-    </section>` : ''}
 
     <section class="card">
       <h2>Livrare la</h2>

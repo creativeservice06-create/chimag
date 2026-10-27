@@ -132,9 +132,17 @@ export async function issueStorno(env, s, orderId) {
 
 // Apelată după fiecare schimbare de status: emite factura sau storno-ul, după setări.
 export async function syncInvoice(env, s, orderId) {
-  if (s.inv_enabled !== '1' || invoicingProblem(s)) return null;
   const order = await getOrder(env, orderId);
-  if (!order || order.created_at < sinceUtc(s)) return null;
+  if (!order) return null;
+  const due = (ISSUE_ON[s.inv_trigger] || ISSUE_ON.expediata).includes(order.status);
+  // dacă factura ar fi trebuit emisă acum, dar n-a putut, scriem motivul în istoricul comenzii
+  const skip = s.inv_enabled !== '1' ? 'emiterea automată e oprită (Setări → Facturare → bifează „Emite facturi automat”)'
+    : invoicingProblem(s) ? invoicingProblem(s)
+    : order.created_at < sinceUtc(s) ? `comanda e plasată înainte de data de start a facturării (${s.inv_since ? roDate(s.inv_since) : 'nesetată'}, Setări → Facturare)` : '';
+  if (skip) {
+    if (due && s.inv_trigger !== 'manual') await addOrderEvent(env, orderId, `Factura nu s-a emis automat: ${skip}. O poți emite din caseta „Factură”.`);
+    return null;
+  }
   const list = await getOrderInvoices(env, orderId);
   const has = (k) => list.some((i) => i.kind === k);
   try {

@@ -341,7 +341,7 @@ function invoicePanel(o, invoices, s, problem) {
     <h2>Factură</h2>
     ${invoices.map((i) => html`<p><a href="/admin/facturi/${i.id}" target="_blank"><b>${i.kind === 'storno' ? 'Storno' : 'Factura'} ${i.full_number}</b></a> · ${fmtD(i.issued_on)} · ${money(i.total)}</p>`)}
     ${!f ? html`
-      ${problem ? html`<p class="flash err">${problem}</p>` : html`<p class="muted">${auto && when ? `Se emite automat ${when}.` : 'Încă neemisă.'}</p>`}
+      ${problem ? html`<p class="flash err">${problem}</p>` : html`<p class="muted">${auto && when ? `Se emite automat ${when}.` : s.inv_enabled !== '1' ? html`Încă neemisă. <b>Emiterea automată e oprită</b> – o pornești din <a href="/admin/setari#facturare">Setări → Facturare</a>.` : 'Încă neemisă.'}</p>`}
       ${!problem && o.status !== 'anulata' ? html`<form method="post" action="/admin/comenzi/${o.id}/factura">
         <label class="check"><input type="checkbox" name="email" value="1" ${o.email ? 'checked' : 'disabled'}> Trimite factura clientului pe email</label>
         <button class="btn" data-confirm="Emiți factura acum? Numărul se alocă definitiv.">Emite factura acum</button></form>` : ''}`

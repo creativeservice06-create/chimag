@@ -266,3 +266,35 @@ export function zipFiles(files) {
   let p = 0; for (const b of all) { out.set(b, p); p += b.length; }
   return out;
 }
+
+// ---------------- Ștergere (pentru teste) ----------------
+// După ștergere, numărătoarea seriei coboară la ultimul număr rămas, ca să nu rămână goluri la final.
+async function resetCounters(env, s, series) {
+  for (const ser of new Set(series)) {
+    const start = Math.max(1, Number(s.inv_start) || 1) - 1;
+    await env.DB.prepare('UPDATE counters SET value = COALESCE((SELECT MAX(number) FROM invoices WHERE series = ?), ?) WHERE name = ?')
+      .bind(ser, start, 'inv_' + ser).run();
+  }
+}
+
+export async function deleteInvoices(env, s, ids) {
+  if (!ids.length) return 0;
+  const q = ids.map(() => '?').join(',');
+  // o factură ștearsă își ia cu ea și storno-ul
+  const { results } = await env.DB.prepare(`SELECT * FROM invoices WHERE id IN (${q}) OR ref_id IN (${q})`).bind(...ids, ...ids).all();
+  const rows = results || [];
+  if (!rows.length) return 0;
+  await env.DB.batch([
+    env.DB.prepare(`DELETE FROM invoices WHERE id IN (${rows.map(() => '?').join(',')})`).bind(...rows.map((r) => r.id)),
+    ...rows.map((r) => env.DB.prepare('INSERT INTO order_events(order_id, message) VALUES (?, ?)').bind(r.order_id, `${r.kind === 'storno' ? 'Factura storno' : 'Factura'} ${r.full_number} a fost ștearsă din admin.`)),
+  ]);
+  await resetCounters(env, s, rows.map((r) => r.series));
+  return rows.length;
+}
+
+export async function deleteOrderInvoices(env, s, orderId) {
+  const { results } = await env.DB.prepare('SELECT id, series FROM invoices WHERE order_id = ?').bind(orderId).all();
+  if (!results?.length) return;
+  await env.DB.prepare('DELETE FROM invoices WHERE order_id = ?').bind(orderId).run();
+  await resetCounters(env, s, results.map((r) => r.series));
+}

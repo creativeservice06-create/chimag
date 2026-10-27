@@ -4,7 +4,7 @@ import {
   getSettings, saveSettings, listProducts, getProductById, getOrder, getOrderItems, updateOrder, addOrderEvent,
   ORDER_STATUSES,
 } from './lib/db.js';
-import { setStatus, generateAwb, cancelAwb, setManualAwb } from './lib/orders.js';
+import { setStatus, generateAwb, cancelAwb, setManualAwb, deleteOrder } from './lib/orders.js';
 import { getProvider } from './shipping/providers.js';
 import { JUDETE } from './lib/judete.js';
 import {
@@ -105,6 +105,9 @@ export async function handleAdmin(request, env, ctx, path) {
       if (action === 'awb') {
         const r = await generateAwb(env, settings, id, { ctx });
         if (r.ok) ok++; else errors.push(`#${id}: ${r.error}`);
+      } else if (action === 'sterge') {
+        const r = await deleteOrder(env, settings, id);
+        if (r.ok) ok++; else errors.push(`#${id}: ${r.error}`);
       } else if (ORDER_STATUSES[action]) {
         await setStatus(env, settings, id, action, { ctx }); ok++;
       }
@@ -123,7 +126,20 @@ export async function handleAdmin(request, env, ctx, path) {
     return render(env, url, { title: order.number, active: 'comenzi', body: orderView({ order, items, events: events || [], settings, invoices, invProblem: invoicingProblem(settings), hsOn: !!(env.HELPSHIP_CLIENT_ID && env.HELPSHIP_CLIENT_SECRET && env.HELPSHIP_ACCOUNT_ID) }) });
   }
 
+  if ((m = path.match(/^\/admin\/comenzi\/(\d+)\/sterge$/)) && method === 'POST') {
+    const r = await deleteOrder(env, settings, Number(m[1]));
+    return redirect(withFlash(r.ok ? '/admin/comenzi' : `/admin/comenzi/${m[1]}`, r.ok ? 'ok' : 'err', r.ok ? `Comanda ${r.number} a fost ștearsă definitiv.` : r.error));
+  }
+
   // ---------- Facturi ----------
+  if (path === '/admin/facturi/sterge' && method === 'POST') {
+    const inv = await import('./lib/invoices.js');
+    const form = await readForm(request);
+    const ids = form.getAll('ids').map(Number).filter(Boolean).slice(0, 500);
+    const n = await inv.deleteInvoices(env, settings, ids);
+    const back = String(form.get('back') || '/admin/facturi');
+    return redirect(withFlash(back.startsWith('/admin/') ? back : '/admin/facturi', n ? 'ok' : 'err', n ? `${n === 1 ? 'O factură a fost ștearsă' : `${n} facturi au fost șterse`}. Următorul număr: ${(await inv.nextInvoiceNumber(env, settings)).next}.` : 'Nu ai selectat nicio factură.'));
+  }
   if ((m = path.match(/^\/admin\/comenzi\/(\d+)\/(factura|storno)$/)) && method === 'POST') {
     const inv = await import('./lib/invoices.js');
     const id = Number(m[1]);

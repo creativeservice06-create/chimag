@@ -202,6 +202,7 @@ export function ordersView({ orders, status, q, counts, page, hasMore }) {
         <option value="livrata">Marchează Livrată</option>
         <option value="refuzata">Marchează Refuzată</option>
         <option value="anulata">Anulează</option>
+        <option value="sterge">Șterge definitiv (comenzi de test)</option>
       </select>
       <button class="btn">Aplică</button>
     </form>
@@ -326,6 +327,12 @@ export function orderView({ order: o, items, events, settings, provider, hsOn = 
         <h2>Istoric</h2>
         <ol class="timeline">${events.map((e) => html`<li><time>${formatDate(e.created_at)}</time>${e.message}</li>`)}</ol>
       </section>
+
+      <section class="panel danger-zone">
+        <h2>Ștergere</h2>
+        <p class="muted">Pentru comenzi de test. Se șterg definitiv comanda, istoricul${invoices.length ? ` și facturile ei (${invoices.map((i) => i.full_number).join(', ')})` : ''}. Stocul revine${o.hs_order_id && o.status !== 'anulata' ? ', iar comanda se anulează și la Helpship' : ''}.</p>
+        <form method="post" action="/admin/comenzi/${o.id}/sterge"><button class="btn danger" data-confirm="Ștergi definitiv comanda ${o.number}${invoices.length ? ' și facturile ei' : ''}? Nu se poate anula.">Șterge comanda definitiv</button></form>
+      </section>
     </div>
   </div>`;
 }
@@ -381,8 +388,13 @@ export function invoicesView({ list, range: r, settings: s, problem, next }) {
   </section>
   <section class="panel">
     <h2>Facturi emise (${list.length})</h2>
-    ${list.length ? html`<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Număr</th><th>Data</th><th>Tip</th><th>Comanda</th><th>Client</th><th class="r">Total</th></tr></thead><tbody>
-      ${list.map((i) => html`<tr><td><a href="/admin/facturi/${i.id}" target="_blank"><b>${i.full_number}</b></a></td><td>${fmtD(i.issued_on)}</td>
+    ${list.length ? html`<form method="post" action="/admin/facturi/sterge" id="inv-del" class="bulk">
+      <input type="hidden" name="back" value="/admin/facturi?de_la=${r.from}&pana_la=${r.to}">
+      <label class="check"><input type="checkbox" data-check-all> Selectează toate</label>
+      <button class="btn danger" data-confirm="Ștergi definitiv facturile selectate? Folosește doar pentru facturi de test. Dacă ștergi o factură din mijlocul seriei, rămâne un număr lipsă.">Șterge selectate</button>
+    </form>
+    <div class="tbl-wrap"><table class="tbl"><thead><tr><th></th><th>Număr</th><th>Data</th><th>Tip</th><th>Comanda</th><th>Client</th><th class="r">Total</th></tr></thead><tbody>
+      ${list.map((i) => html`<tr><td><input type="checkbox" name="ids" value="${i.id}" form="inv-del" aria-label="Selectează ${i.full_number}"></td><td><a href="/admin/facturi/${i.id}" target="_blank"><b>${i.full_number}</b></a></td><td>${fmtD(i.issued_on)}</td>
         <td>${i.kind === 'storno' ? html`<span class="chip st-anulata">Storno</span>` : html`<span class="chip st-livrata">Factură</span>`}</td>
         <td><a href="/admin/comenzi/${i.order_id}">${i.order_number}</a></td><td>${JSON.parse(i.buyer_json || '{}').name || ''}</td><td class="r">${money(i.total)}</td></tr>`)}
     </tbody></table></div>` : html`<p class="muted">Nicio factură în perioada aleasă.</p>`}

@@ -175,3 +175,22 @@ export async function markPaid(env, orderId, sessionId) {
   }
   return getOrder(env, orderId);
 }
+
+// Ștergere definitivă (pentru comenzi de test): stocul revine, comanda se anulează la Helpship, facturile ei se șterg.
+export async function deleteOrder(env, settings, orderId) {
+  const order = await getOrder(env, orderId);
+  if (!order) return { ok: false, error: 'Comanda nu există.' };
+  if (!RESTOCK.has(order.status)) await restoreStock(env, orderId);
+  if (order.hs_order_id && order.status !== 'anulata') {
+    const hs = await import('./helpship.js');
+    await hs.cancelAtHelpship(env, orderId).catch(() => {});
+  }
+  const inv = await import('./invoices.js');
+  await inv.deleteOrderInvoices(env, settings, orderId);
+  await env.DB.batch([
+    env.DB.prepare('DELETE FROM order_events WHERE order_id = ?').bind(orderId),
+    env.DB.prepare('DELETE FROM order_items WHERE order_id = ?').bind(orderId),
+    env.DB.prepare('DELETE FROM orders WHERE id = ?').bind(orderId),
+  ]);
+  return { ok: true, number: order.number };
+}

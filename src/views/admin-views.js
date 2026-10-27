@@ -262,7 +262,7 @@ function ordersTable(orders, selectable = true) {
     <thead><tr>${selectable ? html`<th><input type="checkbox" data-check-all aria-label="Selectează tot"></th>` : ''}<th>Comandă</th><th>Data</th><th>Client</th><th>Localitate</th><th class="r">Total</th><th>Plată</th><th>Status</th><th>AWB</th></tr></thead>
     <tbody>${orders.map((o) => html`<tr>
       ${selectable ? html`<td><input type="checkbox" name="ids" value="${o.id}" form="bulk" aria-label="Selectează ${o.number}"></td>` : ''}
-      <td><a href="/admin/comenzi/${o.id}"><b>${o.number}</b></a>${o.fulfillment_mode === 'helpship' ? html`<br><span class="chip chip-hs">Helpship</span>` : o.fulfillment_mode === 'mixt' ? html`<br><span class="chip chip-hs">2 colete</span>` : ''}</td>
+      <td><a href="/admin/comenzi/${o.id}"><b>${o.number}</b></a>${o.fulfillment_mode !== 'own' ? html`<br><span class="chip ${o.hs_error ? 'st-anulata' : 'chip-hs'}" title="${o.hs_error || ''}">${o.fulfillment_mode === 'mixt' ? '2 colete · ' : ''}${o.hs_error ? 'Helpship: eroare' : o.hs_order_id ? 'Trimisă la depozit' : o.status === 'anulata' ? 'Helpship' : 'Helpship: netrimisă'}</span>` : ''}</td>
       <td class="nowrap o-date">${formatDate(o.created_at)}</td>
       <td class="o-client">${o.customer_name}<br><a class="muted" href="tel:${o.phone}">${o.phone}</a></td>
       <td class="o-loc">${o.city}<br><span class="muted">${o.county}</span></td>

@@ -772,9 +772,21 @@ html.drawer-open { overflow: hidden; }
 .consent-actions [data-consent-settings] { border-color: transparent; color: var(--muted); padding-left: 8px; padding-right: 8px; }
 .consent-actions [data-consent-settings]:hover { color: var(--ink); }
 .consent-actions .btn[hidden] { display: none; }
+.c-short { display: none; }
 @media (max-width: 560px) {
-  .consent { left: 0; right: 0; bottom: 0; width: auto; border-radius: 20px 20px 0 0; border-bottom: 0; padding: 18px 16px calc(16px + env(safe-area-inset-bottom)); }
-  .consent-actions [data-consent-settings] { flex: 1 0 100%; order: 3; padding: 6px; }
+  .consent { left: 8px; right: 8px; bottom: calc(8px + env(safe-area-inset-bottom)); width: auto; border-radius: 16px; padding: 12px 14px; }
+  .consent-ico { display: none; }
+  .consent-head { display: block; }
+  .consent h2 { font-size: .92rem; margin: 0 0 2px; }
+  .consent p { font-size: .8rem; line-height: 1.4; }
+  .c-long { display: none; } .c-short { display: inline; }
+  .consent-actions { margin-top: 10px; gap: 6px; flex-wrap: nowrap; }
+  .consent-actions .btn { padding: 8px 10px; font-size: .85rem; min-height: 38px; }
+  .consent-actions [data-consent-settings] { flex: 0 0 auto; order: 0; padding: 8px 4px; }
+  .consent-prefs { margin-top: 10px; }
+  .consent-opt { padding: 9px 12px; }
+  .consent-opt small { display: none; }
+}
 }
 
 /* ---------- Prezentare produs (secțiuni cu poze) ---------- */

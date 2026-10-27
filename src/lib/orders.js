@@ -59,6 +59,12 @@ async function restoreStock(env, orderId) {
 
 const RESTOCK = new Set(['anulata', 'retur']);
 
+// factura / storno automat (erorile nu blochează schimbarea de status)
+async function invoiceSync(env, settings, orderId) {
+  try { const { syncInvoice } = await import('./invoices.js'); await syncInvoice(env, settings, orderId); }
+  catch (e) { console.log('factura', e?.message || e); }
+}
+
 export async function setStatus(env, settings, orderId, status, { by = 'admin', ctx = null } = {}) {
   const order = await getOrder(env, orderId);
   if (!order || !ORDER_STATUSES[status] || order.status === status) return { order };
@@ -73,6 +79,7 @@ export async function setStatus(env, settings, orderId, status, { by = 'admin', 
     if (status === 'confirmata' && !order.hs_order_id) await hs.sendToHelpship(env, settings, orderId).catch(() => {});
     if (status === 'anulata') await hs.cancelAtHelpship(env, orderId).catch(() => {});
   }
+  await invoiceSync(env, settings, orderId);
   let awbResult = null;
   if (status === 'confirmata' && settings.auto_awb_on_confirm === '1' && !order.awb && order.fulfillment_mode !== 'helpship') {
     awbResult = await generateAwb(env, settings, orderId, { ctx });
@@ -123,6 +130,7 @@ export async function generateAwb(env, settings, orderId, { ctx = null } = {}) {
     if (order.status === 'noua' || order.status === 'confirmata') {
       await updateOrder(env, orderId, { status: 'expediata' });
       await addOrderEvent(env, orderId, `Status: ${ORDER_STATUSES[order.status]} → Expediată`);
+      await invoiceSync(env, settings, orderId);
       const p = notifyStatus(env, settings, await getOrder(env, orderId));
       if (ctx) ctx.waitUntil(p); else await p;
     }

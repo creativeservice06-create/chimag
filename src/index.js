@@ -63,7 +63,8 @@ export default {
   },
 
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(Promise.allSettled([syncTracking(env), checkWheelUnlocks(env), syncHelpship(env)]));
+    ctx.waitUntil(Promise.allSettled([syncTracking(env), checkWheelUnlocks(env), syncHelpship(env)])
+      .then(async () => { const { syncInvoices } = await import('./lib/invoices.js'); await syncInvoices(env, await getSettings(env)); }));
   },
 };
 
@@ -182,10 +183,21 @@ async function route(request, env, ctx) {
     if (!order) return notFound(env, request);
     const settings = await getSettings(env);
     const items = await getOrderItems(env, order.id);
+    const { results: invoices } = await env.DB.prepare('SELECT kind, full_number, issued_on, token FROM invoices WHERE order_id = ? ORDER BY id').bind(order.id).all().catch(() => ({ results: [] }));
     return htmlResponse(layout({
       settings, siteUrl: siteUrl(env, request), title: `Comanda ${order.number}`,
-      body: thankYouPage({ settings, order, items, payment: url.searchParams.get('plata') }),
+      body: thankYouPage({ settings, order, items, payment: url.searchParams.get('plata'), invoices: invoices || [] }),
     }), 200, { 'cache-control': 'no-store', 'x-robots-tag': 'noindex' });
+  }
+
+  // Factura pentru client (link secret, din email și din pagina comenzii)
+  if (method === 'GET' && (m = path.match(/^\/factura\/([a-f0-9]{32})$/))) {
+    const { getInvoiceByToken } = await import('./lib/invoices.js');
+    const { invoicePage } = await import('./views/invoice-view.js');
+    const inv = await getInvoiceByToken(env, m[1]);
+    if (!inv) return notFound(env, request);
+    const o = await env.DB.prepare('SELECT token FROM orders WHERE id = ?').bind(inv.order_id).first();
+    return htmlResponse(invoicePage(inv, { orderToken: o?.token || '' }), 200, { 'cache-control': 'no-store', 'x-robots-tag': 'noindex' });
   }
 
   if (path === '/comanda' && (method === 'GET' || method === 'POST')) {

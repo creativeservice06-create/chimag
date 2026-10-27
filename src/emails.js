@@ -132,7 +132,7 @@ const STATUS_COPY = {
 };
 export const STATUS_EMAILS = Object.keys(STATUS_COPY);
 
-export function customerStatusEmail(s, base, o, items, images) {
+export function customerStatusEmail(s, base, o, items, images, invoice = null) {
   let c = STATUS_COPY[o.status];
   if (!c) return null;
   if (o.fulfillment_mode === 'mixt' && o.status === 'expediata') {
@@ -147,10 +147,26 @@ export function customerStatusEmail(s, base, o, items, images) {
     subject: c.subject.replace('{n}', o.number),
     html: layout(s, base, {
       preheader: c.intro, title: c.title, intro: c.intro,
-      body: awb + summaryStrip(o) + itemsTable(base, items, images) + totalsTable(o),
+      body: awb + (invoice ? invoiceBox(base, invoice) : '') + summaryStrip(o) + itemsTable(base, items, images) + totalsTable(o),
       cta: { label: 'Vezi comanda', href: `${base}/multumim/${o.token}` },
     }),
-    text: `${c.title}\n${c.intro}\n${o.awb ? `AWB: ${o.awb} ${o.tracking_url || ''}\n` : ''}\nComanda: ${base}/multumim/${o.token}`,
+    text: `${c.title}\n${c.intro}\n${o.awb ? `AWB: ${o.awb} ${o.tracking_url || ''}\n` : ''}${invoice ? `Factura ${invoice.full_number}: ${base}/factura/${invoice.token}\n` : ''}\nComanda: ${base}/multumim/${o.token}`,
+  };
+}
+
+const invoiceBox = (base, inv) => `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;border:1px solid ${C.line};border-radius:12px;${FONT}"><tr><td style="padding:12px 16px;font-size:15px;">🧾 Factura <strong>${esc(inv.full_number)}</strong> · <a href="${esc(base)}/factura/${esc(inv.token)}" style="color:${C.blue};font-weight:700;">Vezi și descarcă factura</a></td></tr></table>`;
+
+export function invoiceEmail(s, base, o, inv) {
+  return {
+    subject: `Factura ${inv.full_number} pentru comanda ${o.number}`,
+    html: layout(s, base, {
+      preheader: `Factura pentru comanda ${o.number} este gata.`,
+      title: 'Factura ta 🧾',
+      intro: `Factura pentru comanda <strong style="color:${C.ink}">${esc(o.number)}</strong> este gata. O poți deschide, descărca în format PDF sau printa oricând.`,
+      body: invoiceBox(base, inv),
+      cta: { label: 'Vezi factura', href: `${base}/factura/${inv.token}` },
+    }),
+    text: `Factura ${inv.full_number} pentru comanda ${o.number}: ${base}/factura/${inv.token}`,
   };
 }
 

@@ -448,7 +448,7 @@ export function checkoutPage({ settings, bump, loggedIn = false }) {
 }
 
 // ---------------- Mulțumim / status comandă ----------------
-export function thankYouPage({ settings, order, items, payment }) {
+export function thankYouPage({ settings, order, items, payment, invoices = [] }) {
   const isCard = order.payment_method === 'card';
   const paid = order.payment_status === 'platita';
   const fresh = Date.now() - Date.parse(order.created_at.replace(' ', 'T') + 'Z') < 1000 * 60 * 60 * 6;
@@ -504,6 +504,11 @@ export function thankYouPage({ settings, order, items, payment }) {
         <div class="grand"><dt>Total ${isCard && paid ? 'plătit' : 'de plată la livrare'}</dt><dd>${money(order.total)}</dd></div>
       </dl>
     </section>
+
+    ${invoices.length ? html`<section class="card">
+      <h2>Factură</h2>
+      <ul class="order-lines">${invoices.map((f) => html`<li><span>${f.kind === 'storno' ? 'Factură storno' : 'Factura'} ${f.full_number} · ${f.issued_on.slice(8, 10)}.${f.issued_on.slice(5, 7)}.${f.issued_on.slice(0, 4)}</span><a href="/factura/${f.token}" target="_blank" rel="noopener"><strong>Vezi / descarcă</strong></a></li>`)}</ul>
+    </section>` : ''}
 
     <section class="card">
       <h2>Livrare la</h2>

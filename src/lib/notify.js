@@ -1,6 +1,6 @@
 import { sendMail, sendEmail } from './email.js';
 import { getOrderItems } from './db.js';
-import { adminNewOrderEmail, customerOrderEmail, customerStatusEmail, STATUS_EMAILS, itemImages, contactAdminEmail, contactAutoReply, parcelShippedEmail } from '../emails.js';
+import { adminNewOrderEmail, customerOrderEmail, customerStatusEmail, STATUS_EMAILS, itemImages, contactAdminEmail, contactAutoReply, parcelShippedEmail, invoiceEmail } from '../emails.js';
 
 // Toate notificările pe email ale magazinului. Erorile de email nu blochează niciodată comanda.
 const baseUrl = (env) => String(env.SITE_URL || '').replace(/\/$/, '');
@@ -22,7 +22,8 @@ export async function notifyStatus(env, settings, order) {
   if (settings.customer_emails === '0' || !order.email || !STATUS_EMAILS.includes(order.status)) return;
   const base = baseUrl(env);
   const items = await getOrderItems(env, order.id);
-  const mail = customerStatusEmail(settings, base, order, items, await itemImages(env, items));
+  const inv = await env.DB.prepare("SELECT full_number, token FROM invoices WHERE order_id = ? AND kind = 'factura'").bind(order.id).first().catch(() => null);
+  const mail = customerStatusEmail(settings, base, order, items, await itemImages(env, items), ['expediata', 'livrata'].includes(order.status) ? inv : null);
   if (!mail) return;
   const r = await safe(sendMail(env, settings, { to: order.email, ...mail }));
   if (r.ok) await env.DB.prepare('INSERT INTO order_events(order_id, message) VALUES (?, ?)').bind(order.id, `Email trimis clientului: ${mail.subject}`).run();
@@ -42,4 +43,12 @@ export async function notifyParcelShipped(env, settings, order) {
   const items = (await getOrderItems(env, order.id)).filter((i) => i.fulfillment === 'helpship');
   const r = await safe(sendMail(env, settings, { to: order.email, ...parcelShippedEmail(settings, base, order, items, await itemImages(env, items)) }));
   if (r.ok) await env.DB.prepare('INSERT INTO order_events(order_id, message) VALUES (?, ?)').bind(order.id, 'Email trimis clientului: coletul Helpship a fost expediat').run();
+}
+
+// factura emisă manual din admin (la cele automate, linkul e în emailul de expediere/livrare)
+export async function notifyInvoice(env, settings, order, inv) {
+  if (settings.customer_emails === '0' || !order.email) return false;
+  const r = await safe(sendMail(env, settings, { to: order.email, ...invoiceEmail(settings, baseUrl(env), order, inv) }));
+  if (r.ok) await env.DB.prepare('INSERT INTO order_events(order_id, message) VALUES (?, ?)').bind(order.id, `Email trimis clientului: factura ${inv.full_number}`).run();
+  return !!r.ok;
 }

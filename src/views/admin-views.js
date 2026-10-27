@@ -11,6 +11,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0, msgCount
   const nav = [
     ['/admin', 'panou', 'Panou'],
     ['/admin/comenzi', 'comenzi', 'Comenzi'],
+    ['/admin/facturi', 'facturi', 'Facturi'],
     ['/admin/produse', 'produse', 'Produse'],
     ['/admin/coduri', 'coduri', 'Roată și coduri'],
     ['/admin/clienti', 'clienti', 'Clienți'],
@@ -212,7 +213,7 @@ export function ordersView({ orders, status, q, counts, page, hasMore }) {
   </nav>`;
 }
 
-export function orderView({ order: o, items, events, settings, provider, hsOn = false }) {
+export function orderView({ order: o, items, events, settings, provider, hsOn = false, invoices = [], invProblem = '' }) {
   const providerObj = PROVIDERS[o.shipping_provider || settings.shipping_provider] || PROVIDERS.test;
   const quick = {
     noua: [['confirmata', 'Confirmă comanda', 'primary'], ['anulata', 'Anulează', '']],
@@ -304,6 +305,8 @@ export function orderView({ order: o, items, events, settings, provider, hsOn = 
         </details>
       </section>` : html`${o.awb ? html`<section class="panel"><h2>Livrare</h2><p class="awb">AWB <b>${o.awb}</b>${o.courier ? ` · ${o.courier}` : ''}</p>${o.tracking_url ? html`<a class="btn" href="${o.tracking_url}" target="_blank">Urmărește coletul</a>` : ''}</section>` : ''}`}
 
+      ${invoicePanel(o, invoices, settings, invProblem)}
+
       <section class="panel">
         <h2>Plată</h2>
         <p>${o.payment_method === 'card' ? 'Card online (Stripe)' : 'Ramburs la livrare'} · ${PAYMENT_STATUSES[o.payment_status]}</p>
@@ -325,6 +328,65 @@ export function orderView({ order: o, items, events, settings, provider, hsOn = 
       </section>
     </div>
   </div>`;
+}
+
+const fmtD = (d) => `${d.slice(8, 10)}.${d.slice(5, 7)}.${d.slice(0, 4)}`;
+
+function invoicePanel(o, invoices, s, problem) {
+  const f = invoices.find((i) => i.kind === 'factura');
+  const st = invoices.find((i) => i.kind === 'storno');
+  const auto = s.inv_enabled === '1';
+  const when = { expediata: 'la expediere', livrata: 'la livrare', manual: '' }[s.inv_trigger] || 'la expediere';
+  return html`<section class="panel">
+    <h2>Factură</h2>
+    ${invoices.map((i) => html`<p><a href="/admin/facturi/${i.id}" target="_blank"><b>${i.kind === 'storno' ? 'Storno' : 'Factura'} ${i.full_number}</b></a> · ${fmtD(i.issued_on)} · ${money(i.total)}</p>`)}
+    ${!f ? html`
+      ${problem ? html`<p class="flash err">${problem}</p>` : html`<p class="muted">${auto && when ? `Se emite automat ${when}.` : 'Încă neemisă.'}</p>`}
+      ${!problem && o.status !== 'anulata' ? html`<form method="post" action="/admin/comenzi/${o.id}/factura">
+        <label class="check"><input type="checkbox" name="email" value="1" ${o.email ? 'checked' : 'disabled'}> Trimite factura clientului pe email</label>
+        <button class="btn" data-confirm="Emiți factura acum? Numărul se alocă definitiv.">Emite factura acum</button></form>` : ''}`
+    : !st ? html`<p class="muted">Dacă comanda e anulată, refuzată sau returnată, storno-ul se emite automat.</p>
+      <form method="post" action="/admin/comenzi/${o.id}/storno"><button class="btn danger" data-confirm="Emiți factura storno pentru ${f.full_number}? Anulează integral factura.">Stornează factura</button></form>` : ''}
+  </section>`;
+}
+
+export function invoicesView({ list, range: r, settings: s, problem, next }) {
+  const qs = (extra) => `/admin/facturi?${new URLSearchParams(extra)}`;
+  const dl = (fmt) => `/admin/facturi/saga.${fmt}?${new URLSearchParams({ de_la: r.from, pana_la: r.to })}`;
+  const facturi = list.filter((i) => i.kind === 'factura');
+  const storno = list.filter((i) => i.kind === 'storno');
+  const sum = (a, k = 'total') => a.reduce((x, i) => x + i[k], 0);
+  return html`
+  <header class="page-head"><div><h1>Facturi</h1><p class="muted">Seria ${next.series} · următorul număr: <b>${next.series}${String(next.next).padStart(4, '0')}</b> · ${s.inv_enabled === '1' ? 'emitere automată pornită' : html`<span class="err-txt">emitere automată oprită</span>`} · <a href="/admin/setari#facturare">setări</a></p></div></header>
+  ${problem ? html`<p class="flash err">${problem}</p>` : ''}
+  <section class="panel">
+    <div class="profit-head"><h2>Perioada</h2>
+      <div class="chips">${PRESETS.map(([k, label]) => html`<a class="chip-link ${r.preset === k ? 'on' : ''}" href="${qs({ perioada: k })}">${label}</a>`)}</div></div>
+    <form method="get" action="/admin/facturi" class="profit-range">
+      <label>De la<input type="date" name="de_la" value="${r.from}"></label>
+      <label>Până la<input type="date" name="pana_la" value="${r.to}"></label>
+      <button class="btn primary">Arată</button>
+    </form>
+    <div class="kpis">
+      <div class="kpi"><h2>Facturi</h2><p class="kpi-main">${facturi.length}</p><p class="kpi-sub">${money(sum(facturi))}</p></div>
+      <div class="kpi"><h2>Storno</h2><p class="kpi-main">${storno.length}</p><p class="kpi-sub">${money(sum(storno))}</p></div>
+      <div class="kpi"><h2>Total net</h2><p class="kpi-main">${money(sum(list))}</p><p class="kpi-sub">${s.inv_vat_payer === '1' ? `din care TVA ${money(sum(list, 'vat_total'))}` : 'neplătitor de TVA'}</p></div>
+    </div>
+    <h3>Export pentru SAGA</h3>
+    <div class="btn-row">
+      <a class="btn primary" href="${dl('xml')}">Descarcă XML (toate facturile, un fișier)</a>
+      <a class="btn" href="${dl('zip')}">Descarcă ZIP (câte un XML pe factură)</a>
+    </div>
+    <p class="hint" style="margin-top:12px">În SAGA: <b>Diverse → Import date → Facturi (XML)</b>, alegi fișierul, apoi verifici facturile în <b>Ieșiri</b> și le trimiți în e-Factura din SAGA. Termen legal: 5 zile lucrătoare de la emitere.</p>
+  </section>
+  <section class="panel">
+    <h2>Facturi emise (${list.length})</h2>
+    ${list.length ? html`<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Număr</th><th>Data</th><th>Tip</th><th>Comanda</th><th>Client</th><th class="r">Total</th></tr></thead><tbody>
+      ${list.map((i) => html`<tr><td><a href="/admin/facturi/${i.id}" target="_blank"><b>${i.full_number}</b></a></td><td>${fmtD(i.issued_on)}</td>
+        <td>${i.kind === 'storno' ? html`<span class="chip st-anulata">Storno</span>` : html`<span class="chip st-livrata">Factură</span>`}</td>
+        <td><a href="/admin/comenzi/${i.order_id}">${i.order_number}</a></td><td>${JSON.parse(i.buyer_json || '{}').name || ''}</td><td class="r">${money(i.total)}</td></tr>`)}
+    </tbody></table></div>` : html`<p class="muted">Nicio factură în perioada aleasă.</p>`}
+  </section>`;
 }
 
 export function labelView({ order: o, items, settings }) {
@@ -460,7 +522,7 @@ export function productFormView({ product: p, reviews = [], hasR2 }) {
 }
 
 // ---------------- Setări ----------------
-export function settingsView({ settings: s, products, secrets, siteUrl }) {
+export function settingsView({ settings: s, products, secrets, siteUrl, invNext = { series: 'CHI', next: 1 } }) {
   const f = (name, label, attrs = {}) => html`<label class="${attrs.span ? 'span2' : ''}">${label}${attrs.hint ? html` <small>${attrs.hint}</small>` : ''}<input name="${name}" value="${attrs.money ? moneyNum(s[name]) : s[name] || ''}" ${attrs.placeholder ? raw(`placeholder="${attrs.placeholder}"`) : ''}></label>`;
   const ok = (v) => (v ? html`<span class="chip st-livrata">configurat</span>` : html`<span class="chip">lipsește</span>`);
   return html`
@@ -496,6 +558,9 @@ export function settingsView({ settings: s, products, secrets, siteUrl }) {
       ${f('company_cui', 'CUI')}
       ${f('company_reg', 'Nr. Registrul Comerțului')}
       ${f('company_address', 'Sediu social')}
+      ${f('company_capital', 'Capital social', { hint: '(opțional, apare pe factură)' })}
+      ${f('company_bank', 'Banca', { hint: '(opțional, pe factură)' })}
+      ${f('company_iban', 'IBAN', { hint: '(opțional, pe factură)' })}
     </section>
     <section class="panel form-grid">
       <h2 class="span2">Livrare și prețuri</h2>
@@ -527,6 +592,24 @@ export function settingsView({ settings: s, products, secrets, siteUrl }) {
         <p>Chei API: SmartShip ${ok(secrets.smartship)} · Helpship (push) ${ok(secrets.helpship)} · API depozit ${ok(secrets.warehouse)}</p>
         <p>API pentru depozit (Helpship sau alt partener): <code>${siteUrl}/api/fulfillment/orders</code>, autentificare <code>Authorization: Bearer WAREHOUSE_API_KEY</code>. Detalii în README.</p>
       </div>
+    </section>
+    <section class="panel form-grid" id="facturare">
+      <h2 class="span2">Facturare</h2>
+      <label class="check span2"><input type="checkbox" name="inv_enabled" value="1" ${s.inv_enabled === '1' ? 'checked' : ''}> Emite facturi automat (și storno la anulare, refuz sau retur)</label>
+      <label>Seria facturilor<input name="inv_series" value="${s.inv_series || 'CHI'}" maxlength="8"></label>
+      <label>Următorul număr <small>(ex: ${invNext.series}${String(invNext.next).padStart(4, '0')})</small><input name="inv_next" type="number" min="1" value="${invNext.next}"><input type="hidden" name="inv_next_orig" value="${invNext.next}"></label>
+      <label>Când se emite factura<select name="inv_trigger">
+        <option value="expediata" ${s.inv_trigger !== 'livrata' && s.inv_trigger !== 'manual' ? 'selected' : ''}>La expediere (când pleacă coletul)</option>
+        <option value="livrata" ${s.inv_trigger === 'livrata' ? 'selected' : ''}>La livrare (când clientul primește coletul)</option>
+        <option value="manual" ${s.inv_trigger === 'manual' ? 'selected' : ''}>Doar manual, din pagina comenzii</option>
+      </select></label>
+      <label>Facturez automat comenzile plasate din<input type="date" name="inv_since" value="${s.inv_since || ''}"></label>
+      <label>TVA<select name="inv_vat_payer">
+        <option value="0" ${s.inv_vat_payer !== '1' ? 'selected' : ''}>Firma NU este plătitoare de TVA</option>
+        <option value="1" ${s.inv_vat_payer === '1' ? 'selected' : ''}>Firma este plătitoare de TVA</option>
+      </select></label>
+      <label>Cota TVA (%) <small>(doar dacă ești plătitor; prețurile din magazin includ TVA)</small><input name="inv_vat_rate" value="${s.inv_vat_rate || '21'}" inputmode="decimal"></label>
+      <p class="hint span2">Clientul primește linkul facturii în emailul de expediere sau livrare și o vede pe pagina comenzii. Clienții persoane fizice apar cu codul generic 0000000000000, cum cere e-Factura. Exportul pentru SAGA e în <a href="/admin/facturi">Facturi</a>. Pe factură apar datele din „Date firmă” (denumire, CUI și sediul sunt obligatorii).</p>
     </section>
     <section class="panel form-grid">
       <h2 class="span2">Helpship (depozit)</h2>

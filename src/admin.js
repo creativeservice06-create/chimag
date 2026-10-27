@@ -9,7 +9,7 @@ import { getProvider } from './shipping/providers.js';
 import { JUDETE } from './lib/judete.js';
 import {
   adminLayout, loginView, dashboardView, ordersView, orderView, labelView, productsView, productFormView, settingsView, couponsView, messagesView,
-  customersView, customerFormView, customerView,
+  customersView, customerFormView, customerView, invoicesView,
 } from './views/admin-views.js';
 import { COUPON_TYPES, CODE_TYPES, normalizeCode } from './lib/coupons.js';
 import { emailStatus, sendEmail } from './lib/email.js';
@@ -118,7 +118,53 @@ export async function handleAdmin(request, env, ctx, path) {
     if (!order) return redirect(withFlash('/admin/comenzi', 'err', 'Comanda nu există.'));
     const items = await getOrderItems(env, order.id);
     const { results: events } = await env.DB.prepare('SELECT * FROM order_events WHERE order_id = ? ORDER BY id DESC').bind(order.id).all();
-    return render(env, url, { title: order.number, active: 'comenzi', body: orderView({ order, items, events: events || [], settings, hsOn: !!(env.HELPSHIP_CLIENT_ID && env.HELPSHIP_CLIENT_SECRET && env.HELPSHIP_ACCOUNT_ID) }) });
+    const { getOrderInvoices, invoicingProblem } = await import('./lib/invoices.js');
+    const invoices = await getOrderInvoices(env, order.id);
+    return render(env, url, { title: order.number, active: 'comenzi', body: orderView({ order, items, events: events || [], settings, invoices, invProblem: invoicingProblem(settings), hsOn: !!(env.HELPSHIP_CLIENT_ID && env.HELPSHIP_CLIENT_SECRET && env.HELPSHIP_ACCOUNT_ID) }) });
+  }
+
+  // ---------- Facturi ----------
+  if ((m = path.match(/^\/admin\/comenzi\/(\d+)\/(factura|storno)$/)) && method === 'POST') {
+    const inv = await import('./lib/invoices.js');
+    const id = Number(m[1]);
+    if (m[2] === 'factura') {
+      const r = await inv.issueInvoice(env, settings, id);
+      if (!r.ok) return redirect(withFlash(`/admin/comenzi/${id}`, 'err', r.error));
+      let mailed = false;
+      if (!r.existed && (await readForm(request)).get('email') === '1') {
+        const { notifyInvoice } = await import('./lib/notify.js');
+        mailed = await notifyInvoice(env, settings, await getOrder(env, id), r.invoice);
+      }
+      return redirect(withFlash(`/admin/comenzi/${id}`, 'ok', r.existed ? `Comanda are deja factura ${r.invoice.full_number}.` : `Factura ${r.invoice.full_number} a fost emisă${mailed ? ' și trimisă clientului pe email' : ''}.`));
+    }
+    const r = await inv.issueStorno(env, settings, id);
+    return redirect(withFlash(`/admin/comenzi/${id}`, r.ok ? 'ok' : 'err', r.ok ? `Factura storno ${r.invoice.full_number} a fost emisă.` : r.error));
+  }
+  if (path.startsWith('/admin/facturi') && method === 'GET') {
+    const inv = await import('./lib/invoices.js');
+    const { resolveRange } = await import('./lib/profit.js');
+    if ((m = path.match(/^\/admin\/facturi\/(\d+)$/))) {
+      const { invoicePage } = await import('./views/invoice-view.js');
+      const one = await inv.getInvoiceById(env, Number(m[1]));
+      if (!one) return redirect(withFlash('/admin/facturi', 'err', 'Factura nu există.'));
+      return htmlResponse(invoicePage(one, { admin: true }), 200, { 'cache-control': 'no-store', 'x-robots-tag': 'noindex' });
+    }
+    const range = resolveRange(url.searchParams);
+    const list = await inv.listInvoices(env, range.from, range.to);
+    const cui = String(settings.company_cui || '').replace(/\s/g, '');
+    const tag = `${range.from}_${range.to}`;
+    if (path === '/admin/facturi/saga.xml') {
+      if (!list.length) return redirect(withFlash(`/admin/facturi?de_la=${range.from}&pana_la=${range.to}`, 'err', 'Nicio factură în perioada aleasă.'));
+      return new Response(inv.sagaXml(list), { headers: { 'content-type': 'application/xml; charset=utf-8', 'content-disposition': `attachment; filename="F_${cui}_facturi_${tag}.xml"`, 'cache-control': 'no-store' } });
+    }
+    if (path === '/admin/facturi/saga.zip') {
+      if (!list.length) return redirect(withFlash(`/admin/facturi?de_la=${range.from}&pana_la=${range.to}`, 'err', 'Nicio factură în perioada aleasă.'));
+      const zip = inv.zipFiles(list.map((f) => ({ name: inv.sagaFileName(f), content: inv.sagaXml([f]) })));
+      return new Response(zip, { headers: { 'content-type': 'application/zip', 'content-disposition': `attachment; filename="facturi-saga_${tag}.zip"`, 'cache-control': 'no-store' } });
+    }
+    if (path === '/admin/facturi') {
+      return render(env, url, { title: 'Facturi', active: 'facturi', body: invoicesView({ list, range, settings, problem: inv.invoicingProblem(settings), next: await inv.nextInvoiceNumber(env, settings) }) });
+    }
   }
 
   if ((m = path.match(/^\/admin\/comenzi\/(\d+)\/helpship$/)) && method === 'POST') {
@@ -420,14 +466,16 @@ export async function handleAdmin(request, env, ctx, path) {
       fbCapi: !!env.FB_CAPI_TOKEN, ttEvents: !!env.TIKTOK_EVENTS_TOKEN,
     };
     secrets.email = emailStatus(env);
-    return render(env, url, { title: 'Setări', active: 'setari', body: settingsView({ settings, products, secrets, siteUrl: (env.SITE_URL || url.origin).replace(/\/$/, '') }) });
+    const { nextInvoiceNumber } = await import('./lib/invoices.js');
+    const invNext = await nextInvoiceNumber(env, settings).catch(() => ({ series: settings.inv_series || 'CHI', next: 1 }));
+    return render(env, url, { title: 'Setări', active: 'setari', body: settingsView({ settings, products, secrets, invNext, siteUrl: (env.SITE_URL || url.origin).replace(/\/$/, '') }) });
   }
   if (path === '/admin/setari' && method === 'POST') {
     const form = await readForm(request);
     const text = ['store_name', 'tagline', 'announcement', 'phone', 'email', 'hours', 'company_name', 'company_cui', 'company_reg', 'company_address',
       'contact_email', 'whatsapp', 'facebook_url', 'instagram_url', 'tiktok_url',
       'delivery_text', 'bump_product_id', 'fb_pixel_id', 'tiktok_pixel_id', 'shipping_provider', 'sender_name', 'sender_phone', 'sender_county',
-      'sender_city', 'sender_address', 'parcel_contents'];
+      'sender_city', 'sender_address', 'parcel_contents', 'company_bank', 'company_iban', 'company_capital'];
     const values = {};
     for (const k of text) values[k] = String(form.get(k) ?? '').trim().slice(0, 500);
     for (const k of ['shipping_cost', 'free_shipping_threshold', 'cod_fee', 'cost_courier', 'cost_helpship']) values[k] = String(Math.max(0, toBani(form.get(k))));
@@ -436,6 +484,24 @@ export async function handleAdmin(request, env, ctx, path) {
     values.auto_awb_on_confirm = form.get('auto_awb_on_confirm') ? '1' : '0';
     values.helpship_send = form.get('helpship_send') === 'confirmed' ? 'confirmed' : 'placed';
     values.card_enabled = form.get('card_enabled') ? '1' : '0';
+    // facturare
+    values.inv_enabled = form.get('inv_enabled') ? '1' : '0';
+    values.inv_series = String(form.get('inv_series') || 'CHI').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8) || 'CHI';
+    values.inv_trigger = ['expediata', 'livrata', 'manual'].includes(form.get('inv_trigger')) ? form.get('inv_trigger') : 'expediata';
+    values.inv_vat_payer = form.get('inv_vat_payer') === '1' ? '1' : '0';
+    values.inv_vat_rate = String(Math.min(30, Math.max(0, Number(String(form.get('inv_vat_rate') || '21').replace(',', '.')) || 0)));
+    const since = String(form.get('inv_since') || '');
+    values.inv_since = /^\d{4}-\d{2}-\d{2}$/.test(since) ? since : (values.inv_enabled === '1' && !settings.inv_since ? (await import('./lib/profit.js')).roToday() : settings.inv_since || '');
+    const nextNo = Math.floor(Number(form.get('inv_next')) || 0);
+    let invWarn = '';
+    if (nextNo > 0 && String(nextNo) !== String(form.get('inv_next_orig') || '')) {
+      const used = await env.DB.prepare('SELECT COALESCE(MAX(number), 0) AS n FROM invoices WHERE series = ?').bind(values.inv_series).first().catch(() => ({ n: 0 }));
+      if (nextNo <= (used?.n || 0)) invWarn = ` Numărul ${nextNo} e deja folosit în seria ${values.inv_series}; următorul rămâne ${(used?.n || 0) + 1}.`;
+      else {
+        values.inv_start = String(nextNo);
+        await env.DB.prepare('INSERT INTO counters(name, value) VALUES (?, ?) ON CONFLICT(name) DO UPDATE SET value = excluded.value').bind('inv_' + values.inv_series, nextNo - 1).run();
+      }
+    }
     values.notify_orders = form.get('notify_orders') ? '1' : '0';
     values.customer_emails = form.get('customer_emails') ? '1' : '0';
     values.accounts_enabled = form.get('accounts_enabled') ? '1' : '0';
@@ -444,7 +510,9 @@ export async function handleAdmin(request, env, ctx, path) {
     values.tiktok_pixel_id = values.tiktok_pixel_id.replace(/[^A-Za-z0-9]/g, '');
     await saveSettings(env, values);
     const warn = values.card_enabled === '1' && !env.STRIPE_SECRET_KEY ? ' Atenție: plata cu cardul nu apare până nu setezi STRIPE_SECRET_KEY.' : '';
-    return redirect(withFlash('/admin/setari', 'ok', 'Setările au fost salvate.' + warn));
+    const { invoicingProblem } = await import('./lib/invoices.js');
+    if (values.inv_enabled === '1') { const pb = invoicingProblem({ ...settings, ...values }); if (pb) invWarn += ` Facturile nu se pot emite încă: ${pb}`; }
+    return redirect(withFlash('/admin/setari', invWarn ? 'err' : 'ok', 'Setările au fost salvate.' + warn + invWarn));
   }
 
   return render(env, url, { title: 'Negăsit', active: '', body: '<h1>Pagina nu există</h1>' });

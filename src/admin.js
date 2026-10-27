@@ -59,10 +59,12 @@ export async function handleAdmin(request, env, ctx, path) {
 
   // ---------- Panou ----------
   if (path === '/admin' && method === 'GET') {
-    const { resolveRange, profitData } = await import('./lib/profit.js');
+    const { resolveRange, profitData, prevRange, periodStats } = await import('./lib/profit.js');
     const range = resolveRange(url.searchParams);
-    const profit = await profitData(env, await getSettings(env), range);
-    return render(env, url, { title: 'Panou', active: 'panou', body: dashboardView({ ...(await dashboardData(env)), profit, range }) });
+    const [profit, prev, stats, base] = await Promise.all([
+      profitData(env, settings, range), profitData(env, settings, prevRange(range)), periodStats(env, range), dashboardData(env),
+    ]);
+    return render(env, url, { title: 'Panou', active: 'panou', body: dashboardView({ ...base, profit, prev, stats, range }) });
   }
 
   // ---------- Comenzi ----------

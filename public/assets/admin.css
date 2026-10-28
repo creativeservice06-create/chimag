@@ -469,3 +469,14 @@ input[type=date]::-webkit-date-and-time-value { text-align: left; }
 .backup-steps { margin: 10px 0 0; padding-left: 20px; display: grid; gap: 14px; }
 .backup-steps li > div { margin: 8px 0 4px; }
 .backup-steps small { display: block; }
+.ship-strip { display: grid; grid-template-columns: auto minmax(0,1fr) auto auto; align-items: center; gap: 14px 18px; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; margin: 0 0 14px; box-shadow: 0 1px 2px rgba(16,29,48,.04); }
+.ship-ic { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; background: #eef4ff; color: #155ecc; }
+.ship-txt h3 { margin: 0 0 2px; font-size: .9rem; font-weight: 700; color: var(--ink, #101d30); }
+.ship-txt p { margin: 0; font-size: .82rem; }
+.ship-val { font-size: 1.45rem; font-weight: 800; white-space: nowrap; }
+.ship-tot { display: grid; text-align: right; gap: 2px; padding-left: 18px; border-left: 1px solid var(--line); font-size: .82rem; }
+.ship-tot strong { font-size: 1rem; }
+@media (max-width: 700px) {
+  .ship-strip { grid-template-columns: auto minmax(0,1fr) auto; }
+  .ship-tot { grid-column: 1 / -1; text-align: left; padding: 10px 0 0; border-left: 0; border-top: 1px solid var(--line); display: flex; justify-content: space-between; }
+}

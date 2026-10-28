@@ -27,7 +27,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0, msgCount
 <meta name="robots" content="noindex">
 <title>${title} · Admin Chimag</title>
 <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/assets/admin.css?v=14">
+<link rel="stylesheet" href="/assets/admin.css?v=15">
 <meta name="theme-color" content="#0e192a">
 <script src="/assets/admin.js?v=2" defer></script>
 </head><body>
@@ -134,9 +134,6 @@ function profitPanel(p, r, prev) {
   const scopeQs = (scope) => `/admin?${new URLSearchParams({ ...(r.preset ? { perioada: r.preset } : { de_la: r.from, pana_la: r.to }), ...(scope === 'livrate' ? { comenzi: 'livrate' } : {}) })}`;
   const fmtDay = (d) => d.slice(8, 10) + '.' + d.slice(5, 7);
   const units = p.products.reduce((s, x) => s + x.qty, 0);
-  const shipSet = p.costsSet.courier || p.costsSet.helpship;
-  const cost = p.cost + (shipSet ? p.shippingCost : 0);
-  const prevCost = prev ? prev.cost + (shipSet ? prev.shippingCost : 0) : 0;
   return html`<section class="panel dash-filter">
     <div class="profit-head">
       <div class="chips">${PRESETS.map(([k, label]) => html`<a class="chip-link ${r.preset === k ? 'on' : ''}" href="${qs({ perioada: k })}">${label}</a>`)}</div>
@@ -156,24 +153,32 @@ function profitPanel(p, r, prev) {
 
   <section class="eq">
     <div class="eq-card">
-      <h3>${r.scope === 'livrate' ? 'Încasat' : 'Vânzări'} ${delta(p.collected, prev?.collected)}</h3>
-      <p class="eq-val">${money(p.collected)}</p>
-      <p class="eq-sub">produse ${money(p.productRevenue)} + transport ${money(p.shippingIn)}</p>
+      <h3>Vânzări produse ${delta(p.productRevenue, prev?.productRevenue)}</h3>
+      <p class="eq-val">${money(p.productRevenue)}</p>
+      <p class="eq-sub">${p.orders} ${p.orders === 1 ? 'comandă' : 'comenzi'} · fără transport</p>
     </div>
     <span class="eq-op" aria-hidden="true">−</span>
     <div class="eq-card">
-      <h3>Cost de achiziție ${delta(cost, prevCost)}</h3>
-      <p class="eq-val">${money(cost)}</p>
-      <p class="eq-sub">${shipSet ? html`produse ${money(p.cost)} + livrare ${money(p.shippingCost)}` : html`${units} ${units === 1 ? 'produs vândut' : 'produse vândute'} × prețul tău de cumpărare`}</p>
+      <h3>Cost de achiziție ${delta(p.cost, prev?.cost)}</h3>
+      <p class="eq-val">${money(p.cost)}</p>
+      <p class="eq-sub">${units} ${units === 1 ? 'produs vândut' : 'produse vândute'} × prețul tău de cumpărare</p>
     </div>
     <span class="eq-op" aria-hidden="true">=</span>
     <div class="eq-card eq-profit ${p.net < 0 ? 'neg' : ''}">
       <h3>Profit ${delta(p.net, prev?.net)}</h3>
       <p class="eq-val">${money(p.net)}</p>
-      <p class="eq-sub">marjă ${p.collected ? pct(p.net, p.collected) : '–'} din vânzări</p>
+      <p class="eq-sub">marjă ${p.productRevenue ? pct(p.net, p.productRevenue) : '–'} din vânzări</p>
     </div>
   </section>
-  ${!shipSet ? html`<p class="hint dash-hint">Costul livrării nu e scăzut din profit. Îl poți seta în <a href="/admin/setari">Setări → Livrare și prețuri</a> (cât plătești pe colet).</p>` : ''}
+  <section class="ship-strip">
+    <span class="ship-ic" aria-hidden="true">${icons.truck(20)}</span>
+    <div class="ship-txt">
+      <h3>Transport încasat de la clienți</h3>
+      <p class="muted">Se plătește mai departe la Helpship / curier, de aceea nu intră în profit.</p>
+    </div>
+    <div class="ship-val">${money(p.shippingIn)}</div>
+    <div class="ship-tot"><span class="muted">Total încasat (produse + transport)</span><strong>${money(p.collected)}</strong></div>
+  </section>
   ${p.missingCost.length ? html`<p class="flash err">Lipsește costul de achiziție la: ${p.missingCost.join(', ')}. Completează-l la produs, altfel profitul apare mai mare decât e.</p>` : ''}`;
 }
 

@@ -3,7 +3,7 @@ import { waLink } from './pages.js';
 import { icons } from './icons.js';
 import { wheelConfig } from '../lib/coupons.js';
 
-const ASSET_V = '63';
+const ASSET_V = '64';
 
 export function layout({ settings, title, description = '', canonical = '', ogImage = '', body, bodyClass = '', jsonLd = null, pageData = null, siteUrl = '', customer = null, categories = [], wheelState = null }) {
   const storeName = settings.store_name || 'Chimag';
@@ -68,7 +68,7 @@ ${settings.announcement ? html`<div class="announce">${settings.announcement}</d
   <nav class="sub-nav" aria-label="Meniu principal">
     <div class="wrap sub-nav-inner">
       <a href="/#produse">Toate produsele</a>
-      ${categories.map((c) => html`<a href="/categorie/${c.slug}">${c.name}</a>`)}
+      ${categories.map((c) => html`<a href="/?categorie=${c.slug}#produse" data-nav-cat="${c.slug}">${c.name}</a>`)}
       <a href="/comanda">Comanda mea</a>
       <a href="/pagina/contact">Contact</a>
     </div>
@@ -90,7 +90,7 @@ ${settings.announcement ? html`<div class="announce">${settings.announcement}</d
     <nav class="drawer-nav">
       <a href="/">${icons.home(22)} Acasă</a>
       <a href="/#produse">${icons.grid(22)} Toate produsele</a>
-      ${categories.length ? html`<div class="drawer-cats">${categories.map((c) => html`<a href="/categorie/${c.slug}">${c.name}<small>${c.count}</small></a>`)}</div>` : ''}
+      ${categories.length ? html`<div class="drawer-cats">${categories.map((c) => html`<a href="/?categorie=${c.slug}#produse" data-nav-cat="${c.slug}">${c.name}<small>${c.count}</small></a>`)}</div>` : ''}
       <a href="/comanda">${icons.box(22)} Unde e comanda mea?</a>
       <a href="/pagina/contact">${icons.mail(22)} Contact</a>
       ${wheel.enabled ? html`<button type="button" data-wheel-open data-drawer-close>🎁 Roata norocului</button>` : ''}

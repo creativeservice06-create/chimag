@@ -166,7 +166,25 @@
         var f = b.getAttribute('data-filter');
         $$('[data-filter]').forEach(function (x) { x.classList.toggle('on', x === b); x.setAttribute('aria-selected', x === b ? 'true' : 'false'); });
         $$('.pcard', grid).forEach(function (c) { c.hidden = !!f && c.getAttribute('data-cat') !== f; });
+        try { var u = new URL(location.href); if (f) u.searchParams.set('categorie', f); else u.searchParams.delete('categorie'); history.replaceState(null, '', u.pathname + u.search + u.hash); } catch (e) { /* fără URL */ }
       });
+    });
+    // din meniu: /?categorie=bucatarie#produse → lista „Toate produsele” filtrată pe categorie
+    var want = '';
+    try { want = new URLSearchParams(location.search).get('categorie') || ''; } catch (e) { /* vechi */ }
+    if (want) { var chip0 = $('[data-filter="' + want + '"]'); if (chip0) chip0.click(); }
+    // pe prima pagină, linkurile din meniu filtrează pe loc, fără reîncărcare
+    $$('[data-nav-cat]').forEach(function (a) {
+      a.addEventListener('click', function (e) {
+        var chip = $('[data-filter="' + a.getAttribute('data-nav-cat') + '"]');
+        if (!chip) return;
+        e.preventDefault(); chip.click();
+        var sec = document.getElementById('produse'); if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        var dr = document.querySelector('[data-drawer]'); if (dr && !dr.hidden) { var x = dr.querySelector('[data-drawer-close]'); if (x) x.click(); }
+      });
+    });
+    $$('a[href="/#produse"]').forEach(function (a) {
+      a.addEventListener('click', function () { var all = $('[data-filter=""]'); if (all) all.click(); });
     });
     // bulele de categorii: filtrează lista de mai jos și coboară la ea (fără altă pagină)
     $$('[data-cat-jump]').forEach(function (a) {

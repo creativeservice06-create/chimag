@@ -1411,3 +1411,78 @@ a.oi-link:hover .oi-name { color: var(--brand); }
 .hv-faq { margin-bottom: 64px; }
 .hv-faq-more { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; margin: 26px 0 0; color: var(--muted); font-weight: 500; }
 @media (max-width: 600px) { .hv-faq { margin-bottom: 44px; } .hv-faq-more { flex-direction: column; gap: 10px; } }
+
+/* ===== Prima pagină v3: hero + avantaje integrate, recomandare, cum comanzi ===== */
+.hv-hero-inner { padding-bottom: 30px; }
+.hv-lead { margin-bottom: 28px; }
+.hv-actions { margin-bottom: 0; }
+.hv-strip { list-style: none; margin: 0 0 34px; padding: 6px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); background: #fff; border: 1px solid #e6ecf4; border-radius: 18px; box-shadow: 0 12px 30px -22px rgba(16,29,48,.35); }
+.hv-strip li { display: flex; align-items: center; gap: 12px; padding: 12px 16px; min-width: 0; }
+.hv-strip li + li { border-left: 1px solid #edf1f6; }
+.hv-strip svg { flex: none; width: 38px; height: 38px; padding: 9px; border-radius: 11px; background: var(--brand-tint); color: var(--brand); }
+.hv-strip b { display: block; font-size: .94rem; }
+.hv-strip small { color: var(--muted); font-size: .8rem; }
+.hv-wheel { margin-top: 40px; }
+
+.hv-spot { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0; background: linear-gradient(135deg, #f4f8ff, #fff 60%); border: 1px solid #e3eaf4; border-radius: 28px; overflow: hidden; }
+.hv-spot-media { display: block; position: relative; min-height: 100%; overflow: hidden; background: var(--surface-2); }
+.hv-spot-media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .6s ease; }
+.hv-spot-media:hover img { transform: scale(1.03); }
+.hv-spot-copy { padding: 44px 44px; display: flex; flex-direction: column; justify-content: center; }
+.hv-spot-copy .eyebrow { display: inline-block; align-self: flex-start; padding: 4px 12px; border-radius: 999px; background: var(--brand-tint); font-size: .8rem; letter-spacing: .04em; text-transform: uppercase; }
+.hv-spot-copy h2 { font-size: clamp(1.6rem, 2.6vw, 2.3rem); margin: 6px 0 10px; }
+.hv-spot-sub { color: var(--muted); font-size: 1.05rem; margin: 0 0 18px; }
+.hv-spot-list { list-style: none; margin: 0 0 22px; padding: 0; display: grid; gap: 10px; }
+.hv-spot-list li { display: flex; gap: 10px; align-items: flex-start; font-weight: 500; }
+.hv-spot-list svg { flex: none; width: 20px; height: 20px; padding: 3px; border-radius: 50%; background: #dff3e8; color: var(--ok); margin-top: 1px; }
+.hv-spot-price { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px 12px; margin-bottom: 20px; }
+.hv-spot-price strong { font: 800 2rem/1 var(--font-display); }
+.hv-spot-price s { color: var(--muted); }
+.hv-spot-offers { display: inline-flex; gap: 6px; }
+.hv-spot-offers span { padding: 4px 10px; border-radius: 999px; background: var(--saffron-soft); color: var(--saffron-ink); font-size: .82rem; font-weight: 600; }
+.hv-spot-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+
+.hv-how { margin-top: 64px; padding: 60px 0 64px; background: var(--navy); color: #b9c7da; position: relative; overflow: hidden; }
+.hv-how::before { content: ''; position: absolute; right: -180px; top: -220px; width: 560px; height: 560px; border-radius: 50%; background: radial-gradient(circle, rgba(61,134,245,.25), transparent 65%); pointer-events: none; }
+.hv-how-head { text-align: center; margin: 0 auto 36px; position: relative; }
+.hv-how-head h2 { color: #fff; }
+.hv-how .eyebrow { display: inline-block; padding: 4px 12px; border-radius: 999px; background: rgba(255,255,255,.1); color: #9cc2ff; font-size: .8rem; letter-spacing: .04em; text-transform: uppercase; }
+.hv-how-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; position: relative; }
+.hv-how-steps::before { content: ''; position: absolute; top: 28px; left: 12%; right: 12%; height: 2px; background: repeating-linear-gradient(90deg, rgba(156,194,255,.35) 0 8px, transparent 8px 16px); }
+.hv-how-steps li { position: relative; text-align: center; padding: 0 8px; }
+.hv-how-ic { position: relative; display: inline-grid; place-items: center; width: 58px; height: 58px; border-radius: 18px; background: #1b2c47; border: 1px solid rgba(255,255,255,.12); color: #9cc2ff; }
+.hv-how-ic i { position: absolute; top: -8px; right: -8px; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: var(--brand); color: #fff; font: 800 .72rem/1 var(--font-display); font-style: normal; }
+.hv-how-steps h3 { color: #fff; font-size: 1.05rem; margin: 16px 0 6px; }
+.hv-how-steps p { margin: 0; font-size: .92rem; line-height: 1.55; }
+.hv-how + .hv-sec { padding-top: 64px; }
+
+@media (max-width: 980px) {
+  .hv-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hv-strip li:nth-child(3) { border-left: 0; }
+  .hv-strip li:nth-child(n+3) { border-top: 1px solid #edf1f6; }
+  .hv-spot { grid-template-columns: minmax(0, 1fr); }
+  .hv-spot-media { aspect-ratio: 4 / 3; min-height: 0; }
+  .hv-spot-copy { padding: 28px; }
+  .hv-how-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 30px; }
+  .hv-how-steps::before { display: none; }
+}
+@media (max-width: 600px) {
+  .hv-hero-inner { padding-bottom: 22px; }
+  .hv-strip { margin-bottom: 22px; border-radius: 16px; padding: 4px; }
+  .hv-strip li { padding: 10px; gap: 9px; }
+  .hv-strip svg { width: 32px; height: 32px; padding: 7px; }
+  .hv-strip b { font-size: .84rem; }
+  .hv-strip small { font-size: .72rem; }
+  .hv-wheel { margin-top: 28px; }
+  .hv-spot { border-radius: 20px; }
+  .hv-spot-copy { padding: 22px 18px 24px; }
+  .hv-spot-price strong { font-size: 1.7rem; }
+  .hv-spot-actions .btn { flex: 1 1 100%; }
+  .hv-how { margin-top: 44px; padding: 44px 0 46px; }
+  .hv-how-steps { grid-template-columns: minmax(0, 1fr); row-gap: 12px; }
+  .hv-how-steps li { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 14px; text-align: left; padding: 14px; border-radius: 16px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08); }
+  .hv-how-ic { grid-row: span 2; width: 48px; height: 48px; border-radius: 14px; }
+  .hv-how-steps h3 { margin: 2px 0 2px; }
+  .hv-how + .hv-sec { padding-top: 44px; }
+}
+@media (max-width: 980px) { .hv-spot-media { aspect-ratio: 1; } }

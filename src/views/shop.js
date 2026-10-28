@@ -44,14 +44,16 @@ export function homePage({ settings, products, categories = [], bestsellers = []
   const mosaic = lead ? [lead, ...products.filter((p) => p !== lead)].slice(0, 3) : [];
   const threshold = Number(settings.free_shipping_threshold) || 0;
   const returnDays = settings.return_days || 14;
+  const inStock = (p) => !(p.track_stock && p.stock <= 0);
+  const spot = featured.find(inStock) || products.find(inStock) || null;
+  const spotImg = spot ? (spot === lead && spot.images?.[1] ? spot.images[1] : img(spot)) : '';
+  const offers = spot ? (spot.bundles || []).filter((x) => x.qty > 1 && x.pct > 0) : [];
 
   const faq = [
-    ['Cum plătesc?', `Plătești curierului, la livrare, după ce primești coletul${settings.card_enabled === '1' ? ', sau online cu cardul, la finalizarea comenzii' : ''}. Nu ai nimic de plătit în avans.`],
-    ['În cât timp primesc comanda?', `${settings.delivery_text || 'Livrăm prin curier în 24–48 de ore lucrătoare'}. Primești pe email numărul de urmărire (AWB) imediat ce pleacă coletul.`],
     ['Cât costă transportul?', threshold ? `${money(settings.shipping_cost)} pe comandă, iar peste ${money(threshold)} transportul este gratuit.` : `${money(settings.shipping_cost)} pe comandă.`],
+    ['În cât timp ajunge coletul?', `${settings.delivery_text || 'Livrăm prin curier în 24–48 de ore lucrătoare'}. Curierul te sună înainte să ajungă.`],
     ['Pot returna un produs?', `Da. Ai ${returnDays} zile de la primire să te răzgândești, fără să ne spui motivul. Detaliile sunt în pagina Retur și garanție.`],
-    ['Primesc factură?', 'Da. Factura se emite pe numele tău când comanda este livrată. O primești pe email și o poți descărca oricând din pagina comenzii.'],
-    ['Trebuie să îmi fac cont?', 'Nu. Completezi doar numele, telefonul, emailul și adresa de livrare. Durează mai puțin de două minute.'],
+    ['Ce fac dacă produsul are o problemă?', 'Ne scrii din pagina de contact, cu numărul comenzii și o poză. Găsim împreună soluția: înlocuire sau returnarea banilor, conform garanției legale.'],
   ];
   const tile = (p, big) => html`<a class="hv-tile ${big ? 'hv-tile-big' : ''}" href="/p/${p.slug}">
     <img src="${img(p)}" alt="${p.title}" width="${big ? 720 : 360}" height="${big ? 720 : 360}" ${big ? raw('fetchpriority="high"') : raw('loading="lazy"')}>
@@ -65,48 +67,30 @@ export function homePage({ settings, products, categories = [], bestsellers = []
       <div class="hv-hero-copy">
         <p class="hv-kicker"><span class="hv-dot"></span>Magazin online · livrare în toată țara</p>
         <h1>${settings.tagline || 'Produse utile, la prețuri bune, livrate rapid'}</h1>
-        <p class="hv-lead">Alegem cu grijă produse practice pentru casă, bucătărie, copii și aventură. Le descriem corect, cu poze și specificații, iar tu plătești abia când primești coletul.</p>
+        <p class="hv-lead">Produse practice pentru casă, bucătărie, copii și aventură, alese cu grijă și descrise cinstit. Comanzi în două minute și plătești abia când primești coletul.</p>
         <div class="hv-actions">
           <a class="btn btn-primary btn-lg" href="#produse">Vezi produsele</a>
-          <a class="btn btn-ghost btn-lg" href="#cum-comanzi">Cum comanzi</a>
+          ${spot ? html`<a class="btn btn-ghost btn-lg" href="/p/${spot.slug}">Recomandarea noastră</a>` : ''}
         </div>
-        <ul class="hv-checks">
-          <li>${icons.check(16)}Plata la livrare</li>
-          <li>${icons.check(16)}Livrare 24–48h</li>
-          <li>${icons.check(16)}Retur ${returnDays} zile</li>
-        </ul>
       </div>
       ${mosaic.length ? html`<div class="hv-mosaic hv-n${mosaic.length}">
         ${tile(mosaic[0], true)}
         ${mosaic.slice(1).map((p) => tile(p, false))}
       </div>` : ''}
     </div>
+    <div class="wrap">
+      <ul class="hv-strip" aria-label="Avantaje">
+        <li>${icons.truck(20)}<span><b>Livrare 24–48h</b>${threshold ? html`<small>gratuită peste ${money(threshold)}</small>` : html`<small>în toată țara</small>`}</span></li>
+        <li>${icons.cash(20)}<span><b>Plata la livrare</b><small>fără niciun avans</small></span></li>
+        <li>${icons.back(20)}<span><b>Retur ${returnDays} zile</b><small>fără explicații</small></span></li>
+        <li>${icons.doc(20)}<span><b>Factură pe email</b><small>pe numele tău</small></span></li>
+      </ul>
+    </div>
   </section>
-
-  <section class="wrap hv-trust" aria-label="De ce să cumperi de la noi">
-    <div class="hv-trust-item"><span class="hv-ic">${icons.truck(22)}</span><div><strong>Livrare 24–48h</strong><small>Prin curier, în toată țara${threshold ? `, gratuit peste ${money(threshold)}` : ''}</small></div></div>
-    <div class="hv-trust-item"><span class="hv-ic">${icons.cash(22)}</span><div><strong>Plata la livrare</strong><small>Plătești curierului, fără avans</small></div></div>
-    <div class="hv-trust-item"><span class="hv-ic">${icons.back(22)}</span><div><strong>Retur ${returnDays} zile</strong><small>Te poți răzgândi fără explicații</small></div></div>
-    <div class="hv-trust-item"><span class="hv-ic">${icons.doc(22)}</span><div><strong>Factură pe email</strong><small>Emisă pe numele tău, la livrare</small></div></div>
-  </section>
-
-  ${bestsellers.length ? html`<section class="wrap section hv-sec">
-    <div class="section-head section-head-row"><div><p class="eyebrow">Preferatele clienților</p><h2>Cele mai vândute</h2></div><a class="link-more" href="#produse">Vezi toate produsele</a></div>
-    <div class="pscroller">${bestsellers.map(productCard)}</div>
-  </section>` : ''}
-
-  ${wheelOn ? html`<section class="wrap">
-    <button type="button" class="wheel-promo" data-wheel-open>
-      <span class="wheel-promo-emoji" aria-hidden="true">🎁</span>
-      <span class="wheel-promo-text"><strong>Ai o surpriză!</strong><small>Învârte roata norocului și poți câștiga o reducere.</small></span>
-      <span class="wheel-promo-cta">Încearcă</span>
-    </button>
-  </section>` : ''}
 
   <section class="wrap section hv-sec" id="produse">
     <div class="section-head section-head-row">
       <div><p class="eyebrow">Produse</p><h2>Toate produsele</h2><p>Prețurile afișate sunt finale. Reducerile la 2 sau 3 bucăți se aplică automat în coș.</p></div>
-      ${threshold ? html`<p class="section-note">${icons.truck(18)} Transport gratuit peste ${money(threshold)}</p>` : ''}
     </div>
     ${categories.length >= 2 ? html`<div class="filter-chips" role="tablist" aria-label="Filtrează după categorie">
       <button type="button" class="chip on" data-filter="">Toate <small>${products.length}</small></button>
@@ -117,37 +101,42 @@ export function homePage({ settings, products, categories = [], bestsellers = []
       : html`<p class="empty">Adaugă primul produs din panoul de administrare.</p>`}
   </section>
 
-  <section class="hv-promise">
-    <div class="wrap">
-      <div class="section-head hv-promise-head"><p class="eyebrow">De ce chimag</p><h2>Cumpărături simple, fără surprize</h2><p>Ce primești la fiecare comandă, oricare ar fi produsul.</p></div>
-      <div class="hv-promise-grid">
-        <article class="hv-promise-card">
-          <span class="hv-ic hv-ic-lg">${icons.doc(26)}</span>
-          <h3>Descrieri cinstite</h3>
-          <p>Poze reale, dimensiuni și specificații clare, prețuri finale. Ce vezi pe site e ce primești în colet.</p>
-        </article>
-        <article class="hv-promise-card">
-          <span class="hv-ic hv-ic-lg">${icons.truck(26)}</span>
-          <h3>Urmărești coletul</h3>
-          <p>Primești pe email confirmarea și numărul de urmărire. Vezi oricând stadiul comenzii în pagina <a href="/comanda">Comanda mea</a>.</p>
-        </article>
-        <article class="hv-promise-card">
-          <span class="hv-ic hv-ic-lg">${icons.chat(26)}</span>
-          <h3>Vorbești cu un om</h3>
-          <p>Ai o întrebare sau o problemă? <a href="/pagina/contact">Ne scrii</a> și îți răspundem noi, direct, fără roboți.</p>
-        </article>
+  ${wheelOn ? html`<section class="wrap hv-wheel">
+    <button type="button" class="wheel-promo" data-wheel-open>
+      <span class="wheel-promo-emoji" aria-hidden="true">🎁</span>
+      <span class="wheel-promo-text"><strong>Ai o surpriză!</strong><small>Învârte roata norocului și poți câștiga o reducere.</small></span>
+      <span class="wheel-promo-cta">Încearcă</span>
+    </button>
+  </section>` : ''}
+
+  ${spot ? html`<section class="wrap section hv-sec">
+    <div class="hv-spot">
+      <a class="hv-spot-media" href="/p/${spot.slug}"><img src="${spotImg}" alt="${spot.title}" width="720" height="720" loading="lazy"></a>
+      <div class="hv-spot-copy">
+        <p class="eyebrow">Recomandarea noastră</p>
+        <h2>${spot.title}</h2>
+        ${spot.subtitle ? html`<p class="hv-spot-sub">${spot.subtitle}</p>` : ''}
+        ${spot.benefits.length ? html`<ul class="hv-spot-list">${spot.benefits.slice(0, 4).map((x) => html`<li>${icons.check(16)}<span>${x}</span></li>`)}</ul>` : ''}
+        <div class="hv-spot-price"><strong>${money(spot.price)}</strong>${spot.compare_at_price > spot.price ? html`<s>${money(spot.compare_at_price)}</s>` : ''}
+          ${offers.length ? html`<span class="hv-spot-offers">${offers.map((o) => html`<span>${o.qty} buc. <b>−${o.pct}%</b></span>`)}</span>` : ''}</div>
+        <div class="hv-spot-actions">
+          <button type="button" class="btn btn-primary btn-lg" data-quick-add="${spot.id}" data-title="${spot.title}" data-price="${spot.price}">${icons.cart(20)} Adaugă în coș</button>
+          <a class="btn btn-ghost btn-lg" href="/p/${spot.slug}">Vezi detalii</a>
+        </div>
       </div>
     </div>
-  </section>
+  </section>` : ''}
 
-  <section class="wrap section hv-sec" id="cum-comanzi">
-    <div class="section-head"><p class="eyebrow">Simplu și rapid</p><h2>Cum comanzi</h2><p>De la alegerea produsului până la livrare, totul durează doar câteva minute.</p></div>
-    <ol class="hv-steps">
-      <li><span class="hv-step-n">1</span><h3>Alegi produsele</h3><p>Le adaugi în coș. Reducerea pentru 2 sau 3 bucăți apare pe loc.</p></li>
-      <li><span class="hv-step-n">2</span><h3>Completezi datele</h3><p>Nume, telefon, email și adresa de livrare. Fără cont, fără card.</p></li>
-      <li><span class="hv-step-n">3</span><h3>Primești AWB-ul</h3><p>Când coletul pleacă, îți trimitem pe email numărul de urmărire.</p></li>
-      <li><span class="hv-step-n">4</span><h3>Plătești la livrare</h3><p>Plătești curierului și primești factura pe email.</p></li>
-    </ol>
+  <section class="hv-how" id="cum-comanzi">
+    <div class="wrap">
+      <div class="section-head hv-how-head"><p class="eyebrow">Cum comanzi</p><h2>Simplu, fără cont și fără card</h2></div>
+      <ol class="hv-how-steps">
+        <li><span class="hv-how-ic">${icons.cart(24)}<i>1</i></span><h3>Alegi produsele</h3><p>Le pui în coș. Reducerea la 2 sau 3 bucăți apare pe loc.</p></li>
+        <li><span class="hv-how-ic">${icons.home(24)}<i>2</i></span><h3>Completezi adresa</h3><p>Nume, telefon, email și adresa. Durează sub două minute.</p></li>
+        <li><span class="hv-how-ic">${icons.truck(24)}<i>3</i></span><h3>Urmărești coletul</h3><p>Primești pe email numărul de urmărire când pleacă din depozit.</p></li>
+        <li><span class="hv-how-ic">${icons.cash(24)}<i>4</i></span><h3>Plătești la livrare</h3><p>Plătești curierului și primești factura pe email.</p></li>
+      </ol>
+    </div>
   </section>
 
   ${reviews.length ? html`<section class="wrap section hv-sec">

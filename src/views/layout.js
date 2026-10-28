@@ -3,7 +3,7 @@ import { waLink } from './pages.js';
 import { icons } from './icons.js';
 import { wheelConfig } from '../lib/coupons.js';
 
-const ASSET_V = '60';
+const ASSET_V = '62';
 
 export function layout({ settings, title, description = '', canonical = '', ogImage = '', body, bodyClass = '', jsonLd = null, pageData = null, siteUrl = '', customer = null, categories = [], wheelState = null }) {
   const storeName = settings.store_name || 'Chimag';

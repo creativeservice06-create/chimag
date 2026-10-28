@@ -480,3 +480,85 @@ input[type=date]::-webkit-date-and-time-value { text-align: left; }
   .ship-strip { grid-template-columns: auto minmax(0,1fr) auto; }
   .ship-tot { grid-column: 1 / -1; text-align: left; padding: 10px 0 0; border-left: 0; border-top: 1px solid var(--line); display: flex; justify-content: space-between; }
 }
+
+/* ===== Panou v3: rezumat rapid ===== */
+.d2-head p { margin: 2px 0 0; }
+.d2-filter { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 8px; margin: 0 0 14px; }
+.d2-chips, .d2-seg { display: inline-flex; gap: 2px; background: #f1f4f9; border-radius: 10px; padding: 3px; }
+.d2-chips a, .d2-seg a { padding: 6px 12px; border-radius: 8px; color: var(--ink); text-decoration: none; font-weight: 600; font-size: .86rem; white-space: nowrap; }
+.d2-chips a:hover, .d2-seg a:hover { background: rgba(255,255,255,.7); }
+.d2-chips a.on, .d2-seg a.on { background: #fff; color: var(--brand); box-shadow: 0 1px 3px rgba(16,29,48,.12); }
+.d2-range { margin-left: auto; }
+.d2-range summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 10px; font-weight: 600; font-size: .86rem; color: var(--muted); }
+.d2-range summary::-webkit-details-marker { display: none; }
+.d2-range summary:hover, .d2-range[open] summary { background: #f1f4f9; color: var(--ink); }
+.d2-range[open] { flex-basis: 100%; margin-left: 0; }
+.d2-range form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; padding: 10px 4px 4px; }
+.d2-range label { display: grid; gap: 4px; font-size: .8rem; color: var(--muted); font-weight: 600; }
+.d2-range input { padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; font: inherit; min-width: 0; -webkit-appearance: none; appearance: none; background: #fff; }
+
+.d2-k { display: block; font-size: .74rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.d2-sum { display: grid; grid-template-columns: minmax(260px, 340px) minmax(0, 1fr); background: #fff; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; margin: 0 0 14px; box-shadow: 0 1px 2px rgba(16,29,48,.04); }
+.d2-hero { padding: 22px 24px; background: linear-gradient(160deg, #ecf8f1, #f7fcf9); border-right: 1px solid #d7eee2; display: grid; align-content: center; gap: 6px; }
+.d2-hero .d2-k { color: #2f6b4c; }
+.d2-hero-val { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.d2-hero-val strong { font-size: 2.4rem; line-height: 1.1; font-weight: 800; color: var(--ok); letter-spacing: -.02em; }
+.d2-hero p { margin: 0; color: #3e5a4b; font-size: .86rem; }
+.d2-hero.neg { background: linear-gradient(160deg, #fdeeed, #fff8f7); border-color: #f3d3d0; }
+.d2-hero.neg strong { color: var(--danger); }
+.d2-flow { display: grid; grid-template-columns: minmax(0,1fr) auto minmax(0,1fr) auto minmax(0,1fr); align-items: center; gap: 8px 14px; padding: 20px 24px; }
+.d2-line { display: grid; gap: 4px; min-width: 0; }
+.d2-v { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.d2-v strong { font-size: 1.4rem; font-weight: 800; letter-spacing: -.01em; white-space: nowrap; }
+.d2-line small { color: var(--muted); font-size: .8rem; }
+.d2-line-res strong { color: var(--ok); }
+.d2-op { font-size: 1.5rem; font-weight: 700; color: #b2bccb; }
+.d2-ship { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; padding: 11px 24px; border-top: 1px solid var(--line); background: #fafbfd; font-size: .85rem; color: var(--muted); }
+.d2-ship b { color: var(--ink); }
+.d2-ship em { font-style: normal; }
+.d2-ship-ic { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; background: #eef4ff; color: var(--brand); flex: none; }
+.d2-ship-tot { margin-left: auto; white-space: nowrap; }
+
+.d2-kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; margin: 0 0 14px; }
+.d2-kpi { background: #fff; padding: 14px 16px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.d2-kpi-top { display: flex; align-items: center; gap: 8px; font-size: .8rem; font-weight: 700; color: var(--muted); }
+.d2-kpi-top .kpi2-ic { width: 28px; height: 28px; border-radius: 8px; }
+.d2-kpi-val { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.d2-kpi-val strong { font-size: 1.3rem; font-weight: 800; white-space: nowrap; }
+.d2-kpi-val .delta { margin: 0; }
+.d2-kpi small { color: var(--muted); font-size: .76rem; }
+@media (max-width: 1200px) { .d2-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+@media (max-width: 900px) {
+  .d2-sum { grid-template-columns: minmax(0, 1fr); }
+  .d2-hero { border-right: 0; border-bottom: 1px solid #d7eee2; }
+}
+@media (max-width: 700px) {
+  .d2-head p { font-size: .82rem; }
+  .d2-filter { padding: 6px; gap: 6px; border-radius: 12px; }
+  .d2-chips { display: flex; overflow-x: auto; scrollbar-width: none; max-width: 100%; flex: 1 1 100%; }
+  .d2-chips::-webkit-scrollbar { display: none; }
+  .d2-chips a { padding: 7px 11px; }
+  .d2-seg { flex: 1 1 auto; }
+  .d2-seg a { flex: 1; text-align: center; }
+  .d2-range { margin-left: 0; }
+  .d2-range[open] { flex-basis: 100%; }
+  .d2-range form { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); }
+  .d2-range form .btn { grid-column: 1 / -1; }
+  .d2-hero { padding: 18px; }
+  .d2-hero-val strong { font-size: 2.1rem; }
+  .d2-flow { grid-template-columns: minmax(0, 1fr); gap: 0; padding: 4px 18px; }
+  .d2-op { display: none; }
+  .d2-line { grid-template-columns: minmax(0,1fr) auto; grid-template-areas: "k v" "s v"; gap: 0 10px; padding: 12px 0; border-bottom: 1px solid #eef1f5; align-items: center; }
+  .d2-line .d2-k { grid-area: k; }
+  .d2-line .d2-v { grid-area: v; justify-content: flex-end; }
+  .d2-line small { grid-area: s; }
+  .d2-line-res { border-bottom: 0; }
+  .d2-v strong { font-size: 1.15rem; }
+  .d2-ship { flex-wrap: wrap; padding: 12px 18px; gap: 6px 10px; }
+  .d2-ship em { display: block; }
+  .d2-ship-tot { margin-left: 38px; }
+  .d2-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); border-radius: 12px; }
+  .d2-kpi { padding: 12px 14px; }
+  .d2-kpi-val strong { font-size: 1.15rem; }
+}

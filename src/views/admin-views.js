@@ -27,7 +27,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0, msgCount
 <meta name="robots" content="noindex">
 <title>${title} · Admin Chimag</title>
 <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/assets/admin.css?v=15">
+<link rel="stylesheet" href="/assets/admin.css?v=16">
 <meta name="theme-color" content="#0e192a">
 <script src="/assets/admin.js?v=2" defer></script>
 </head><body>
@@ -89,12 +89,12 @@ const pct = (a, b) => (b ? `${String(Math.round((a / b) * 1000) / 10).replace('.
 const SOURCE_NAMES = { facebook: 'Facebook / Instagram', fb: 'Facebook / Instagram', ig: 'Instagram', instagram: 'Instagram', tiktok: 'TikTok', google: 'Google', direct: 'Direct / fără reclamă' };
 const PAY_NAMES = { ramburs: 'Ramburs', card: 'Card online' };
 
-function delta(cur, prev) {
-  if (!prev && !cur) return '';
-  if (!prev) return html`<span class="delta up">nou</span>`;
+function delta(cur, prev, { invert = false } = {}) {
+  if (!prev) return '';
   const d = Math.round(((cur - prev) / Math.abs(prev)) * 100);
-  if (!d) return html`<span class="delta">0%</span>`;
-  return html`<span class="delta ${d > 0 ? 'up' : 'down'}" title="față de perioada anterioară">${d > 0 ? '▲' : '▼'} ${Math.abs(d)}%</span>`;
+  if (!d) return html`<span class="delta" title="față de perioada anterioară">0%</span>`;
+  const good = invert ? d < 0 : d > 0;
+  return html`<span class="delta ${good ? 'up' : 'down'}" title="față de perioada anterioară">${d > 0 ? '▲' : '▼'} ${Math.abs(d)}%</span>`;
 }
 
 function shareList(rows, { label, total, money: isMoney = true }) {
@@ -128,56 +128,65 @@ function dashChart(series) {
   </div>`;
 }
 
+function periodLabel(r) {
+  const names = { azi: 'Azi', ieri: 'Ieri', '7z': 'Ultimele 7 zile', '30z': 'Ultimele 30 de zile', luna: 'Luna aceasta', 'luna-trecuta': 'Luna trecută' };
+  const fmt = (d) => `${d.slice(8, 10)}.${d.slice(5, 7)}.${d.slice(0, 4)}`;
+  return { name: names[r.preset] || 'Perioadă aleasă', dates: r.from === r.to ? fmt(r.from) : `${fmt(r.from)} – ${fmt(r.to)}` };
+}
+
 function profitPanel(p, r, prev) {
   if (!p) return '';
   const qs = (extra) => `/admin?${new URLSearchParams({ ...(r.scope === 'livrate' ? { comenzi: 'livrate' } : {}), ...extra })}`;
   const scopeQs = (scope) => `/admin?${new URLSearchParams({ ...(r.preset ? { perioada: r.preset } : { de_la: r.from, pana_la: r.to }), ...(scope === 'livrate' ? { comenzi: 'livrate' } : {}) })}`;
-  const fmtDay = (d) => d.slice(8, 10) + '.' + d.slice(5, 7);
   const units = p.products.reduce((s, x) => s + x.qty, 0);
-  return html`<section class="panel dash-filter">
-    <div class="profit-head">
-      <div class="chips">${PRESETS.map(([k, label]) => html`<a class="chip-link ${r.preset === k ? 'on' : ''}" href="${qs({ perioada: k })}">${label}</a>`)}</div>
-      <div class="scope-tabs" role="tablist">
-        <a class="${r.scope !== 'livrate' ? 'on' : ''}" href="${scopeQs('toate')}">Toate comenzile</a>
-        <a class="${r.scope === 'livrate' ? 'on' : ''}" href="${scopeQs('livrate')}">Doar livrate</a>
-      </div>
+  const ppo = p.orders ? Math.round(p.net / p.orders) : 0;
+  return html`<section class="d2-filter">
+    <div class="d2-chips">${PRESETS.map(([k, label]) => html`<a class="${r.preset === k ? 'on' : ''}" href="${qs({ perioada: k })}">${label}</a>`)}</div>
+    <div class="d2-seg" role="tablist">
+      <a class="${r.scope !== 'livrate' ? 'on' : ''}" href="${scopeQs('toate')}">Toate comenzile</a>
+      <a class="${r.scope === 'livrate' ? 'on' : ''}" href="${scopeQs('livrate')}">Doar livrate</a>
     </div>
-    <form method="get" action="/admin" class="profit-range">
-      <label>De la<input type="date" name="de_la" value="${r.from}"></label>
-      <label>Până la<input type="date" name="pana_la" value="${r.to}"></label>
-      ${r.scope === 'livrate' ? html`<input type="hidden" name="comenzi" value="livrate">` : ''}
-      <button class="btn primary">Arată</button>
-      <span class="muted range-note">${fmtDay(r.from)}.${r.from.slice(0, 4)} – ${fmtDay(r.to)}.${r.to.slice(0, 4)} · comparat cu perioada anterioară de aceeași lungime · ${r.scope === 'livrate' ? 'doar comenzile livrate (bani încasați)' : 'toate comenzile, fără anulate, refuzate și retururi'}</span>
-    </form>
+    <details class="d2-range" ${r.preset ? '' : raw('open')}>
+      <summary>${icons.calendar(16)}<span>Alte date</span></summary>
+      <form method="get" action="/admin">
+        <label>De la<input type="date" name="de_la" value="${r.from}"></label>
+        <label>Până la<input type="date" name="pana_la" value="${r.to}"></label>
+        ${r.scope === 'livrate' ? html`<input type="hidden" name="comenzi" value="livrate">` : ''}
+        <button class="btn primary">Arată</button>
+      </form>
+    </details>
   </section>
 
-  <section class="eq">
-    <div class="eq-card">
-      <h3>Vânzări produse ${delta(p.productRevenue, prev?.productRevenue)}</h3>
-      <p class="eq-val">${money(p.productRevenue)}</p>
-      <p class="eq-sub">${p.orders} ${p.orders === 1 ? 'comandă' : 'comenzi'} · fără transport</p>
+  <section class="d2-sum">
+    <div class="d2-hero ${p.net < 0 ? 'neg' : ''}">
+      <span class="d2-k">Profit</span>
+      <div class="d2-hero-val"><strong>${money(p.net)}</strong>${delta(p.net, prev?.net)}</div>
+      <p>Marjă <b>${p.productRevenue ? pct(p.net, p.productRevenue) : '–'}</b> · <b>${money(ppo)}</b> profit pe comandă</p>
     </div>
-    <span class="eq-op" aria-hidden="true">−</span>
-    <div class="eq-card">
-      <h3>Cost de achiziție ${delta(p.cost, prev?.cost)}</h3>
-      <p class="eq-val">${money(p.cost)}</p>
-      <p class="eq-sub">${units} ${units === 1 ? 'produs vândut' : 'produse vândute'} × prețul tău de cumpărare</p>
+    <div class="d2-flow">
+      <div class="d2-line">
+        <span class="d2-k">Vânzări produse</span>
+        <div class="d2-v"><strong>${money(p.productRevenue)}</strong>${delta(p.productRevenue, prev?.productRevenue)}</div>
+        <small>${p.orders} ${p.orders === 1 ? 'comandă' : 'comenzi'} · ${units} buc.</small>
+      </div>
+      <span class="d2-op" aria-hidden="true">−</span>
+      <div class="d2-line">
+        <span class="d2-k">Cost de achiziție</span>
+        <div class="d2-v"><strong>${money(p.cost)}</strong>${delta(p.cost, prev?.cost, { invert: true })}</div>
+        <small>prețul tău de cumpărare</small>
+      </div>
+      <span class="d2-op" aria-hidden="true">=</span>
+      <div class="d2-line d2-line-res">
+        <span class="d2-k">Profit</span>
+        <div class="d2-v"><strong>${money(p.net)}</strong></div>
+        <small>rămâne la tine</small>
+      </div>
     </div>
-    <span class="eq-op" aria-hidden="true">=</span>
-    <div class="eq-card eq-profit ${p.net < 0 ? 'neg' : ''}">
-      <h3>Profit ${delta(p.net, prev?.net)}</h3>
-      <p class="eq-val">${money(p.net)}</p>
-      <p class="eq-sub">marjă ${p.productRevenue ? pct(p.net, p.productRevenue) : '–'} din vânzări</p>
+    <div class="d2-ship">
+      <span class="d2-ship-ic" aria-hidden="true">${icons.truck(16)}</span>
+      <span>Transport încasat de la clienți <b>${money(p.shippingIn)}</b> <em>· se plătește la Helpship, nu intră în profit</em></span>
+      <span class="d2-ship-tot">Total încasat <b>${money(p.collected)}</b></span>
     </div>
-  </section>
-  <section class="ship-strip">
-    <span class="ship-ic" aria-hidden="true">${icons.truck(20)}</span>
-    <div class="ship-txt">
-      <h3>Transport încasat de la clienți</h3>
-      <p class="muted">Se plătește mai departe la Helpship / curier, de aceea nu intră în profit.</p>
-    </div>
-    <div class="ship-val">${money(p.shippingIn)}</div>
-    <div class="ship-tot"><span class="muted">Total încasat (produse + transport)</span><strong>${money(p.collected)}</strong></div>
   </section>
   ${p.missingCost.length ? html`<p class="flash err">Lipsește costul de achiziție la: ${p.missingCost.join(', ')}. Completează-l la produs, altfel profitul apare mai mare decât e.</p>` : ''}`;
 }
@@ -192,24 +201,23 @@ export function dashboardView(d) {
   const prevPpo = prev.orders ? Math.round(prev.net / prev.orders) : 0;
   const newCount = d.statusCounts.noua || 0;
   const maxProd = Math.max(1, ...p.products.map((x) => x.revenue));
-  const kpi = (ic, tone, label, value, sub, dl = '') => html`<div class="kpi2">
-    <div class="kpi2-top"><span class="kpi2-ic t-${tone}">${icons[ic](18)}</span><span class="kpi2-label">${label}</span></div>
-    <p class="kpi2-val">${value}</p>
-    <div class="kpi2-foot">${dl}<span>${sub}</span></div></div>`;
+  const kpi = (ic, tone, label, value, sub, dl = '') => html`<div class="d2-kpi">
+    <div class="d2-kpi-top"><span class="kpi2-ic t-${tone}">${icons[ic](16)}</span><span>${label}</span></div>
+    <div class="d2-kpi-val"><strong>${value}</strong>${dl}</div>
+    <small>${sub}</small></div>`;
   const STATUS_TONE = { noua: '#f6b73c', confirmata: '#155ecc', expediata: '#5b8def', livrata: '#1d7a4f', refuzata: '#d9534f', retur: '#e88a86', anulata: '#b9c2cf' };
   const stTotal = Object.values(st.status).reduce((a2, n) => a2 + n, 0);
   return html`
-  <header class="page-head dash-head">
-    <div><h1>Panou</h1><p class="muted">Vânzările, costurile și profitul magazinului tău.</p></div>
+  <header class="page-head dash-head d2-head">
+    <div><h1>Panou</h1><p class="muted">${periodLabel(r).name} · ${periodLabel(r).dates}${r.scope === 'livrate' ? ' · doar comenzi livrate' : ''}</p></div>
     ${newCount ? html`<a class="btn primary alert-btn" href="/admin/comenzi?status=noua"><b class="count">${newCount}</b> ${newCount === 1 ? 'comandă nouă de confirmat' : 'comenzi noi de confirmat'}</a>` : html`<span class="chip st-livrata">Nicio comandă de confirmat</span>`}
   </header>
 
   ${profitPanel(p, r, prev)}
 
-  <div class="section-title"><h2>Analitici</h2><span class="muted">pentru perioada aleasă, comparat cu perioada anterioară</span></div>
-  <section class="kpi2-grid">
-    ${kpi('cart', 'blue', 'Comenzi', p.orders, `față de ${prev.orders} anterior`, delta(p.orders, prev.orders))}
-    ${kpi('cash', 'indigo', 'Coș mediu', money(aov), 'pe comandă', delta(aov, prevAov))}
+  <section class="d2-kpis">
+    ${kpi('cart', 'blue', 'Comenzi', p.orders, `${prev.orders} în perioada anterioară`, delta(p.orders, prev.orders))}
+    ${kpi('cash', 'indigo', 'Coș mediu', money(aov), 'cu transport inclus', delta(aov, prevAov))}
     ${kpi('star', 'green', 'Profit pe comandă', money(ppo), 'în medie', delta(ppo, prevPpo))}
     ${kpi('box', 'amber', 'Produse vândute', units, `${p.products.length} ${p.products.length === 1 ? 'produs diferit' : 'produse diferite'}`, delta(units, prevUnits))}
     ${kpi('truck', 'teal', 'Rată de livrare', st.deliveryRate == null ? '–' : `${st.deliveryRate}%`, `${st.delivered} livrate · ${st.refused} refuzate`)}

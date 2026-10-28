@@ -1,5 +1,6 @@
 // Profitul pe o perioadă: venitul din produse (după reduceri) minus costul de achiziție,
-// Transportul încasat de la clienți NU intră în profit: e plătit mai departe la Helpship / curier (afișat separat).
+// Profit ESTIMAT = tot ce plătesc clienții (produse + transport) − costul de achiziție al produselor.
+// Profitul real iese după ce se plătesc la Helpship transportul și depozitarea.
 
 // miezul nopții în ora României (cu ora de vară/iarnă), exprimat ca „YYYY-MM-DD HH:MM:SS" UTC, ca în baza de date
 export function roMidnightUtc(dateStr) {
@@ -65,14 +66,14 @@ export async function profitData(env, settings, range) {
     t.shippingIn += (o.shipping || 0) + (o.cod_fee || 0); t.shippingCost += shipCost; t.parcels += (own ? 1 : 0) + (hs ? 1 : 0);
     const day = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Bucharest' }).format(new Date(o.created_at.replace(' ', 'T') + 'Z'));
     const dd = days.get(day) || { orders: 0, profit: 0, revenue: 0 };
-    dd.orders++; dd.revenue += orderRev; dd.profit += orderRev - orderCost; days.set(day, dd);
+    dd.orders++; dd.revenue += o.total; dd.profit += o.total - orderCost; days.set(day, dd);
   }
   const gross = t.productRevenue - t.cost;
-  const net = gross; // profitul = produse − cost de achiziție (transportul e separat)
+  const net = t.collected - t.cost; // profit estimat: încasări totale (cu transport) − cost de achiziție
   const series = [];
   for (let d = range.from, n = 0; d <= range.to && n < 93; d = addDays(d, 1), n++) series.push({ day: d, ...(days.get(d) || { orders: 0, profit: 0, revenue: 0 }) });
   return {
-    ...t, gross, net, margin: t.productRevenue ? Math.round((gross / t.productRevenue) * 1000) / 10 : 0,
+    ...t, gross, net, margin: t.collected ? Math.round((net / t.collected) * 1000) / 10 : 0,
     costsSet: { courier: courier > 0, helpship: hsCost > 0 },
     missingCost: [...t.missingCost], series,
     products: [...products.values()].sort((a, b) => (b.revenue - b.cost) - (a.revenue - a.cost)),

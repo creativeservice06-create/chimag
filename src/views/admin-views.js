@@ -126,7 +126,7 @@ function dashChart(series) {
       <div class="chart-cols">${series.map((x, i) => html`<div class="col ${i > series.length * 0.7 ? 'tip-left' : ''}" tabindex="0">
         <div class="col-bars"><span class="b-rev" style="height:${Math.round((x.revenue / max) * 100)}%"></span><span class="b-prof ${x.profit < 0 ? 'neg' : ''}" style="height:${Math.round((Math.abs(x.profit) / max) * 100)}%"></span></div>
         <small class="${i % everyM === 0 ? 'lm' : ''}">${i % every === 0 || i % everyM === 0 ? fmtDay(x.day) : ''}</small>
-        <div class="tip"><b>${fmtDay(x.day)}</b><span>Vânzări <b>${money(x.revenue)}</b></span><span>Profit <b>${money(x.profit)}</b></span><span>${x.orders} ${x.orders === 1 ? 'comandă' : 'comenzi'}</span></div>
+        <div class="tip"><b>${fmtDay(x.day)}</b><span>Vânzări <b>${money(x.revenue)}</b></span><span>Profit estimat <b>${money(x.profit)}</b></span><span>${x.orders} ${x.orders === 1 ? 'comandă' : 'comenzi'}</span></div>
       </div>`)}</div>
     </div>
   </div>`;
@@ -163,33 +163,32 @@ function profitPanel(p, r, prev) {
 
   <section class="d2-sum">
     <div class="d2-hero ${p.net < 0 ? 'neg' : ''}">
-      <span class="d2-k">Profit</span>
+      <span class="d2-k">Profit estimat</span>
       <div class="d2-hero-val"><strong>${money(p.net)}</strong>${delta(p.net, prev?.net)}</div>
-      <p>Marjă <b>${p.productRevenue ? pct(p.net, p.productRevenue) : '–'}</b> · <b>${money(ppo)}</b> profit pe comandă</p>
+      <p>Marjă <b>${p.collected ? pct(p.net, p.collected) : '–'}</b> · <b>${money(ppo)}</b> pe comandă</p>
     </div>
     <div class="d2-flow">
       <div class="d2-line">
-        <span class="d2-k">Vânzări produse</span>
-        <div class="d2-v"><strong>${money(p.productRevenue)}</strong>${delta(p.productRevenue, prev?.productRevenue)}</div>
-        <small>${p.orders} ${p.orders === 1 ? 'comandă' : 'comenzi'} · ${units} buc.</small>
+        <span class="d2-k">Vânzări totale</span>
+        <div class="d2-v"><strong>${money(p.collected)}</strong>${delta(p.collected, prev?.collected)}</div>
+        <small>${p.orders} ${p.orders === 1 ? 'comandă' : 'comenzi'} · ${units} buc. · cu transport inclus</small>
       </div>
       <span class="d2-op" aria-hidden="true">−</span>
       <div class="d2-line">
         <span class="d2-k">Cost de achiziție</span>
         <div class="d2-v"><strong>${money(p.cost)}</strong>${delta(p.cost, prev?.cost, { invert: true })}</div>
-        <small>${units} buc. din ${p.orders} ${p.orders === 1 ? 'comandă' : 'comenzi'} × prețul tău de cumpărare</small>
+        <small>${units} buc. vândute × prețul tău de cumpărare</small>
       </div>
       <span class="d2-op" aria-hidden="true">=</span>
       <div class="d2-line d2-line-res">
-        <span class="d2-k">Profit</span>
+        <span class="d2-k">Profit estimat</span>
         <div class="d2-v"><strong>${money(p.net)}</strong></div>
-        <small>rămâne la tine</small>
+        <small>înainte de costurile Helpship</small>
       </div>
     </div>
     <div class="d2-ship">
       <span class="d2-ship-ic" aria-hidden="true">${icons.truck(16)}</span>
-      <span>Transport încasat de la clienți <b>${money(p.shippingIn)}</b> <em>· se plătește la Helpship, nu intră în profit</em></span>
-      <span class="d2-ship-tot">Total încasat <b>${money(p.collected)}</b></span>
+      <span>Din vânzări, <b>${money(p.shippingIn)}</b> sunt transport încasat de la clienți. <em>Profitul real = profitul estimat minus ce plătești la Helpship pentru transport și depozitare.</em></span>
     </div>
   </section>
   ${p.missingCost.length ? html`<p class="flash err">Lipsește costul de achiziție la: ${p.missingCost.join(', ')}. Completează-l la produs, altfel profitul apare mai mare decât e.</p>` : ''}`;
@@ -240,15 +239,15 @@ export function dashboardView(d) {
   <section class="d2-kpis">
     ${kpi('cart', 'blue', 'Comenzi', p.orders, `${prev.orders} în perioada anterioară`, delta(p.orders, prev.orders))}
     ${kpi('cash', 'indigo', 'Coș mediu', money(aov), 'cu transport inclus', delta(aov, prevAov))}
-    ${kpi('star', 'green', 'Profit pe comandă', money(ppo), 'în medie', delta(ppo, prevPpo))}
+    ${kpi('star', 'green', 'Profit estimat / comandă', money(ppo), 'în medie', delta(ppo, prevPpo))}
     ${kpi('box', 'amber', 'Produse vândute', units, `${p.products.length} ${p.products.length === 1 ? 'produs diferit' : 'produse diferite'}`, delta(units, prevUnits))}
     ${kpi('truck', 'teal', 'Rată de livrare', st.deliveryRate == null ? '–' : `${st.deliveryRate}%`, `${st.delivered} livrate · ${st.refused} refuzate`)}
     ${kpi('user', 'rose', 'Clienți', st.customers, `${st.returning} ${st.returning === 1 ? 'revenit' : 'reveniți'}`)}
   </section>
 
   <section class="panel card2">
-    <div class="panel-head"><div><h2>Vânzări și profit pe zile</h2><p class="muted small">Atinge sau ține cursorul pe o zi ca să vezi cifrele.</p></div>
-      <div class="legend"><span><i class="lg-rev"></i>Vânzări</span><span><i class="lg-prof"></i>Profit</span></div></div>
+    <div class="panel-head"><div><h2>Vânzări și profit estimat pe zile</h2><p class="muted small">Atinge sau ține cursorul pe o zi ca să vezi cifrele.</p></div>
+      <div class="legend"><span><i class="lg-rev"></i>Vânzări</span><span><i class="lg-prof"></i>Profit estimat</span></div></div>
     ${p.series.length > 1 ? dashChart(p.series) : html`<p class="muted">Alege o perioadă mai lungă de o zi ca să vezi evoluția.</p>`}
   </section>
 

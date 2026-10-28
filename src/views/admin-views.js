@@ -28,7 +28,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0, msgCount
 <title>${title} · Admin Chimag</title>
 <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/admin.css?v=18">
+<link rel="stylesheet" href="/assets/admin.css?v=19">
 <meta name="theme-color" content="#0e192a">
 <script src="/assets/admin.js?v=2" defer></script>
 </head><body>
@@ -68,7 +68,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0, msgCount
 
 export function loginView(error) {
   return html`<html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex"><title>Autentificare · Admin</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/assets/admin.css?v=18"></head>
+<meta name="robots" content="noindex"><title>Autentificare · Admin</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/assets/admin.css?v=19"></head>
 <body class="login-body"><form class="login" method="post" action="/admin/login">
   <div class="brand">${logoMark()}<span>chimag</span></div>
   <h1>Administrare</h1>
@@ -162,11 +162,6 @@ function profitPanel(p, r, prev) {
   </section>
 
   <section class="d2-sum">
-    <div class="d2-hero ${p.net < 0 ? 'neg' : ''}">
-      <span class="d2-k">Profit estimat</span>
-      <div class="d2-hero-val"><strong>${money(p.net)}</strong>${delta(p.net, prev?.net)}</div>
-      <p>Marjă <b>${p.collected ? pct(p.net, p.collected) : '–'}</b> · <b>${money(ppo)}</b> pe comandă</p>
-    </div>
     <div class="d2-flow">
       <div class="d2-line">
         <span class="d2-k">Vânzări totale</span>
@@ -180,11 +175,11 @@ function profitPanel(p, r, prev) {
         <small>${units} buc. vândute × prețul tău de cumpărare</small>
       </div>
       <span class="d2-op" aria-hidden="true">=</span>
-      <div class="d2-line d2-line-res">
-        <span class="d2-k">Profit estimat</span>
-        <div class="d2-v"><strong>${money(p.net)}</strong></div>
-        <small>înainte de costurile Helpship</small>
-      </div>
+    </div>
+    <div class="d2-hero ${p.net < 0 ? 'neg' : ''}">
+      <span class="d2-k">Profit estimat</span>
+      <div class="d2-hero-val"><strong>${money(p.net)}</strong>${delta(p.net, prev?.net)}</div>
+      <p>Marjă <b>${p.collected ? pct(p.net, p.collected) : '–'}</b> · <b>${money(ppo)}</b> pe comandă · înainte de costurile Helpship</p>
     </div>
     <div class="d2-ship">
       <span class="d2-ship-ic" aria-hidden="true">${icons.truck(16)}</span>
@@ -239,7 +234,7 @@ export function dashboardView(d) {
   <section class="d2-kpis">
     ${kpi('cart', 'blue', 'Comenzi', p.orders, `${prev.orders} în perioada anterioară`, delta(p.orders, prev.orders))}
     ${kpi('cash', 'indigo', 'Coș mediu', money(aov), 'cu transport inclus', delta(aov, prevAov))}
-    ${kpi('star', 'green', 'Profit estimat / comandă', money(ppo), 'în medie', delta(ppo, prevPpo))}
+    ${kpi('star', 'green', 'Profit estimat / comandă', money(ppo), 'în medie, înainte de costurile de livrare', delta(ppo, prevPpo))}
     ${kpi('box', 'amber', 'Produse vândute', units, `${p.products.length} ${p.products.length === 1 ? 'produs diferit' : 'produse diferite'}`, delta(units, prevUnits))}
     ${kpi('truck', 'teal', 'Rată de livrare', st.deliveryRate == null ? '–' : `${st.deliveryRate}%`, `${st.delivered} livrate · ${st.refused} refuzate`)}
     ${kpi('user', 'rose', 'Clienți', st.customers, `${st.returning} ${st.returning === 1 ? 'revenit' : 'reveniți'}`)}

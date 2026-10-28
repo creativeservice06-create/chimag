@@ -724,3 +724,14 @@ input[type=checkbox] { box-shadow: none; }
 .msg .who-txt b .chip { margin-left: 6px; vertical-align: 1px; }
 .msg-body { color: #26354a; line-height: 1.6; padding-left: 50px; }
 @media (max-width: 700px) { .msg-body { padding-left: 0; } }
+/* rezumat: Vânzări − Cost = [Profit estimat] */
+.d2-sum { grid-template-columns: minmax(0, 1fr) minmax(280px, 360px); }
+@media (min-width: 701px) { .d2-flow { grid-template-columns: minmax(0,1fr) auto minmax(0,1fr) auto; } }
+.d2-hero { border-right: 0; border-left: 1px solid #d7eee2; }
+@media (max-width: 900px) {
+  .d2-sum { grid-template-columns: minmax(0, 1fr); }
+  .d2-hero { order: -1; border-left: 0; border-bottom: 1px solid #d7eee2; }
+  .d2-flow .d2-line:nth-of-type(2) { border-bottom: 0; }
+}
+@media (max-width: 900px) { .d2-flow > .d2-op:last-child { display: none; } }
+@media (min-width: 701px) and (max-width: 900px) { .d2-flow { grid-template-columns: minmax(0,1fr) auto minmax(0,1fr); } }

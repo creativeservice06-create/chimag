@@ -185,6 +185,12 @@ export async function handleAdmin(request, env, ctx, path) {
     }
   }
 
+  if (path === '/admin/backup' && method === 'GET') {
+    const { backupSql } = await import('./lib/backup.js');
+    const day = new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 10);
+    return new Response(await backupSql(env), { headers: { 'content-type': 'application/sql; charset=utf-8', 'content-disposition': `attachment; filename="chimag-backup-${day}.sql"`, 'cache-control': 'no-store', 'x-robots-tag': 'noindex' } });
+  }
+
   if ((m = path.match(/^\/admin\/comenzi\/(\d+)\/helpship$/)) && method === 'POST') {
     const { sendToHelpship } = await import('./lib/helpship.js');
     const r = await sendToHelpship(env, await getSettings(env), Number(m[1]), { force: true });

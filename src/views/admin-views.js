@@ -27,7 +27,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0, msgCount
 <meta name="robots" content="noindex">
 <title>${title} · Admin Chimag</title>
 <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/assets/admin.css?v=13">
+<link rel="stylesheet" href="/assets/admin.css?v=14">
 <meta name="theme-color" content="#0e192a">
 <script src="/assets/admin.js?v=2" defer></script>
 </head><body>
@@ -741,7 +741,19 @@ export function settingsView({ settings: s, products, secrets, siteUrl, invNext 
       <p class="hint span2">Evenimente trimise automat: ViewContent, AddToCart, InitiateCheckout, Purchase. Conversions API pe server: Facebook ${ok(secrets.fbCapi)} · TikTok ${ok(secrets.ttEvents)}.</p>
     </section>
     <div class="sticky-save"><button class="btn primary big">Salvează setările</button></div>
-  </form>`;
+  </form>
+  <section class="panel backup-panel">
+    <h2>Salvare completă (backup)</h2>
+    <p class="muted">Tot magazinul stă în 3 locuri. Fă o salvare cel puțin o dată pe lună și înainte de schimbări mari.</p>
+    <ol class="backup-steps">
+      <li><strong>Datele magazinului</strong>: produse, comenzi, clienți, facturi, setări, coduri, mesaje.
+        <div><a class="btn primary" href="/admin/backup">Descarcă baza de date (.sql)</a></div>
+        <small class="muted">Fișierul conține date personale ale clienților: păstrează-l doar la tine (calculator + un stick sau Google Drive personal).</small></li>
+      <li><strong>Site-ul, codul și pozele</strong> sunt pe GitHub. Fiind conectat la GitHub, descarci totul ca ZIP:
+        <div><a class="btn" href="https://github.com/creativeservice06-create/chimag/archive/refs/heads/main.zip" target="_blank" rel="noopener">Descarcă site-ul (.zip)</a></div></li>
+      <li><strong>Parolele și cheile</strong> (SMTP, Helpship, TikTok, Cloudflare, GitHub) nu se salvează aici. Ține-le într-un manager de parole sau într-un caiet păstrat în siguranță.</li>
+    </ol>
+  </section>`;
 }
 
 // ---------------- Roată și coduri ----------------

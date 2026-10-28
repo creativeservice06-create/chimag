@@ -28,7 +28,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0, msgCount
 <title>${title} · Admin Chimag</title>
 <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/admin.css?v=17">
+<link rel="stylesheet" href="/assets/admin.css?v=18">
 <meta name="theme-color" content="#0e192a">
 <script src="/assets/admin.js?v=2" defer></script>
 </head><body>
@@ -68,7 +68,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0, msgCount
 
 export function loginView(error) {
   return html`<html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex"><title>Autentificare · Admin</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/assets/admin.css?v=17"></head>
+<meta name="robots" content="noindex"><title>Autentificare · Admin</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/assets/admin.css?v=18"></head>
 <body class="login-body"><form class="login" method="post" action="/admin/login">
   <div class="brand">${logoMark()}<span>chimag</span></div>
   <h1>Administrare</h1>
@@ -202,11 +202,13 @@ function todoStrip(newCount, t) {
     t.stale && { href: '/admin/comenzi?status=confirmata', tone: 'indigo', ic: 'truck', n: t.stale, label: 'confirmate de peste 2 zile, fără AWB', cta: 'Verifică' },
     t.unread && { href: '/admin/mesaje', tone: 'blue', ic: 'mail', n: t.unread, label: t.unread === 1 ? 'mesaj necitit' : 'mesaje necitite', cta: 'Citește' },
   ].filter(Boolean);
-  const low = t.lowStock || [];
-  if (!items.length && !low.length) return html`<section class="d2-todo ok"><span class="d2-todo-ok">${icons.check(18)}</span><b>Totul e la zi.</b><span class="muted">Nicio comandă de confirmat, niciun mesaj necitit.</span></section>`;
+  const none = t.noStock || [], low = t.lowStock || [];
+  const names = (list, withQty) => list.slice(0, 4).map((x) => withQty ? `${x.title} (${x.stock} buc.)` : x.title).join(' · ') + (list.length > 4 ? ` · și încă ${list.length - 4}` : '');
+  if (!items.length && !none.length && !low.length) return html`<section class="d2-todo ok"><span class="d2-todo-ok">${icons.check(18)}</span><b>Totul e la zi.</b><span class="muted">Nicio comandă de confirmat, niciun mesaj necitit, toate produsele au stoc.</span></section>`;
   return html`<section class="d2-todo">
     ${items.map((x) => html`<a class="d2-task" href="${x.href}"><span class="kpi2-ic t-${x.tone}">${icons[x.ic](18)}</span><span class="d2-task-txt"><b>${x.n}</b> ${x.label}</span><span class="d2-task-cta">${x.cta} ›</span></a>`)}
-    ${low.length ? html`<a class="d2-task" href="/admin/produse"><span class="kpi2-ic t-amber">${icons.box(18)}</span><span class="d2-task-txt"><b>${low.length}</b> ${low.length === 1 ? 'produs activ cu stoc' : 'produse active cu stoc'} 0–3 <small class="muted">${low.slice(0, 3).map((x) => `${x.title} (${x.stock})`).join(' · ')}</small></span><span class="d2-task-cta">Stoc ›</span></a>` : ''}
+    ${none.length ? html`<a class="d2-task" href="/admin/produse"><span class="kpi2-ic t-rose">${icons.box(18)}</span><span class="d2-task-txt"><b>${none.length}</b> ${none.length === 1 ? 'produs activ fără stoc' : 'produse active fără stoc'}<small class="muted">${names(none, false)}</small></span><span class="d2-task-cta">Stoc ›</span></a>` : ''}
+    ${low.length ? html`<a class="d2-task" href="/admin/produse"><span class="kpi2-ic t-amber">${icons.box(18)}</span><span class="d2-task-txt"><b>${low.length}</b> ${low.length === 1 ? 'produs aproape epuizat' : 'produse aproape epuizate'} <span class="muted">(sub 5 buc.)</span><small class="muted">${names(low, true)}</small></span><span class="d2-task-cta">Stoc ›</span></a>` : ''}
   </section>`;
 }
 

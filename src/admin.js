@@ -590,10 +590,10 @@ async function dashboardData(env) {
     env.DB.prepare(`SELECT COUNT(*) AS orders, COALESCE(SUM(total),0) AS revenue FROM orders
       WHERE status NOT IN ('anulata') AND NOT (payment_method='card' AND payment_status!='platita')
       AND date(created_at, '+3 hours') = date('now', '+3 hours')`).first(),
-    env.DB.prepare("SELECT id, title, stock, images FROM products WHERE active = 1 AND track_stock = 1 AND stock <= 3 ORDER BY stock, sort LIMIT 6").all().then((r) => r.results || []),
+    env.DB.prepare("SELECT id, title, stock FROM products WHERE active = 1 AND track_stock = 1 AND stock <= 5 ORDER BY stock, sort, id").all().then((r) => r.results || []),
   ]);
   const statusCounts = Object.fromEntries(sc.map((r) => [r.status, r.n]));
-  return { statusCounts, latest, todo: { unread, hsErr, stale, lowStock }, today: today || { orders: 0, revenue: 0 } };
+  return { statusCounts, latest, todo: { unread, hsErr, stale, noStock: lowStock.filter((p) => p.stock <= 0), lowStock: lowStock.filter((p) => p.stock > 0) }, today: today || { orders: 0, revenue: 0 } };
 }
 
 function parseLines(s) { return String(s || '').split('\n').map((x) => x.trim()).filter(Boolean); }

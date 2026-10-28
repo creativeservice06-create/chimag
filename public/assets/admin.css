@@ -574,7 +574,7 @@ h2 { font-weight: 700; letter-spacing: -.01em; }
 .tbl td, .num, .d2-v strong, .d2-kpi-val strong, .d2-hero-val strong, .sum dd { font-variant-numeric: tabular-nums; }
 @media (min-width: 861px) {
   .shell { background: linear-gradient(90deg, #0c1626 220px, var(--bg) 220px); }
-  .content { width: 100%; max-width: 1480px; padding: 26px 30px 80px; }
+  .content { width: 100%; padding: 26px 30px 80px; }
 }
 
 /* meniu lateral */

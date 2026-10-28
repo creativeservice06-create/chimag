@@ -161,11 +161,18 @@
   (function filters() {
     var grid = $('[data-filter-grid]');
     if (!grid) return;
+    // pe telefon (2 coloane): dacă rămâne un singur produs pe ultimul rând, devine card lat
+    function markWide() {
+      var vis = $$('.pcard', grid).filter(function (c) { return !c.hidden; });
+      $$('.pcard', grid).forEach(function (c) { c.classList.remove('pcard-wide'); });
+      if (vis.length % 2) vis[vis.length - 1].classList.add('pcard-wide');
+    }
     $$('[data-filter]').forEach(function (b) {
       b.addEventListener('click', function () {
         var f = b.getAttribute('data-filter');
         $$('[data-filter]').forEach(function (x) { x.classList.toggle('on', x === b); x.setAttribute('aria-selected', x === b ? 'true' : 'false'); });
         $$('.pcard', grid).forEach(function (c) { c.hidden = !!f && c.getAttribute('data-cat') !== f; });
+        markWide();
         try { var u = new URL(location.href); if (f) u.searchParams.set('categorie', f); else u.searchParams.delete('categorie'); history.replaceState(null, '', u.pathname + u.search + u.hash); } catch (e) { /* fără URL */ }
       });
     });

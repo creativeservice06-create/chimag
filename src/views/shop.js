@@ -17,10 +17,10 @@ export function trustRow(settings) {
   return html`<ul class="trust-row">${items.map(([i, t, sub]) => html`<li>${i}<span><strong>${t}</strong><small>${sub}</small></span></li>`)}</ul>`;
 }
 
-function productCard(p) {
+function productCard(p, extra = '') {
   const off = pctOff(p);
   const out = p.track_stock && p.stock <= 0;
-  return html`<div class="pcard" data-cat="${p.category ? slugify(p.category) : ''}">
+  return html`<div class="pcard ${extra}" data-cat="${p.category ? slugify(p.category) : ''}">
     <a class="pcard-link" href="/p/${p.slug}">
       <div class="pcard-media">
         <img src="${img(p)}" alt="${p.title}" loading="lazy" width="600" height="600">
@@ -33,7 +33,7 @@ function productCard(p) {
         <p class="pcard-price"><strong>${money(p.price)}</strong>${p.compare_at_price > p.price ? html`<s>${money(p.compare_at_price)}</s>` : ''}</p>
       </div>
     </a>
-    ${out ? html`<span class="pcard-soon">Revine în stoc în curând</span>` : html`<button type="button" class="pcard-add" data-quick-add="${p.id}" data-title="${p.title}" data-price="${p.price}" aria-label="Adaugă în coș: ${p.title}">${icons.cart(20)}<span>Adaugă</span></button>`}
+    ${out ? html`<span class="pcard-soon">Revine în curând</span>` : html`<button type="button" class="pcard-add" data-quick-add="${p.id}" data-title="${p.title}" data-price="${p.price}" aria-label="Adaugă în coș: ${p.title}">${icons.cart(20)}<span>Adaugă</span></button>`}
   </div>`;
 }
 
@@ -97,7 +97,7 @@ export function homePage({ settings, products, categories = [], bestsellers = []
       ${categories.map((c) => html`<button type="button" class="chip" data-filter="${c.slug}">${c.name} <small>${c.count}</small></button>`)}
     </div>` : ''}
     ${products.length
-      ? html`<div class="pgrid" data-filter-grid>${products.map(productCard)}</div>`
+      ? html`<div class="pgrid" data-filter-grid>${products.map((p, i) => productCard(p, products.length % 2 && i === products.length - 1 ? 'pcard-wide' : ''))}</div>`
       : html`<p class="empty">Adaugă primul produs din panoul de administrare.</p>`}
   </section>
 

@@ -44,7 +44,6 @@ export function homePage({ settings, products, categories = [], bestsellers = []
   const mosaic = lead ? [lead, ...products.filter((p) => p !== lead)].slice(0, 3) : [];
   const threshold = Number(settings.free_shipping_threshold) || 0;
   const returnDays = settings.return_days || 14;
-  const company = settings.company_name || '';
   const phone = settings.phone || '';
   const email = settings.email || '';
 
@@ -66,7 +65,7 @@ export function homePage({ settings, products, categories = [], bestsellers = []
   <section class="hv-hero">
     <div class="wrap hv-hero-inner">
       <div class="hv-hero-copy">
-        <p class="hv-kicker"><span class="hv-dot"></span>Magazin online românesc${company ? ` · ${company}` : ''}</p>
+        <p class="hv-kicker"><span class="hv-dot"></span>Magazin online · livrare în toată țara</p>
         <h1>${settings.tagline || 'Produse utile, la prețuri bune, livrate rapid'}</h1>
         <p class="hv-lead">Alegem cu grijă produse practice pentru casă, bucătărie, copii și aventură. Le descriem corect, cu poze și specificații, iar tu plătești abia când primești coletul.</p>
         <div class="hv-actions">
@@ -92,15 +91,6 @@ export function homePage({ settings, products, categories = [], bestsellers = []
     <div class="hv-trust-item"><span class="hv-ic">${icons.back(22)}</span><div><strong>Retur ${returnDays} zile</strong><small>Te poți răzgândi fără explicații</small></div></div>
     <div class="hv-trust-item"><span class="hv-ic">${icons.doc(22)}</span><div><strong>Factură pe email</strong><small>Emisă pe numele tău, la livrare</small></div></div>
   </section>
-
-  ${categories.length >= 2 ? html`<section class="wrap section hv-sec" id="categorii">
-    <div class="section-head section-head-row"><div><p class="eyebrow">Categorii</p><h2>Cumpără după categorie</h2></div></div>
-    <div class="hv-cats">${categories.map((c) => html`<a class="hv-cat" href="#produse" data-cat-jump="${c.slug}">
-      <img src="${c.image || '/img/placeholder.svg'}" alt="" width="400" height="300" loading="lazy">
-      <span class="hv-cat-txt"><b>${c.name}</b><small>${c.count === 1 ? '1 produs' : `${c.count} produse`}</small></span>
-      <span class="hv-cat-go" aria-hidden="true">→</span>
-    </a>`)}</div>
-  </section>` : ''}
 
   ${bestsellers.length ? html`<section class="wrap section hv-sec">
     <div class="section-head section-head-row"><div><p class="eyebrow">Preferatele clienților</p><h2>Cele mai vândute</h2></div><a class="link-more" href="#produse">Vezi toate produsele</a></div>
@@ -129,36 +119,26 @@ export function homePage({ settings, products, categories = [], bestsellers = []
       : html`<p class="empty">Adaugă primul produs din panoul de administrare.</p>`}
   </section>
 
-  <section class="hv-about">
-    <div class="wrap hv-about-inner">
-      <div class="hv-about-copy">
-        <p class="eyebrow">Cine suntem</p>
-        <h2>Un magazin mic, cu oameni reali în spate</h2>
-        <p>chimag.ro este magazinul online${company ? ` al firmei ${company}` : ''}, o firmă din România. Vindem un număr mic de produse, pe care le alegem atent și le prezentăm cinstit: poze reale, specificații clare și prețuri finale, fără costuri ascunse.</p>
-        <p>Fiecare comandă primește confirmare pe email, număr de urmărire pentru colet și factură. Dacă ai o problemă, ne scrii sau ne suni și rezolvăm direct, fără roboți.</p>
-        <ul class="hv-about-points">
-          <li>${icons.shield(18)}<span>Comanzi fără risc: plătești doar când primești coletul.</span></li>
-          <li>${icons.back(18)}<span>${returnDays} zile drept de retur, conform legii.</span></li>
-          <li>${icons.lock(18)}<span>Datele tale sunt folosite doar pentru livrarea comenzii.</span></li>
-        </ul>
+  <section class="hv-promise">
+    <div class="wrap">
+      <div class="section-head hv-promise-head"><p class="eyebrow">De ce chimag</p><h2>Cumpărături simple, fără surprize</h2><p>Ce primești la fiecare comandă, oricare ar fi produsul.</p></div>
+      <div class="hv-promise-grid">
+        <article class="hv-promise-card">
+          <span class="hv-ic hv-ic-lg">${icons.doc(26)}</span>
+          <h3>Descrieri cinstite</h3>
+          <p>Poze reale, dimensiuni și specificații clare, prețuri finale. Ce vezi pe site e ce primești în colet.</p>
+        </article>
+        <article class="hv-promise-card">
+          <span class="hv-ic hv-ic-lg">${icons.truck(26)}</span>
+          <h3>Urmărești coletul</h3>
+          <p>Primești pe email confirmarea și numărul de urmărire. Vezi oricând stadiul comenzii în pagina <a href="/comanda">Comanda mea</a>.</p>
+        </article>
+        <article class="hv-promise-card">
+          <span class="hv-ic hv-ic-lg">${icons.chat(26)}</span>
+          <h3>Vorbești cu un om</h3>
+          <p>Ai o întrebare sau o problemă? ${phone ? html`Ne suni la <a href="tel:${phone.replace(/\s/g, '')}">${phone}</a> sau ne scrii` : 'Ne scrii'} și rezolvăm direct, fără roboți.</p>
+        </article>
       </div>
-      <aside class="hv-company">
-        <h3>Datele firmei</h3>
-        <dl>
-          ${company ? html`<div><dt>Denumire</dt><dd>${company}</dd></div>` : ''}
-          ${settings.company_cui ? html`<div><dt>CUI</dt><dd>${settings.company_cui}</dd></div>` : ''}
-          ${settings.company_reg ? html`<div><dt>Nr. Reg. Com.</dt><dd>${settings.company_reg}</dd></div>` : ''}
-          ${settings.company_address ? html`<div><dt>Sediu</dt><dd>${settings.company_address}</dd></div>` : ''}
-          ${phone ? html`<div><dt>Telefon</dt><dd><a href="tel:${phone.replace(/\s/g, '')}">${phone}</a></dd></div>` : ''}
-          ${email ? html`<div><dt>Email</dt><dd><a href="mailto:${email}">${email}</a></dd></div>` : ''}
-          ${settings.hours ? html`<div><dt>Program</dt><dd>${settings.hours}</dd></div>` : ''}
-        </dl>
-        <div class="hv-company-links">
-          <a href="/pagina/termeni">Termeni și condiții</a>
-          <a href="/pagina/retur">Retur și garanție</a>
-          <a href="https://anpc.ro/" target="_blank" rel="noopener">ANPC</a>
-        </div>
-      </aside>
     </div>
   </section>
 

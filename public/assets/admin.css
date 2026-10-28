@@ -735,3 +735,27 @@ input[type=checkbox] { box-shadow: none; }
 }
 @media (max-width: 900px) { .d2-flow > .d2-op:last-child { display: none; } }
 @media (min-width: 701px) and (max-width: 900px) { .d2-flow { grid-template-columns: minmax(0,1fr) auto minmax(0,1fr); } }
+/* rezumat: 3 casete egale */
+.d2-sum.d2-sum3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.d2-box { position: relative; padding: 22px 24px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.d2-box + .d2-box { border-left: 1px solid var(--line); }
+.d2-box[data-op]::before { content: attr(data-op); position: absolute; left: -15px; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; border-radius: 50%; background: #fff; border: 1px solid var(--line); display: grid; place-items: center; font: 700 1rem/1 var(--head); color: #8a97aa; z-index: 1; }
+.d2-box-val { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.d2-box-val strong { font: 800 2.2rem/1.1 var(--head); letter-spacing: -.02em; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.d2-box small { color: var(--muted); font-size: .82rem; line-height: 1.45; }
+.d2-box small b { color: inherit; }
+.d2-box-res { background: linear-gradient(160deg, #ecf8f1, #f7fcf9); border-left-color: #d7eee2 !important; }
+.d2-box-res .d2-k { color: #2f6b4c; }
+.d2-box-res strong { color: var(--ok); }
+.d2-box-res small { color: #3e5a4b; }
+.d2-box-res.neg { background: linear-gradient(160deg, #fdeeed, #fff8f7); }
+.d2-box-res.neg strong { color: var(--danger); }
+@media (max-width: 1200px) { .d2-box-val strong { font-size: 1.8rem; } }
+@media (max-width: 860px) {
+  .d2-sum.d2-sum3 { grid-template-columns: minmax(0, 1fr); }
+  .d2-box { padding: 16px 18px; }
+  .d2-box + .d2-box { border-left: 0; border-top: 1px solid var(--line); }
+  .d2-box[data-op]::before { left: 50%; top: -15px; transform: translateX(-50%); }
+  .d2-box-val strong { font-size: 1.75rem; }
+  .d2-box-res { border-top-color: #d7eee2 !important; }
+}

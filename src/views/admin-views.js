@@ -28,7 +28,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0, msgCount
 <title>${title} · Admin Chimag</title>
 <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/admin.css?v=19">
+<link rel="stylesheet" href="/assets/admin.css?v=20">
 <meta name="theme-color" content="#0e192a">
 <script src="/assets/admin.js?v=2" defer></script>
 </head><body>
@@ -68,7 +68,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0, msgCount
 
 export function loginView(error) {
   return html`<html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex"><title>Autentificare · Admin</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/assets/admin.css?v=19"></head>
+<meta name="robots" content="noindex"><title>Autentificare · Admin</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/assets/admin.css?v=20"></head>
 <body class="login-body"><form class="login" method="post" action="/admin/login">
   <div class="brand">${logoMark()}<span>chimag</span></div>
   <h1>Administrare</h1>
@@ -161,25 +161,21 @@ function profitPanel(p, r, prev) {
     </details>
   </section>
 
-  <section class="d2-sum">
-    <div class="d2-flow">
-      <div class="d2-line">
-        <span class="d2-k">Vânzări totale</span>
-        <div class="d2-v"><strong>${money(p.collected)}</strong>${delta(p.collected, prev?.collected)}</div>
-        <small>${p.orders} ${p.orders === 1 ? 'comandă' : 'comenzi'} · ${units} buc. · cu transport inclus</small>
-      </div>
-      <span class="d2-op" aria-hidden="true">−</span>
-      <div class="d2-line">
-        <span class="d2-k">Cost de achiziție</span>
-        <div class="d2-v"><strong>${money(p.cost)}</strong>${delta(p.cost, prev?.cost, { invert: true })}</div>
-        <small>${units} buc. vândute × prețul tău de cumpărare</small>
-      </div>
-      <span class="d2-op" aria-hidden="true">=</span>
+  <section class="d2-sum d2-sum3">
+    <div class="d2-box">
+      <span class="d2-k">Vânzări totale</span>
+      <div class="d2-box-val"><strong>${money(p.collected)}</strong>${delta(p.collected, prev?.collected)}</div>
+      <small>${p.orders} ${p.orders === 1 ? 'comandă' : 'comenzi'} · ${units} buc. · cu transport inclus</small>
     </div>
-    <div class="d2-hero ${p.net < 0 ? 'neg' : ''}">
+    <div class="d2-box" data-op="−">
+      <span class="d2-k">Cost de achiziție</span>
+      <div class="d2-box-val"><strong>${money(p.cost)}</strong>${delta(p.cost, prev?.cost, { invert: true })}</div>
+      <small>${units} buc. vândute × prețul tău de cumpărare</small>
+    </div>
+    <div class="d2-box d2-box-res ${p.net < 0 ? 'neg' : ''}" data-op="=">
       <span class="d2-k">Profit estimat</span>
-      <div class="d2-hero-val"><strong>${money(p.net)}</strong>${delta(p.net, prev?.net)}</div>
-      <p>Marjă <b>${p.collected ? pct(p.net, p.collected) : '–'}</b> · <b>${money(ppo)}</b> pe comandă · înainte de costurile Helpship</p>
+      <div class="d2-box-val"><strong>${money(p.net)}</strong>${delta(p.net, prev?.net)}</div>
+      <small>Marjă <b>${p.collected ? pct(p.net, p.collected) : '–'}</b> · <b>${money(ppo)}</b> pe comandă · înainte de costurile Helpship</small>
     </div>
     <div class="d2-ship">
       <span class="d2-ship-ic" aria-hidden="true">${icons.truck(16)}</span>

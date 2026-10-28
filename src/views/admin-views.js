@@ -173,7 +173,7 @@ function profitPanel(p, r, prev) {
       <div class="d2-line">
         <span class="d2-k">Cost de achiziție</span>
         <div class="d2-v"><strong>${money(p.cost)}</strong>${delta(p.cost, prev?.cost, { invert: true })}</div>
-        <small>prețul tău de cumpărare</small>
+        <small>${units} buc. din ${p.orders} ${p.orders === 1 ? 'comandă' : 'comenzi'} × prețul tău de cumpărare</small>
       </div>
       <span class="d2-op" aria-hidden="true">=</span>
       <div class="d2-line d2-line-res">

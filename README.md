@@ -197,3 +197,9 @@ seed/                     setări inițiale + produse demo
 - La fiecare 30 de minute (cron), site-ul trimite comenzile rămase netrimise și aduce AWB-ul / statusul (`GET /api/Order/{id}`). Anularea unei comenzi o anulează și la Helpship.
 - Admin → Setări → Helpship: alegi dacă trimitem imediat sau doar după confirmare.
 - Secrete în Cloudflare: `HELPSHIP_CLIENT_ID`, `HELPSHIP_CLIENT_SECRET`, `HELPSHIP_ACCOUNT_ID` (opțional `HELPSHIP_API_URL`, `HELPSHIP_TOKEN_URL` pentru mediul de test). Fără ele legătura e oprită.
+
+## Siguranță: backup și aprobarea modificărilor
+
+- **Backup:** Admin → Setări → „Salvare completă (backup)”: descarcă baza de date (.sql) și site-ul (.zip). Recomandat lunar și înainte de schimbări mari.
+- **Aprobare:** ramura `main` este protejată. Orice modificare vine ca *Pull request* și ajunge pe site doar după ce proprietarul apasă „Merge pull request”.
+- **Revenire rapidă:** Cloudflare → Workers & Pages → chimag → Deployments → Rollback la versiunea anterioară.

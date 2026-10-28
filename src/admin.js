@@ -579,40 +579,21 @@ function orderFilter(status, q) {
 }
 
 async function dashboardData(env) {
-  const sum = async (cond) => env.DB.prepare(
-    `SELECT COUNT(*) AS orders, COALESCE(SUM(total),0) AS revenue FROM orders
-     WHERE status NOT IN ('anulata') AND NOT (payment_method='card' AND payment_status!='platita') AND ${cond}`).first();
-  // "azi" în ora României
-  const todayCond = "date(created_at, '+3 hours') = date('now', '+3 hours')";
-  const [today, week, month] = await Promise.all([
-    sum(todayCond), sum("created_at > datetime('now','-7 days')"), sum("created_at > datetime('now','-30 days')"),
+  // ce e de rezolvat acum + ultimele comenzi (cifrele pe perioadă vin din profit.js)
+  const one = (sql) => env.DB.prepare(sql).first().then((r) => r?.n || 0).catch(() => 0);
+  const [sc, latest, unread, hsErr, stale, today, lowStock] = await Promise.all([
+    env.DB.prepare('SELECT status, COUNT(*) AS n FROM orders GROUP BY status').all().then((r) => r.results || []),
+    env.DB.prepare('SELECT * FROM orders ORDER BY id DESC LIMIT 8').all().then((r) => r.results || []),
+    one('SELECT COUNT(*) AS n FROM messages WHERE is_read = 0'),
+    one("SELECT COUNT(*) AS n FROM orders WHERE hs_error != '' AND status IN ('noua','confirmata')"),
+    one("SELECT COUNT(*) AS n FROM orders WHERE status = 'confirmata' AND awb = '' AND hs_awb = '' AND created_at < datetime('now','-2 days')"),
+    env.DB.prepare(`SELECT COUNT(*) AS orders, COALESCE(SUM(total),0) AS revenue FROM orders
+      WHERE status NOT IN ('anulata') AND NOT (payment_method='card' AND payment_status!='platita')
+      AND date(created_at, '+3 hours') = date('now', '+3 hours')`).first(),
+    env.DB.prepare("SELECT id, title, stock, images FROM products WHERE active = 1 AND track_stock = 1 AND stock <= 3 ORDER BY stock, sort LIMIT 6").all().then((r) => r.results || []),
   ]);
-  const { results: dayRows } = await env.DB.prepare(
-    `SELECT date(created_at, '+3 hours') AS d, COUNT(*) AS orders, COALESCE(SUM(total),0) AS revenue FROM orders
-     WHERE status != 'anulata' AND NOT (payment_method='card' AND payment_status!='platita') AND created_at > datetime('now','-14 days')
-     GROUP BY d`).all();
-  const byDay = new Map((dayRows || []).map((r) => [r.d, r]));
-  const days = [];
-  for (let i = 13; i >= 0; i--) {
-    const d = new Date(Date.now() + 3 * 3600e3 - i * 86400e3);
-    const key = d.toISOString().slice(0, 10);
-    const r = byDay.get(key) || { orders: 0, revenue: 0 };
-    days.push({ label: key, short: `${d.getUTCDate()}`, orders: r.orders, revenue: r.revenue });
-  }
-  const { results: sc } = await env.DB.prepare('SELECT status, COUNT(*) AS n FROM orders GROUP BY status').all();
-  const statusCounts = Object.fromEntries((sc || []).map((r) => [r.status, r.n]));
-  const { results: dl } = await env.DB.prepare("SELECT status, COUNT(*) AS n FROM orders WHERE status IN ('livrata','refuzata','retur') AND created_at > datetime('now','-30 days') GROUP BY status").all();
-  const delivery = Object.fromEntries((dl || []).map((r) => [r.status, r.n]));
-  delivery.refuzata = (delivery.refuzata || 0) + (delivery.retur || 0);
-  const { results: sources } = await env.DB.prepare(
-    `SELECT CASE WHEN utm_source != '' THEN utm_source WHEN fbclid != '' THEN 'facebook' WHEN ttclid != '' THEN 'tiktok' ELSE 'direct' END AS source,
-     COUNT(*) AS orders, SUM(total) AS revenue FROM orders WHERE status != 'anulata' AND created_at > datetime('now','-30 days')
-     GROUP BY source ORDER BY revenue DESC LIMIT 10`).all();
-  const { results: top } = await env.DB.prepare(
-    `SELECT i.title, SUM(i.qty) AS qty, SUM(i.total) AS revenue FROM order_items i JOIN orders o ON o.id = i.order_id
-     WHERE o.status != 'anulata' AND o.created_at > datetime('now','-30 days') GROUP BY i.product_id, i.title ORDER BY revenue DESC LIMIT 8`).all();
-  const { results: latest } = await env.DB.prepare('SELECT * FROM orders ORDER BY id DESC LIMIT 8').all();
-  return { today, week, month, days, statusCounts, delivery, sources: sources || [], top: top || [], latest: latest || [] };
+  const statusCounts = Object.fromEntries(sc.map((r) => [r.status, r.n]));
+  return { statusCounts, latest, todo: { unread, hsErr, stale, lowStock }, today: today || { orders: 0, revenue: 0 } };
 }
 
 function parseLines(s) { return String(s || '').split('\n').map((x) => x.trim()).filter(Boolean); }

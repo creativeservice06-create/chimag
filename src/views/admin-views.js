@@ -27,7 +27,8 @@ export function adminLayout({ title, active, body, flash, newCount = 0, msgCount
 <meta name="robots" content="noindex">
 <title>${title} · Admin Chimag</title>
 <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/assets/admin.css?v=16">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/admin.css?v=17">
 <meta name="theme-color" content="#0e192a">
 <script src="/assets/admin.js?v=2" defer></script>
 </head><body>
@@ -67,7 +68,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0, msgCount
 
 export function loginView(error) {
   return html`<html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex"><title>Autentificare · Admin</title><link rel="stylesheet" href="/assets/admin.css?v=6"></head>
+<meta name="robots" content="noindex"><title>Autentificare · Admin</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/assets/admin.css?v=17"></head>
 <body class="login-body"><form class="login" method="post" action="/admin/login">
   <div class="brand">${logoMark()}<span>chimag</span></div>
   <h1>Administrare</h1>
@@ -88,6 +89,9 @@ const pct = (a, b) => (b ? `${String(Math.round((a / b) * 1000) / 10).replace('.
 
 const SOURCE_NAMES = { facebook: 'Facebook / Instagram', fb: 'Facebook / Instagram', ig: 'Instagram', instagram: 'Instagram', tiktok: 'TikTok', google: 'Google', direct: 'Direct / fără reclamă' };
 const PAY_NAMES = { ramburs: 'Ramburs', card: 'Card online' };
+
+const initials = (n) => String(n || '?').trim().split(/\s+/).slice(0, 2).map((w) => w[0] || '').join('').toUpperCase();
+const dateOnly = (d) => { const f = formatDate(d); return f ? f.split(',')[0] : ''; };
 
 function delta(cur, prev, { invert = false } = {}) {
   if (!prev) return '';
@@ -191,6 +195,21 @@ function profitPanel(p, r, prev) {
   ${p.missingCost.length ? html`<p class="flash err">Lipsește costul de achiziție la: ${p.missingCost.join(', ')}. Completează-l la produs, altfel profitul apare mai mare decât e.</p>` : ''}`;
 }
 
+function todoStrip(newCount, t) {
+  const items = [
+    newCount && { href: '/admin/comenzi?status=noua', tone: 'amber', ic: 'cart', n: newCount, label: newCount === 1 ? 'comandă nouă de confirmat' : 'comenzi noi de confirmat', cta: 'Confirmă' },
+    t.hsErr && { href: '/admin/comenzi?status=noua', tone: 'rose', ic: 'truck', n: t.hsErr, label: t.hsErr === 1 ? 'comandă cu eroare la Helpship' : 'comenzi cu eroare la Helpship', cta: 'Vezi' },
+    t.stale && { href: '/admin/comenzi?status=confirmata', tone: 'indigo', ic: 'truck', n: t.stale, label: 'confirmate de peste 2 zile, fără AWB', cta: 'Verifică' },
+    t.unread && { href: '/admin/mesaje', tone: 'blue', ic: 'mail', n: t.unread, label: t.unread === 1 ? 'mesaj necitit' : 'mesaje necitite', cta: 'Citește' },
+  ].filter(Boolean);
+  const low = t.lowStock || [];
+  if (!items.length && !low.length) return html`<section class="d2-todo ok"><span class="d2-todo-ok">${icons.check(18)}</span><b>Totul e la zi.</b><span class="muted">Nicio comandă de confirmat, niciun mesaj necitit.</span></section>`;
+  return html`<section class="d2-todo">
+    ${items.map((x) => html`<a class="d2-task" href="${x.href}"><span class="kpi2-ic t-${x.tone}">${icons[x.ic](18)}</span><span class="d2-task-txt"><b>${x.n}</b> ${x.label}</span><span class="d2-task-cta">${x.cta} ›</span></a>`)}
+    ${low.length ? html`<a class="d2-task" href="/admin/produse"><span class="kpi2-ic t-amber">${icons.box(18)}</span><span class="d2-task-txt"><b>${low.length}</b> ${low.length === 1 ? 'produs activ cu stoc' : 'produse active cu stoc'} 0–3 <small class="muted">${low.slice(0, 3).map((x) => `${x.title} (${x.stock})`).join(' · ')}</small></span><span class="d2-task-cta">Stoc ›</span></a>` : ''}
+  </section>`;
+}
+
 export function dashboardView(d) {
   const p = d.profit, prev = d.prev, st = d.stats, r = d.range;
   const units = p.products.reduce((s, x) => s + x.qty, 0);
@@ -210,8 +229,9 @@ export function dashboardView(d) {
   return html`
   <header class="page-head dash-head d2-head">
     <div><h1>Panou</h1><p class="muted">${periodLabel(r).name} · ${periodLabel(r).dates}${r.scope === 'livrate' ? ' · doar comenzi livrate' : ''}</p></div>
-    ${newCount ? html`<a class="btn primary alert-btn" href="/admin/comenzi?status=noua"><b class="count">${newCount}</b> ${newCount === 1 ? 'comandă nouă de confirmat' : 'comenzi noi de confirmat'}</a>` : html`<span class="chip st-livrata">Nicio comandă de confirmat</span>`}
+    <div class="d2-today"><span>Azi</span><b>${d.today.orders} ${d.today.orders === 1 ? 'comandă' : 'comenzi'}</b><i></i><b>${money(d.today.revenue)}</b></div>
   </header>
+  ${todoStrip(newCount, d.todo)}
 
   ${profitPanel(p, r, prev)}
 
@@ -858,8 +878,8 @@ export function messagesView({ messages, email, settings: s }) {
     : html`Trimiterea pe email nu e configurată încă, dar toate mesajele apar aici. Configurarea e descrisă în README → „Emailuri”.`}</p>
   ${messages.length ? html`<div class="msg-list">${messages.map((m) => html`<article class="panel msg ${m.is_read ? '' : 'unread'}">
     <header class="msg-head">
-      <div><b>${m.name}</b> ${m.is_read ? '' : html`<span class="chip st-noua">nou</span>`}<br>
-        <span class="muted">${formatDate(m.created_at)} · ${m.subject || 'Fără subiect'}${m.order_number ? ` · comanda ${m.order_number}` : ''}</span></div>
+      <div class="who"><span class="avatar" aria-hidden="true">${initials(m.name)}</span><span class="who-txt"><b>${m.name} ${m.is_read ? '' : html`<span class="chip st-noua">necitit</span>`}</b>
+        <small>${formatDate(m.created_at)} · ${m.subject || 'Fără subiect'}${m.order_number ? ` · comanda ${m.order_number}` : ''}</small></span></div>
       <div class="btn-row">
         ${m.phone ? html`<a class="btn sm" href="tel:${m.phone}">Sună ${m.phone}</a>` : ''}
         ${m.email ? html`<a class="btn sm" href="mailto:${m.email}?subject=${encodeURIComponent('Re: ' + (m.subject || 'mesajul tău'))}">Răspunde pe email</a>` : ''}
@@ -880,16 +900,16 @@ export function customersView({ customers, q, filter, counts }) {
   <header class="page-head"><h1>Clienți</h1><a class="btn primary" href="/admin/clienti/nou">Adaugă client</a></header>
   <nav class="tabs">${tabs.map(([k, v]) => html`<a href="/admin/clienti${k ? `?f=${k}` : ''}" class="${filter === k ? 'on' : ''}">${v} <small>${counts[k || 'all'] || 0}</small></a>`)}</nav>
   <div class="toolbar"><form method="get" class="search">${filter ? html`<input type="hidden" name="f" value="${filter}">` : ''}<input type="search" name="q" value="${q}" placeholder="Caută după nume, email sau telefon"><button class="btn">Caută</button></form></div>
-  ${customers.length ? html`<div class="tbl-wrap"><table class="tbl orders">
-    <thead><tr><th>Client</th><th>Telefon</th><th class="r">Comenzi</th><th class="r">Total cumpărat</th><th>Înregistrat</th><th>Ultima autentificare</th><th>Stare</th></tr></thead>
+  ${customers.length ? html`<div class="tbl-wrap"><table class="tbl customers cardable">
+    <thead><tr><th>Client</th><th>Telefon</th><th class="r">Comenzi</th><th class="r">Total cumpărat</th><th>Client din</th><th>Ultima autentificare</th><th>Stare</th></tr></thead>
     <tbody>${customers.map((c) => html`<tr>
-      <td><a href="/admin/clienti/${c.id}"><b>${c.name}</b></a><br><span class="muted">${c.email}</span></td>
-      <td class="nowrap">${c.phone || html`<span class="muted">–</span>`}</td>
-      <td class="r">${c.orders}</td>
-      <td class="r nowrap">${money(c.spent)}</td>
-      <td class="nowrap">${formatDate(c.created_at)}</td>
-      <td class="nowrap">${c.last_login ? formatDate(c.last_login) : html`<span class="muted">–</span>`}</td>
-      <td>${custStatus(c)}</td>
+      <td class="c-main"><a class="who" href="/admin/clienti/${c.id}"><span class="avatar" aria-hidden="true">${initials(c.name)}</span><span class="who-txt"><b>${c.name}</b><small>${c.email}</small></span></a></td>
+      <td class="cu-phone nowrap" data-label="Telefon">${c.phone ? html`<a class="tel" href="tel:${c.phone}">${c.phone}</a>` : html`<span class="muted">–</span>`}</td>
+      <td class="r num cu-orders" data-label="Comenzi">${c.orders}</td>
+      <td class="r num nowrap cu-spent" data-label="Total"><b>${money(c.spent)}</b></td>
+      <td class="nowrap cu-since" data-label="Client din">${dateOnly(c.created_at)}</td>
+      <td class="nowrap cu-login" data-label="Ultima logare">${c.last_login ? dateOnly(c.last_login) : html`<span class="muted">niciodată</span>`}</td>
+      <td class="cu-status" data-label="">${custStatus(c)}</td>
     </tr>`)}</tbody></table></div>` : html`<p class="muted">Niciun client aici.</p>`}`;
 }
 

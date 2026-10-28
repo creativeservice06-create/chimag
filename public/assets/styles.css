@@ -1408,3 +1408,6 @@ a.oi-link:hover .oi-name { color: var(--brand); }
   .hv-promise-card h3 { margin: 2px 0 4px; }
 }
 @media (min-width: 1100px) { .pgrid:has(> .pcard:nth-child(5):last-child) { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+.hv-faq { margin-bottom: 64px; }
+.hv-faq-more { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; margin: 26px 0 0; color: var(--muted); font-weight: 500; }
+@media (max-width: 600px) { .hv-faq { margin-bottom: 44px; } .hv-faq-more { flex-direction: column; gap: 10px; } }

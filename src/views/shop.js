@@ -44,8 +44,6 @@ export function homePage({ settings, products, categories = [], bestsellers = []
   const mosaic = lead ? [lead, ...products.filter((p) => p !== lead)].slice(0, 3) : [];
   const threshold = Number(settings.free_shipping_threshold) || 0;
   const returnDays = settings.return_days || 14;
-  const phone = settings.phone || '';
-  const email = settings.email || '';
 
   const faq = [
     ['Cum plătesc?', `Plătești curierului, la livrare, după ce primești coletul${settings.card_enabled === '1' ? ', sau online cu cardul, la finalizarea comenzii' : ''}. Nu ai nimic de plătit în avans.`],
@@ -136,7 +134,7 @@ export function homePage({ settings, products, categories = [], bestsellers = []
         <article class="hv-promise-card">
           <span class="hv-ic hv-ic-lg">${icons.chat(26)}</span>
           <h3>Vorbești cu un om</h3>
-          <p>Ai o întrebare sau o problemă? ${phone ? html`Ne suni la <a href="tel:${phone.replace(/\s/g, '')}">${phone}</a> sau ne scrii` : 'Ne scrii'} și rezolvăm direct, fără roboți.</p>
+          <p>Ai o întrebare sau o problemă? <a href="/pagina/contact">Ne scrii</a> și îți răspundem noi, direct, fără roboți.</p>
         </article>
       </div>
     </div>
@@ -161,20 +159,16 @@ export function homePage({ settings, products, categories = [], bestsellers = []
     </article>`)}</div>
   </section>` : ''}
 
-  <section class="wrap section hv-sec hv-help" id="intrebari">
-    <div class="hv-help-faq">
-      <p class="eyebrow">Întrebări frecvente</p>
-      <h2>Tot ce trebuie să știi</h2>
-      <div class="faq">${faq.map(([q, a]) => html`<details><summary>${q}</summary><div><p>${a}</p></div></details>`)}</div>
+  <section class="wrap section hv-sec" id="intrebari">
+    <div class="faq3 hv-faq">
+      <div class="faq3-head">
+        <span class="faq3-ico" aria-hidden="true">?</span>
+        <h2>Întrebări frecvente</h2>
+        <p class="muted">Răspunsuri scurte la ce ne întreabă cel mai des clienții.</p>
+      </div>
+      <div class="faq3-grid">${faq.map(([q, a], i) => html`<details class="faq3-item" ${i === 0 ? raw('open') : ''}><summary><span class="faq3-q">${q}</span><span class="faq3-tog" aria-hidden="true"></span></summary><div class="faq3-a"><p>${a}</p></div></details>`)}</div>
+      <p class="hv-faq-more">Nu ai găsit răspunsul? <a class="btn btn-ghost" href="/pagina/contact">${icons.mail(18)} Scrie-ne un mesaj</a></p>
     </div>
-    <aside class="hv-contact">
-      <span class="hv-ic hv-ic-lg">${icons.chat(26)}</span>
-      <h3>Ai o întrebare?</h3>
-      <p>Îți răspundem noi, nu un robot${settings.hours ? `: ${settings.hours.charAt(0).toLowerCase() + settings.hours.slice(1)}` : ''}.</p>
-      ${phone ? html`<a class="hv-contact-row" href="tel:${phone.replace(/\s/g, '')}">${icons.phone(18)}<span>${phone}</span></a>` : ''}
-      ${email ? html`<a class="hv-contact-row" href="mailto:${email}">${icons.mail(18)}<span>${email}</span></a>` : ''}
-      <a class="btn btn-primary" href="/pagina/contact">Scrie-ne un mesaj</a>
-    </aside>
   </section>`;
 }
 

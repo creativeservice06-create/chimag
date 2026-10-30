@@ -1,4 +1,9 @@
 import { sha256Hex } from './util.js';
+import { addOrderEvent } from './db.js';
+
+// Versiunea Graph/Marketing API pentru Conversions API. Versiunile vechi sunt retrase periodic
+// de Meta, iar apelurile către o versiune retrasă sunt refuzate.
+const FB_API_VERSION = 'v26.0';
 
 // Evenimente "Purchase" trimise de pe server (Facebook Conversions API + TikTok Events API).
 // Folosesc același event_id ca pixelul din browser, deci Facebook/TikTok le deduplică.
@@ -59,9 +64,9 @@ export async function sendServerPurchase(env, settings, order, items, siteUrl) {
         },
       }],
     };
-    tasks.push(fetch(`https://graph.facebook.com/v21.0/${settings.fb_pixel_id}/events?access_token=${env.FB_CAPI_TOKEN}`, {
+    tasks.push(['Facebook', fetch(`https://graph.facebook.com/${FB_API_VERSION}/${settings.fb_pixel_id}/events?access_token=${env.FB_CAPI_TOKEN}`, {
       method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
-    }));
+    })]);
   }
 
   if (env.TIKTOK_EVENTS_TOKEN && settings.tiktok_pixel_id) {
@@ -77,11 +82,31 @@ export async function sendServerPurchase(env, settings, order, items, siteUrl) {
         },
       }],
     };
-    tasks.push(fetch('https://business-api.tiktok.com/open_api/v1.3/event/track/', {
+    tasks.push(['TikTok', fetch('https://business-api.tiktok.com/open_api/v1.3/event/track/', {
       method: 'POST', headers: { 'content-type': 'application/json', 'Access-Token': env.TIKTOK_EVENTS_TOKEN }, body: JSON.stringify(body),
-    }));
+    })]);
   }
 
-  const results = await Promise.allSettled(tasks);
-  for (const r of results) if (r.status === 'rejected') console.log('tracking error', r.reason);
+  // Rezultatul fiecărei trimiteri ajunge în istoricul comenzii, ca un token greșit sau o versiune
+  // de API retrasă să se vadă direct în admin (fetch nu aruncă eroare la răspunsuri 4xx/5xx).
+  const results = await Promise.allSettled(tasks.map(([, p]) => p));
+  await Promise.allSettled(results.map(async (r, i) => {
+    const platform = tasks[i][0];
+    const message = await describeResult(platform, r);
+    if (message.startsWith('⚠')) console.log('tracking error', message);
+    if (order.id) await addOrderEvent(env, order.id, message);
+  }));
+}
+
+// Facebook răspunde cu { events_received } sau { error: { message } };
+// TikTok răspunde cu { code: 0 } la succes, altfel { code, message }.
+async function describeResult(platform, r) {
+  if (r.status === 'rejected') return `⚠ ${platform}: evenimentul Purchase nu a putut fi trimis (${String(r.reason?.message || r.reason).slice(0, 200)}).`;
+  const res = r.value;
+  let data = null;
+  try { data = await res.json(); } catch { /* răspuns fără JSON */ }
+  const ok = platform === 'TikTok' ? res.ok && data?.code === 0 : res.ok && !data?.error;
+  if (ok) return `${platform} a primit evenimentul Purchase de pe server.`;
+  const reason = data?.error?.message || data?.message || `HTTP ${res.status}`;
+  return `⚠ ${platform} a refuzat evenimentul Purchase de pe server: ${String(reason).slice(0, 300)}`;
 }

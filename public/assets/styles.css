@@ -1031,6 +1031,9 @@ html.drawer-open { overflow: hidden; }
 .pcard-add.added { background: var(--ok); border-color: var(--ok); color: #fff; }
 .pcard-add.added span::after { content: ' ✓'; }
 #produse { position: relative; }
+/* 100vw include și bara de derulare (pe Windows ~17px), deci fundalul ar ieși în dreapta și ar apărea
+   o bară de derulare orizontală. Tăiem orice depășire la marginea conținutului, fără să creăm un container de derulare. */
+#continut { overflow-x: clip; }
 #produse::before { content: ''; position: absolute; z-index: -1; inset: 0 calc(50% - 50vw); background: linear-gradient(180deg, #fff 0%, var(--surface) 40%, var(--surface) 100%); }
 
 /* recomandarea săptămânii: casetă colorată */

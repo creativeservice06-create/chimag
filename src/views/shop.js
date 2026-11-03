@@ -118,7 +118,7 @@ export function homePage({ settings, products, categories = [], bestsellers = []
         ${spot.subtitle ? html`<p class="hv-spot-sub">${spot.subtitle}</p>` : ''}
         ${spot.benefits.length ? html`<ul class="hv-spot-list">${spot.benefits.slice(0, 4).map((x) => html`<li>${icons.check(16)}<span>${x}</span></li>`)}</ul>` : ''}
         <div class="hv-spot-price"><strong>${money(spot.price)}</strong>${spot.compare_at_price > spot.price ? html`<s>${money(spot.compare_at_price)}</s>` : ''}
-          ${offers.length ? html`<span class="hv-spot-offers">${offers.map((o) => html`<span>${o.qty} buc. <b>−${o.pct}%</b></span>`)}</span>` : ''}</div>
+          ${offers.length ? html`<span class="hv-spot-offers">${offers.map((o) => html`<span>${o.qty} buc. <b>−${Math.round(Number(o.pct))}%</b></span>`)}</span>` : ''}</div>
         <div class="hv-spot-actions">
           <button type="button" class="btn btn-primary btn-lg" data-quick-add="${spot.id}" data-title="${spot.title}" data-price="${spot.price}">${icons.cart(20)} Adaugă în coș</button>
           <a class="btn btn-ghost btn-lg" href="/p/${spot.slug}">Vezi detalii</a>
@@ -237,7 +237,7 @@ export function productPage({ settings, product: p, reviews, related = [], siteU
                 <input type="radio" name="qty" value="${b.qty}" ${i === 0 ? 'checked' : ''} data-total="${net}">
                 <span class="bundle-main">
                   <strong>${b.qty} ${b.qty === 1 ? 'bucată' : 'bucăți'}</strong>
-                  ${Number(b.pct) > 0 ? html`<span class="bundle-save">−${b.pct}% la total</span>` : html`<span class="bundle-each">preț standard</span>`}
+                  ${Number(b.pct) > 0 ? html`<span class="bundle-save">−${Math.round(Number(b.pct))}% la total</span>` : html`<span class="bundle-each">preț standard</span>`}
                 </span>
                 <span class="bundle-price"><strong>${money(net)}</strong>${net < gross ? html`<s>${money(gross)}</s>` : ''}</span>
                 ${b.label ? html`<span class="bundle-flag">${b.label}</span>` : ''}

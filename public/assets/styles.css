@@ -1564,5 +1564,9 @@ a.oi-link:hover .oi-name { color: var(--brand); }
 .cart-price s { font-size: .92rem; }
 @media (max-width: 600px) { .bundle-price s { font-size: .98rem; } .pcard-price s { font-size: .9rem; } }
 /* prețul vechi din caseta principală de preț */
-.price-block .price-was s { font-size: 1.45rem; font-weight: 600; text-decoration-thickness: 2.5px; }
-@media (max-width: 600px) { .price-block .price-was s { font-size: 1.25rem; } }
+.price-block .price-was s { font-size: 1.3rem; font-weight: 600; text-decoration-thickness: 2.5px; white-space: nowrap; }
+@media (min-width: 601px) {
+  .price-block { flex-wrap: nowrap; }
+  .price-block .price-now, .price-block .price-save { white-space: nowrap; }
+}
+@media (max-width: 600px) { .price-block .price-was s { font-size: 1.5rem; } }

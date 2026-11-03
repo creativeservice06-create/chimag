@@ -1554,3 +1554,12 @@ a.oi-link:hover .oi-name { color: var(--brand); }
 .s2-list { list-style: none; margin: 18px 0 0; padding: 0; display: grid; gap: 10px; }
 .s2-list li { display: flex; gap: 10px; align-items: flex-start; font-weight: 500; color: var(--ink); line-height: 1.5; }
 .s2-list svg { flex: none; width: 20px; height: 20px; padding: 3px; border-radius: 50%; background: #dff3e8; color: var(--ok); margin-top: 2px; }
+
+/* preț vechi tăiat: mai mare și mai ușor de observat */
+.bundle-price s, .pcard-price s, .price-was s, .sticky-info s, .cart-price s, .hv-spot-price s {
+  color: #6b7a90; font-weight: 500; text-decoration-line: line-through; text-decoration-color: rgba(214, 69, 69, .85); text-decoration-thickness: 2px;
+}
+.bundle-price s { font-size: 1.02rem; margin-top: 3px; }
+.pcard-price s { font-size: .98rem; }
+.cart-price s { font-size: .92rem; }
+@media (max-width: 600px) { .bundle-price s { font-size: .98rem; } .pcard-price s { font-size: .9rem; } }

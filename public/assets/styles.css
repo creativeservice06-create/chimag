@@ -1546,10 +1546,11 @@ a.oi-link:hover .oi-name { color: var(--brand); }
   .hv-faq .faq3-head h2 { font-size: 1.5rem; }
 }
 
-/* video de prezentare pe pagina de produs */
-.pdp-video { margin-top: 56px; }
-.pv-frame { position: relative; max-width: 560px; margin: 0 auto; border-radius: 24px; overflow: hidden; background: #0e192a; box-shadow: 0 30px 60px -30px rgba(16,29,48,.45); aspect-ratio: 1; }
-.pv-frame video { display: block; width: 100%; height: 100%; object-fit: cover; }
-.pv-badge { position: absolute; left: 14px; top: 14px; display: inline-flex; align-items: center; gap: 8px; padding: 7px 13px; border-radius: 999px; background: rgba(14,25,42,.72); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); color: #fff; font-size: .82rem; font-weight: 600; }
-.pv-dot { width: 8px; height: 8px; border-radius: 50%; background: #ef4444; box-shadow: 0 0 0 3px rgba(239,68,68,.25); }
-@media (max-width: 600px) { .pdp-video { margin-top: 36px; } .pv-frame { border-radius: 18px; } }
+/* video de prezentare: card în același stil cu secțiunile */
+.s2-video .s2-media { position: relative; background: #0e192a; }
+.s2-video video { display: block; width: 100%; height: 100%; aspect-ratio: 1; object-fit: cover; }
+.s2-live { gap: 8px; display: inline-flex; align-items: center; background: #fdecec; color: #b42318; }
+.pv-dot { width: 8px; height: 8px; border-radius: 50%; background: #ef4444; box-shadow: 0 0 0 3px rgba(239,68,68,.22); }
+.s2-list { list-style: none; margin: 18px 0 0; padding: 0; display: grid; gap: 10px; }
+.s2-list li { display: flex; gap: 10px; align-items: flex-start; font-weight: 500; color: var(--ink); line-height: 1.5; }
+.s2-list svg { flex: none; width: 20px; height: 20px; padding: 3px; border-radius: 50%; background: #dff3e8; color: var(--ok); margin-top: 2px; }

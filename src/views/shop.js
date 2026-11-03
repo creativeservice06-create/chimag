@@ -298,17 +298,20 @@ export function productPage({ settings, product: p, reviews, related = [], siteU
     <div class="about-body">${paragraphs(p.description)}</div>
   </div></section>` : ''}
 
-  ${p.video ? html`<section class="pdp-video"><div class="wrap">
-    <div class="pv-frame">
-      <video data-autoplay-video muted loop playsinline preload="metadata" poster="${p.video.replace(/\.mp4$/i, '.jpg')}" aria-label="Video: ${p.title} în folosință">
-        <source src="${p.video}" type="video/mp4">
-      </video>
-      <span class="pv-badge"><span class="pv-dot"></span>Vezi cum funcționează</span>
-    </div>
-  </div></section>` : ''}
 
-  ${(p.sections || []).length ? html`<section class="pdp-story"><div class="wrap story2">
-    ${p.sections.map((sec, i) => html`<article class="s2-row ${i % 2 ? 'rev' : ''}">
+  ${(p.sections || []).length || p.video ? html`<section class="pdp-story"><div class="wrap story2">
+    ${p.video ? html`<article class="s2-row s2-video rev">
+      <div class="s2-media">
+        <video data-autoplay-video muted loop playsinline preload="metadata" poster="${p.video.replace(/\.mp4$/i, '.jpg')}" aria-label="Video: ${p.title} în folosință"><source src="${p.video}" type="video/mp4"></video>
+      </div>
+      <div class="s2-text">
+        <span class="s2-num s2-live"><span class="pv-dot"></span>Video</span>
+        <h2>Vezi cum funcționează</h2>
+        <p>Câteva secunde cu produsul în folosință, ca să știi exact ce primești.</p>
+        ${p.benefits.length ? html`<ul class="s2-list">${p.benefits.slice(0, 3).map((x) => html`<li>${icons.check(16)}<span>${x}</span></li>`)}</ul>` : ''}
+      </div>
+    </article>` : ''}
+    ${(p.sections || []).map((sec, i) => html`<article class="s2-row ${i % 2 ? 'rev' : ''}">
       ${sec.image ? html`<div class="s2-media"><img src="${sec.image}" alt="${sec.title || p.title}" width="900" height="900" loading="lazy"></div>` : ''}
       <div class="s2-text">
         <span class="s2-num">${String(i + 1).padStart(2, '0')}</span>

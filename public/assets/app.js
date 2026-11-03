@@ -857,3 +857,15 @@
     track('Purchase', data, data.eventId);
   })();
 })();
+
+// Video de prezentare: pornește singur când ajungi la el și se oprește când ieși din ecran
+(function () {
+  var vids = document.querySelectorAll('video[data-autoplay-video]');
+  if (!vids.length) return;
+  var play = function (v) { v.muted = true; var p = v.play(); if (p && p.catch) p.catch(function () {}); };
+  if (!('IntersectionObserver' in window)) { vids.forEach(play); return; }
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) play(e.target); else e.target.pause(); });
+  }, { threshold: 0.35 });
+  vids.forEach(function (v) { io.observe(v); });
+})();

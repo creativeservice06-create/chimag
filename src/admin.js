@@ -666,6 +666,7 @@ async function saveProduct(request, env, id) {
     faq: JSON.stringify(parseFaq(form.get('faq')).slice(0, 30)), bundles: JSON.stringify(parseBundles(form.get('bundles'))),
     sections: JSON.stringify(parseSections(form.get('sections'))),
     specs: JSON.stringify(parseSpecs(form.get('specs'))),
+    video: (() => { const u = String(form.get('video') || '').trim().slice(0, 500); return /^(\/|https:\/\/)\S+$/.test(u) ? u : ''; })(),
     fulfillment: form.get('fulfillment') === 'helpship' ? 'helpship' : '',
     badge: String(form.get('badge') || '').trim().slice(0, 30), category: String(form.get('category') || '').trim().slice(0, 60),
     active: form.get('active') ? 1 : 0, featured: form.get('featured') ? 1 : 0, sort: Math.floor(Number(form.get('sort')) || 0),

@@ -584,6 +584,7 @@ export function productFormView({ product: p, reviews = [], hasR2 }) {
           <label class="span2">Întrebări frecvente <small>(întrebarea pe primul rând, răspunsul dedesubt, rând gol între ele)</small><textarea name="faq" rows="6">${faqText}</textarea></label>
           <label class="span2">Specificații <small>(una pe rând, sub forma <b>Nume: valoare</b>, ex: Material: Silicon)</small><textarea name="specs" rows="6" placeholder="Material: Silicon moale&#10;Dimensiuni: 14 × 8 cm">${specsText}</textarea></label>
           <label class="span2">Secțiuni de prezentare <small>(apar sub butonul de comandă, cu poza alternând stânga–dreapta. Pentru fiecare secțiune: titlul pe primul rând, linkul pozei pe al doilea, apoi textul. Separă secțiunile cu un rând care conține doar <b>---</b>)</small><textarea name="sections" rows="10" placeholder="Somn liniștit, fără teamă de întuneric&#10;/img/poza.jpg&#10;Textul secțiunii...&#10;---&#10;Următorul titlu&#10;...">${sectionsText}</textarea></label>
+          <label class="span2">Video de prezentare <small>(link spre un fișier .mp4; apare după descriere, pornește singur, fără sunet, în buclă)</small><input name="video" value="${p.video || ''}" placeholder="/video/produs.mp4"></label>
         </section>
 
         <section class="panel">

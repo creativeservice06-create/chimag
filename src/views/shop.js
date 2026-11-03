@@ -298,6 +298,15 @@ export function productPage({ settings, product: p, reviews, related = [], siteU
     <div class="about-body">${paragraphs(p.description)}</div>
   </div></section>` : ''}
 
+  ${p.video ? html`<section class="pdp-video"><div class="wrap">
+    <div class="pv-frame">
+      <video data-autoplay-video muted loop playsinline preload="metadata" poster="${p.video.replace(/\.mp4$/i, '.jpg')}" aria-label="Video: ${p.title} în folosință">
+        <source src="${p.video}" type="video/mp4">
+      </video>
+      <span class="pv-badge"><span class="pv-dot"></span>Vezi cum funcționează</span>
+    </div>
+  </div></section>` : ''}
+
   ${(p.sections || []).length ? html`<section class="pdp-story"><div class="wrap story2">
     ${p.sections.map((sec, i) => html`<article class="s2-row ${i % 2 ? 'rev' : ''}">
       ${sec.image ? html`<div class="s2-media"><img src="${sec.image}" alt="${sec.title || p.title}" width="900" height="900" loading="lazy"></div>` : ''}

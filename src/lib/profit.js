@@ -108,3 +108,54 @@ export async function periodStats(env, range) {
     pay, counties, sources, customers: phones[0]?.n || 0, returning: returning[0]?.n || 0,
   };
 }
+
+// ---------------- Profit real pe lună ----------------
+const pad2 = (n) => String(n).padStart(2, '0');
+export function monthRange(ym, scope) {
+  const today = roToday();
+  const ok = /^\d{4}-\d{2}$/.test(ym || '');
+  const month = ok ? ym : today.slice(0, 7);
+  const [y, m] = month.split('-').map(Number);
+  const last = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  const from = `${month}-01`;
+  let to = `${month}-${pad2(last)}`;
+  if (to > today && from <= today) to = today;
+  const prev = m === 1 ? `${y - 1}-12` : `${y}-${pad2(m - 1)}`;
+  const next = m === 12 ? `${y + 1}-01` : `${y}-${pad2(m + 1)}`;
+  return { month, from, to, prev, next: next <= today.slice(0, 7) ? next : '', scope: scope === 'toate' ? 'toate' : 'livrate', preset: '' };
+}
+
+export async function monthCosts(env, month) {
+  const r = await env.DB.prepare('SELECT * FROM monthly_costs WHERE month = ?').bind(month).first().catch(() => null);
+  return r || { month, ads: 0, helpship: 0, other: 0, note: '' };
+}
+
+export async function saveMonthCosts(env, month, v) {
+  await env.DB.prepare(`INSERT INTO monthly_costs (month, ads, helpship, other, note, updated_at) VALUES (?, ?, ?, ?, ?, datetime('now'))
+    ON CONFLICT(month) DO UPDATE SET ads = excluded.ads, helpship = excluded.helpship, other = excluded.other, note = excluded.note, updated_at = excluded.updated_at`)
+    .bind(month, v.ads, v.helpship, v.other, v.note).run();
+}
+
+export async function realProfit(env, settings, ym, scope) {
+  const range = monthRange(ym, scope);
+  const [p, costs] = await Promise.all([profitData(env, settings, range), monthCosts(env, range.month)]);
+  const spend = costs.ads + costs.helpship + costs.other;
+  const real = p.collected - p.cost - spend;
+  // istoric: ultimele 12 luni (încasări și costuri de achiziție pe lună + costurile salvate)
+  const months = [];
+  for (let i = 0, cur = range.month; i < 12; i++) {
+    months.push(cur);
+    const [y, m] = cur.split('-').map(Number);
+    cur = m === 1 ? `${y - 1}-12` : `${y}-${pad2(m - 1)}`;
+  }
+  const history = [];
+  for (const mo of months) {
+    const r = monthRange(mo, range.scope);
+    if (r.from > roToday()) continue;
+    const [hp, hc] = await Promise.all([profitData(env, settings, r), monthCosts(env, mo)]);
+    if (!hp.orders && !(hc.ads + hc.helpship + hc.other)) continue;
+    const hs = hc.ads + hc.helpship + hc.other;
+    history.push({ month: mo, orders: hp.orders, units: hp.products.reduce((s, x) => s + x.qty, 0), collected: hp.collected, cost: hp.cost, ...hc, real: hp.collected - hp.cost - hs });
+  }
+  return { range, p, costs, spend, real, history };
+}

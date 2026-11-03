@@ -11,6 +11,7 @@ import { parseJSON } from '../lib/util.js';
 export function adminLayout({ title, active, body, flash, newCount = 0, msgCount = 0 }) {
   const nav = [
     ['/admin', 'panou', 'Panou', 'home'],
+    ['/admin/profit-real', 'profit', 'Profit real', 'cash'],
     ['/admin/comenzi', 'comenzi', 'Comenzi', 'cart'],
     ['/admin/facturi', 'facturi', 'Facturi', 'doc'],
     ['/admin/produse', 'produse', 'Produse', 'box'],
@@ -20,7 +21,8 @@ export function adminLayout({ title, active, body, flash, newCount = 0, msgCount
     ['/admin/setari', 'setari', 'Setări', 'gear'],
   ];
   const badge = (key) => (key === 'comenzi' && newCount ? html`<b class="count">${newCount}</b>` : key === 'mesaje' && msgCount ? html`<b class="count">${msgCount}</b>` : '');
-  const main = nav.slice(0, 4), more = nav.slice(4);
+  const TAB = ['panou', 'comenzi', 'facturi', 'produse'];
+  const main = nav.filter(([, k]) => TAB.includes(k)), more = nav.filter(([, k]) => !TAB.includes(k));
   const moreActive = more.some(([, key]) => key === active);
   return html`<html lang="ro"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
@@ -28,7 +30,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0, msgCount
 <title>${title} · Admin Chimag</title>
 <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/admin.css?v=20">
+<link rel="stylesheet" href="/assets/admin.css?v=21">
 <meta name="theme-color" content="#0e192a">
 <script src="/assets/admin.js?v=2" defer></script>
 </head><body>
@@ -68,7 +70,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0, msgCount
 
 export function loginView(error) {
   return html`<html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex"><title>Autentificare · Admin</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/assets/admin.css?v=20"></head>
+<meta name="robots" content="noindex"><title>Autentificare · Admin</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/assets/admin.css?v=21"></head>
 <body class="login-body"><form class="login" method="post" action="/admin/login">
   <div class="brand">${logoMark()}<span>chimag</span></div>
   <h1>Administrare</h1>
@@ -179,7 +181,7 @@ function profitPanel(p, r, prev) {
     </div>
     <div class="d2-ship">
       <span class="d2-ship-ic" aria-hidden="true">${icons.truck(16)}</span>
-      <span>Din vânzări, <b>${money(p.shippingIn)}</b> sunt transport încasat de la clienți. <em>Profitul real = profitul estimat minus ce plătești la Helpship pentru transport și depozitare.</em></span>
+      <span>Din vânzări, <b>${money(p.shippingIn)}</b> sunt transport încasat de la clienți. <em>Profitul real = profitul estimat minus ce plătești la Helpship pentru transport și depozitare.</em> <a href="/admin/profit-real">Vezi profitul real ›</a></span>
     </div>
   </section>
   ${p.missingCost.length ? html`<p class="flash err">Lipsește costul de achiziție la: ${p.missingCost.join(', ')}. Completează-l la produs, altfel profitul apare mai mare decât e.</p>` : ''}`;
@@ -991,5 +993,88 @@ export function emailsView({ previews, to, emailOk }) {
         <a class="btn" href="/admin/emailuri/${k}" target="_blank">Vezi</a>
         <form method="post" action="/admin/emailuri/${k}"><button class="btn primary" ${emailOk && to ? '' : 'disabled'}>Trimite-mi testul</button></form>
       </div></li>`)}</ul>
+  </section>`;
+}
+
+// ---------------- Profit real ----------------
+const MONTHS_RO = ['ianuarie', 'februarie', 'martie', 'aprilie', 'mai', 'iunie', 'iulie', 'august', 'septembrie', 'octombrie', 'noiembrie', 'decembrie'];
+const monthName = (ym) => { const [y, m] = ym.split('-').map(Number); return `${MONTHS_RO[m - 1]} ${y}`; };
+const monthShort = (ym) => { const [y, m] = ym.split('-').map(Number); return `${MONTHS_RO[m - 1].slice(0, 3)}. ${y}`; };
+
+export function realProfitView({ range: r, p, costs: c, spend, real, history }) {
+  const units = p.products.reduce((s, x) => s + x.qty, 0);
+  const sc = r.scope === 'toate' ? '&comenzi=toate' : '';
+  const link = (m) => `/admin/profit-real?luna=${m}${sc}`;
+  const scopeLink = (s) => `/admin/profit-real?luna=${r.month}${s === 'toate' ? '&comenzi=toate' : ''}`;
+  const lei = (v) => (v ? moneyNum(v) : '');
+  const perOrder = (v) => (p.orders ? money(Math.round(v / p.orders)) : '–');
+  const roas = c.ads ? String(Math.round((p.collected / c.ads) * 100) / 100).replace('.', ',') : '–';
+  const filled = spend > 0;
+  const row = (label, v, sub, sign = '−', tone = '') => html`<div class="pr-row ${tone}"><span class="pr-l"><b>${label}</b>${sub ? html`<small>${sub}</small>` : ''}</span><span class="pr-v">${sign ? html`<i>${sign}</i>` : ''}${money(v)}</span></div>`;
+  return html`
+  <header class="page-head d2-head">
+    <div><h1>Profit real</h1><p class="muted">Cât îți rămâne după produse, reclame și Helpship, pe ${monthName(r.month)}.</p></div>
+    <nav class="pr-month" aria-label="Alege luna">
+      <a class="btn sm" href="${link(r.prev)}" aria-label="Luna anterioară">‹</a>
+      <form method="get" action="/admin/profit-real"><input type="month" name="luna" value="${r.month}" onchange="this.form.submit()">${r.scope === 'toate' ? html`<input type="hidden" name="comenzi" value="toate">` : ''}</form>
+      ${r.next ? html`<a class="btn sm" href="${link(r.next)}" aria-label="Luna următoare">›</a>` : html`<span class="btn sm disabled" aria-hidden="true">›</span>`}
+    </nav>
+  </header>
+
+  <section class="d2-filter">
+    <div class="d2-seg" role="tablist">
+      <a class="${r.scope === 'livrate' ? 'on' : ''}" href="${scopeLink('livrate')}">Doar livrate (bani încasați)</a>
+      <a class="${r.scope === 'toate' ? 'on' : ''}" href="${scopeLink('toate')}">Toate comenzile</a>
+    </div>
+  </section>
+
+  <div class="pr-grid">
+    <section class="panel pr-calc">
+      <h2>Calculul lunii</h2>
+      ${row('Vânzări totale', p.collected, `${p.orders} ${p.orders === 1 ? 'comandă' : 'comenzi'} · ${units} buc. · cu transport`, '')}
+      ${row('Cost de achiziție', p.cost, `${units} buc. × prețul tău de cumpărare`)}
+      ${row('Reclame', c.ads, 'Facebook, TikTok, Google')}
+      ${row('Helpship', c.helpship, 'transport, depozitare, procesare')}
+      ${c.other ? row('Alte costuri', c.other, c.note || '') : ''}
+      <div class="pr-total ${real < 0 ? 'neg' : ''}">
+        <span><b>Profit real</b><small>${p.orders ? `marjă ${pct(real, p.collected)} · ${perOrder(real)} pe comandă` : 'nicio comandă în această lună'}</small></span>
+        <strong>${money(real)}</strong>
+      </div>
+      ${!filled ? html`<p class="hint pr-hint">Completează în dreapta cât ai plătit luna aceasta pe reclame și la Helpship. Până atunci, profitul de mai sus nu are scăzute aceste costuri.</p>` : ''}
+      ${p.missingCost.length ? html`<p class="flash err">Lipsește costul de achiziție la: ${p.missingCost.join(', ')}.</p>` : ''}
+    </section>
+
+    <section class="panel pr-form">
+      <h2>Costurile lunii</h2>
+      <p class="muted small">Sumele plătite în ${monthName(r.month)}, în lei. Le poți modifica oricând.</p>
+      <form method="post" action="/admin/profit-real" class="pr-fields">
+        <input type="hidden" name="luna" value="${r.month}">${r.scope === 'toate' ? html`<input type="hidden" name="comenzi" value="toate">` : ''}
+        <label>Reclame <small>(totalul din Facebook, TikTok, Google)</small><span class="pr-in"><input name="ads" inputmode="decimal" value="${lei(c.ads)}" placeholder="0,00"><em>lei</em></span></label>
+        <label>Helpship <small>(factura lunii: transport, depozitare)</small><span class="pr-in"><input name="helpship" inputmode="decimal" value="${lei(c.helpship)}" placeholder="0,00"><em>lei</em></span></label>
+        <label>Alte costuri <small>(opțional: ambalaje, abonamente, contabil)</small><span class="pr-in"><input name="other" inputmode="decimal" value="${lei(c.other)}" placeholder="0,00"><em>lei</em></span></label>
+        <label>Notițe <small>(opțional)</small><input name="note" value="${c.note || ''}" placeholder="ex: include și factura Helpship din 05.11"></label>
+        <button class="btn primary">Salvează costurile</button>
+      </form>
+    </section>
+  </div>
+
+  <section class="d2-kpis pr-kpis">
+    <div class="d2-kpi"><div class="d2-kpi-top"><span class="kpi2-ic t-blue">${icons.cart(16)}</span><span>Comenzi</span></div><div class="d2-kpi-val"><strong>${p.orders}</strong></div><small>${units} buc. vândute</small></div>
+    <div class="d2-kpi"><div class="d2-kpi-top"><span class="kpi2-ic t-rose">${icons.chart ? icons.chart(16) : icons.cash(16)}</span><span>Reclamă pe comandă</span></div><div class="d2-kpi-val"><strong>${c.ads ? perOrder(c.ads) : '–'}</strong></div><small>cât te-a costat o comandă</small></div>
+    <div class="d2-kpi"><div class="d2-kpi-top"><span class="kpi2-ic t-indigo">${icons.cash(16)}</span><span>ROAS</span></div><div class="d2-kpi-val"><strong>${roas}</strong></div><small>lei încasați la 1 leu de reclamă</small></div>
+    <div class="d2-kpi"><div class="d2-kpi-top"><span class="kpi2-ic t-amber">${icons.truck(16)}</span><span>Helpship pe comandă</span></div><div class="d2-kpi-val"><strong>${c.helpship ? perOrder(c.helpship) : '–'}</strong></div><small>transport și depozitare</small></div>
+    <div class="d2-kpi"><div class="d2-kpi-top"><span class="kpi2-ic t-green">${icons.star(16)}</span><span>Profit real / comandă</span></div><div class="d2-kpi-val"><strong>${perOrder(real)}</strong></div><small>după toate costurile</small></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Ultimele luni</h2><span class="muted">${r.scope === 'livrate' ? 'doar comenzi livrate' : 'toate comenzile'}</span></div>
+    ${history.length ? html`<div class="tbl-wrap"><table class="tbl pr-hist">
+      <thead><tr><th>Luna</th><th class="r">Comenzi</th><th class="r">Vânzări</th><th class="r">Cost produse</th><th class="r">Reclame</th><th class="r">Helpship</th><th class="r">Alte</th><th class="r">Profit real</th><th class="r">Marjă</th></tr></thead>
+      <tbody>${history.map((h) => html`<tr class="${h.month === r.month ? 'on' : ''}">
+        <td><a href="${link(h.month)}"><b>${monthShort(h.month)}</b></a>${!(h.ads + h.helpship + h.other) ? html` <span class="chip st-noua">fără costuri</span>` : ''}</td>
+        <td class="r num">${h.orders}</td><td class="r num">${money(h.collected)}</td><td class="r num">${money(h.cost)}</td>
+        <td class="r num">${money(h.ads)}</td><td class="r num">${money(h.helpship)}</td><td class="r num">${money(h.other)}</td>
+        <td class="r num"><b class="${h.real < 0 ? 'err-txt' : 'ok-txt'}">${money(h.real)}</b></td><td class="r num">${h.collected ? pct(h.real, h.collected) : '–'}</td>
+      </tr>`)}</tbody></table></div>` : html`<p class="muted">Încă nu sunt comenzi sau costuri salvate.</p>`}
   </section>`;
 }

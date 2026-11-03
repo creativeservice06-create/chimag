@@ -9,7 +9,7 @@ import { getProvider } from './shipping/providers.js';
 import { JUDETE } from './lib/judete.js';
 import {
   adminLayout, loginView, dashboardView, ordersView, orderView, labelView, productsView, productFormView, settingsView, couponsView, messagesView,
-  customersView, customerFormView, customerView, invoicesView, emailsView,
+  customersView, customerFormView, customerView, invoicesView, emailsView, realProfitView,
 } from './views/admin-views.js';
 import { COUPON_TYPES, CODE_TYPES, normalizeCode } from './lib/coupons.js';
 import { emailStatus, sendEmail } from './lib/email.js';
@@ -65,6 +65,20 @@ export async function handleAdmin(request, env, ctx, path) {
       profitData(env, settings, range), profitData(env, settings, prevRange(range)), periodStats(env, range), dashboardData(env),
     ]);
     return render(env, url, { title: 'Panou', active: 'panou', body: dashboardView({ ...base, profit, prev, stats, range }) });
+  }
+
+  // ---------- Profit real (pe lună, cu reclame și Helpship) ----------
+  if (path === '/admin/profit-real') {
+    const { realProfit, saveMonthCosts, monthRange } = await import('./lib/profit.js');
+    if (method === 'POST') {
+      const form = await readForm(request);
+      const r = monthRange(String(form.get('luna') || ''), String(form.get('comenzi') || ''));
+      const lei = (k) => Math.max(0, toBani(form.get(k)) || 0);
+      await saveMonthCosts(env, r.month, { ads: lei('ads'), helpship: lei('helpship'), other: lei('other'), note: String(form.get('note') || '').trim().slice(0, 500) });
+      return redirect(withFlash(`/admin/profit-real?luna=${r.month}${r.scope === 'toate' ? '&comenzi=toate' : ''}`, 'ok', 'Costurile lunii au fost salvate.'));
+    }
+    const data = await realProfit(env, settings, url.searchParams.get('luna'), url.searchParams.get('comenzi'));
+    return render(env, url, { title: 'Profit real', active: 'profit', body: realProfitView(data) });
   }
 
   // ---------- Comenzi ----------

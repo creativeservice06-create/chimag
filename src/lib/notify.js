@@ -13,7 +13,11 @@ export async function notifyOrderPlaced(env, settings, order) {
   const tasks = [];
   if (settings.notify_orders === '1') tasks.push(safe(sendEmail(env, settings, adminNewOrderEmail(settings, base, order, items, images))));
   if (settings.customer_emails !== '0' && order.email) {
-    tasks.push(safe(sendMail(env, settings, { to: order.email, ...customerOrderEmail(settings, base, order, items, images) })));
+    const mail = customerOrderEmail(settings, base, order, items, images);
+    tasks.push(safe(sendMail(env, settings, { to: order.email, ...mail })).then(async (r) => {
+      if (r && r.ok) await env.DB.prepare('INSERT INTO order_events(order_id, message) VALUES (?, ?)').bind(order.id, `Email trimis clientului: ${mail.subject}`).run().catch(() => {});
+      return r;
+    }));
   }
   await Promise.all(tasks);
 }

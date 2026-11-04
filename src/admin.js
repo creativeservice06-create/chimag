@@ -9,7 +9,7 @@ import { getProvider } from './shipping/providers.js';
 import { JUDETE } from './lib/judete.js';
 import {
   adminLayout, loginView, dashboardView, ordersView, orderView, labelView, productsView, productFormView, settingsView, couponsView, messagesView,
-  customersView, customerFormView, customerView, invoicesView, emailsView, realProfitView,
+  customersView, customerFormView, customerView, invoicesView, emailsView, realProfitView, ordersMapView, orderSource,
 } from './views/admin-views.js';
 import { COUPON_TYPES, CODE_TYPES, normalizeCode } from './lib/coupons.js';
 import { emailStatus, sendEmail } from './lib/email.js';
@@ -79,6 +79,28 @@ export async function handleAdmin(request, env, ctx, path) {
     }
     const data = await realProfit(env, settings, url.searchParams.get('luna'), url.searchParams.get('comenzi'));
     return render(env, url, { title: 'Profit real', active: 'profit', body: realProfitView(data) });
+  }
+
+  // ---------- Harta comenzilor (doar citire) ----------
+  if (path === '/admin/harta' && method === 'GET') {
+    const { roToday, roMidnightUtc } = await import('./lib/profit.js');
+    const period = ['7z', '30z', 'luna', 'tot'].includes(url.searchParams.get('perioada')) ? url.searchParams.get('perioada') : '30z';
+    const today = roToday();
+    const back = (n) => { const d = new Date(today + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - n); return d.toISOString().slice(0, 10); };
+    const fromDay = { '7z': back(6), '30z': back(29), luna: today.slice(0, 8) + '01', tot: '2000-01-01' }[period];
+    const start = roMidnightUtc(fromDay);
+    const valid = "created_at >= ? AND status NOT IN ('anulata', 'refuzata', 'retur') AND NOT (payment_method = 'card' AND payment_status != 'platita')";
+    const [byCounty, srcRows] = await Promise.all([
+      env.DB.prepare(`SELECT county, COUNT(*) AS n, COALESCE(SUM(total), 0) AS revenue FROM orders WHERE ${valid} GROUP BY county`).bind(start).all().then((r) => r.results || []),
+      env.DB.prepare(`SELECT utm_source, utm_campaign, fbclid, ttclid, COUNT(*) AS n FROM orders WHERE ${valid} GROUP BY utm_source, utm_campaign, fbclid != '', ttclid != ''`).bind(start).all().then((r) => r.results || []),
+    ]);
+    const slug = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/\s+/g, '-').replace(/^municipiul-/, '');
+    const map = new Map();
+    for (const r of byCounty) { const k = slug(r.county); const m0 = map.get(k) || { slug: k, name: r.county, n: 0, revenue: 0 }; m0.n += r.n; m0.revenue += r.revenue; map.set(k, m0); }
+    const src = new Map();
+    for (const r of srcRows) { const k = orderSource(r).key; src.set(k, (src.get(k) || 0) + r.n); }
+    const sources = [...src.entries()].map(([key, n]) => ({ key, n })).sort((a, b) => b.n - a.n);
+    return render(env, url, { title: 'Harta comenzilor', active: 'harta', body: ordersMapView({ rows: [...map.values()], period, sources }) });
   }
 
   // ---------- Comenzi ----------

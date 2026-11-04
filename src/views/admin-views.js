@@ -17,6 +17,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0, msgCount
     ['/admin/produse', 'produse', 'Produse', 'box'],
     ['/admin/coduri', 'coduri', 'Roată și coduri', 'gift'],
     ['/admin/clienti', 'clienti', 'Clienți', 'user'],
+    ['/admin/harta', 'harta', 'Harta comenzilor', 'map'],
     ['/admin/mesaje', 'mesaje', 'Mesaje', 'mail'],
     ['/admin/setari', 'setari', 'Setări', 'gear'],
   ];
@@ -30,7 +31,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0, msgCount
 <title>${title} · Admin Chimag</title>
 <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/admin.css?v=21">
+<link rel="stylesheet" href="/assets/admin.css?v=22">
 <meta name="theme-color" content="#0e192a">
 <script src="/assets/admin.js?v=2" defer></script>
 </head><body>
@@ -70,7 +71,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0, msgCount
 
 export function loginView(error) {
   return html`<html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex"><title>Autentificare · Admin</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/assets/admin.css?v=21"></head>
+<meta name="robots" content="noindex"><title>Autentificare · Admin</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/assets/admin.css?v=22"></head>
 <body class="login-body"><form class="login" method="post" action="/admin/login">
   <div class="brand">${logoMark()}<span>chimag</span></div>
   <h1>Administrare</h1>
@@ -79,6 +80,19 @@ export function loginView(error) {
   <button class="btn primary">Intră în cont</button>
 </form></body></html>`;
 }
+
+// Sursa comenzii: din linkul reclamei (fbclid / ttclid / gclid) sau din parametrii utm
+export function orderSource(o) {
+  const u = String(o.utm_source || '').trim().toLowerCase();
+  const camp = String(o.utm_campaign || '').trim();
+  if (o.ttclid || /tiktok|^tt$/.test(u)) return { key: 'tiktok', label: 'TikTok', camp };
+  if (/instagram|^ig$/.test(u)) return { key: 'meta', label: 'Instagram', camp };
+  if (o.fbclid || /facebook|^fb$|^meta$/.test(u)) return { key: 'meta', label: 'Facebook', camp };
+  if (/google|^gads$|^adwords$/.test(u) || /gclid=/.test(String(o.landing || ''))) return { key: 'google', label: 'Google', camp };
+  if (u) return { key: 'other', label: u.charAt(0).toUpperCase() + u.slice(1, 30), camp };
+  return { key: 'direct', label: 'Direct', camp };
+}
+const sourceChip = (o, long = false) => { const s = orderSource(o); return html`<span class="src src-${s.key}" title="${s.camp ? `Campanie: ${s.camp}` : s.key === 'direct' ? 'Fără reclamă: a intrat direct pe site' : ''}"><i></i>${s.label}${long && s.camp ? html`<small>${s.camp}</small>` : ''}</span>`; };
 
 const statusChip = (s) => html`<span class="chip st-${s}">${ORDER_STATUSES[s] || s}</span>`;
 const payChip = (o) => o.payment_method === 'card'
@@ -291,7 +305,7 @@ function ordersTable(orders, selectable = true) {
       ${selectable ? html`<td><input type="checkbox" name="ids" value="${o.id}" form="bulk" aria-label="Selectează ${o.number}"></td>` : ''}
       <td><a href="/admin/comenzi/${o.id}"><b>${o.number}</b></a>${o.fulfillment_mode !== 'own' ? html`<br><span class="chip ${o.hs_error ? 'st-anulata' : 'chip-hs'}" title="${o.hs_error || ''}">${o.fulfillment_mode === 'mixt' ? '2 colete · ' : ''}${o.hs_error ? 'Helpship: eroare' : o.hs_order_id ? 'Trimisă la depozit' : o.status === 'anulata' ? 'Helpship' : 'Helpship: netrimisă'}</span>` : ''}</td>
       <td class="nowrap o-date">${formatDate(o.created_at)}</td>
-      <td class="o-client">${o.customer_name}<br><a class="muted" href="tel:${o.phone}">${o.phone}</a></td>
+      <td class="o-client">${o.customer_name}<br><a class="muted" href="tel:${o.phone}">${o.phone}</a><span class="o-src">${sourceChip(o)}</span></td>
       <td class="o-loc">${o.city}<br><span class="muted">${o.county}</span></td>
       <td class="r nowrap o-total"><b>${money(o.total)}</b></td>
       <td class="o-pay">${payChip(o)}</td>
@@ -348,7 +362,7 @@ export function orderView({ order: o, items, events, settings, provider, hsOn = 
   return html`
   <header class="page-head">
     <div><a class="back" href="/admin/comenzi">Comenzi</a><h1>${o.number} ${statusChip(o.status)}</h1>
-    <p class="muted">Plasată ${formatDate(o.created_at)} · ${payChip(o)}</p>
+    <p class="muted">Plasată ${formatDate(o.created_at)} · ${payChip(o)} · Sursa: ${sourceChip(o, true)}</p>
     ${['noua', 'confirmata'].includes(o.status) ? html`<p class="hint">Clientul nu primește email la confirmare. Primește unul singur, „confirmată și pe drum”, cu AWB-ul, când pleacă coletul.</p>` : ''}</div>
     <div class="actions">
       ${quick.map(([s, label, cls]) => html`<form method="post" action="/admin/comenzi/${o.id}/status"><input type="hidden" name="status" value="${s}"><button class="btn ${cls}" ${s === 'anulata' ? raw('data-confirm="Sigur anulezi comanda? Stocul se readaugă."') : ''}>${label}</button></form>`)}
@@ -1077,4 +1091,38 @@ export function realProfitView({ range: r, p, costs: c, spend, real, history }) 
         <td class="r num"><b class="${h.real < 0 ? 'err-txt' : 'ok-txt'}">${money(h.real)}</b></td><td class="r num">${h.collected ? pct(h.real, h.collected) : '–'}</td>
       </tr>`)}</tbody></table></div>` : html`<p class="muted">Încă nu sunt comenzi sau costuri salvate.</p>`}
   </section>`;
+}
+
+// ---------------- Harta comenzilor (doar citire) ----------------
+export function ordersMapView({ rows, period, sources }) {
+  const P = [['7z', '7 zile'], ['30z', '30 de zile'], ['luna', 'Luna aceasta'], ['tot', 'Tot timpul']];
+  const SRC = { meta: 'Facebook / Instagram', tiktok: 'TikTok', google: 'Google', other: 'Altele', direct: 'Direct' };
+  const total = sources.reduce((a, x) => a + x.n, 0);
+  return html`
+  <header class="page-head d2-head">
+    <div><h1>Harta comenzilor</h1><p class="muted">De unde vin comenzile, pe județe · fără comenzile anulate, refuzate sau returnate</p></div>
+    <nav class="d2-chips">${P.map(([k, l]) => html`<a class="${period === k ? 'on' : ''}" href="/admin/harta?perioada=${k}">${l}</a>`)}</nav>
+  </header>
+  <section class="d2-kpis hm-kpis" id="hm-kpis"></section>
+  <div class="hm-grid">
+    <section class="panel">
+      <div class="panel-head"><h2>Comenzi pe județe</h2><span class="muted">Atinge un județ pentru detalii</span></div>
+      <div class="hm-map" id="hm-map"><div class="hm-tip" id="hm-tip"></div></div>
+      <div class="hm-legend" id="hm-legend"></div>
+    </section>
+    <div class="hm-side">
+      <section class="panel">
+        <div class="panel-head"><h2>Top județe</h2><span class="muted">după comenzi</span></div>
+        <ol class="hm-rank" id="hm-rank"></ol>
+        <p class="hm-none muted" id="hm-none"></p>
+      </section>
+      <section class="panel">
+        <div class="panel-head"><h2>Surse</h2><span class="muted">de unde au venit</span></div>
+        ${total ? html`<ul class="hm-src">${sources.map((x) => html`<li><span class="src src-${x.key}"><i></i>${SRC[x.key] || x.key}</span><b>${x.n}</b><small class="muted">${pct(x.n, total)}</small></li>`)}</ul>` : html`<p class="muted">Nicio comandă în perioada aleasă.</p>`}
+      </section>
+    </div>
+  </div>
+  <script type="application/json" id="hm-data">${raw(JSON.stringify(rows).replace(/</g, '\\u003c'))}</script>
+  <script src="/assets/ro-judete.js?v=1"></script>
+  <script src="/assets/harta.js?v=2"></script>`;
 }

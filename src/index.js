@@ -63,7 +63,7 @@ export default {
   },
 
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(Promise.allSettled([syncTracking(env), checkWheelUnlocks(env), syncHelpship(env)])
+    ctx.waitUntil(Promise.allSettled([syncTracking(env), checkWheelUnlocks(env), syncHelpship(env), import('./lib/activity.js').then((m) => m.cleanupVisits(env))])
       .then(async () => { const { syncInvoices } = await import('./lib/invoices.js'); await syncInvoices(env, await getSettings(env)); }));
   },
 };
@@ -72,6 +72,15 @@ async function route(request, env, ctx) {
   const url = new URL(request.url);
   const path = url.pathname.replace(/\/+$/, '') || '/';
   const method = request.method;
+
+  // Activitate pe site (din /assets/v.js): răspunde imediat, scrie în fundal; orice eroare e ignorată
+  if (path === '/api/v' && method === 'POST') {
+    try {
+      const text = await request.text();
+      ctx.waitUntil(import('./lib/activity.js').then((m) => m.recordVisit(request, env, text)).catch((e) => console.log('activitate', e?.message || e)));
+    } catch (e) { /* ignorat */ }
+    return new Response(null, { status: 204, headers: { 'cache-control': 'no-store' } });
+  }
 
   // Redirect http -> https și chimag.ro -> www.chimag.ro (după SITE_URL)
   if (env.SITE_URL && url.hostname !== 'localhost') {

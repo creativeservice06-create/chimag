@@ -44,6 +44,7 @@ ${ogImage ? html`<meta property="og:image" content="${ogImage.startsWith('http')
 ${jsonLd ? html`<script type="application/ld+json">${jsonScript(jsonLd)}</script>` : ''}
 <script>window.CHIMAG=${jsonScript(config)};${pageData ? html`window.PAGE=${jsonScript(pageData)};` : ''}</script>
 <script src="/assets/app.js?v=${ASSET_V}" defer></script>
+<script src="/assets/v.js?v=1" defer></script>
 </head>
 <body class="${bodyClass}">
 ${settings.announcement ? html`<div class="announce">${settings.announcement}</div>` : ''}

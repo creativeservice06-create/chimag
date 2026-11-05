@@ -18,6 +18,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0, msgCount
     ['/admin/coduri', 'coduri', 'Roată și coduri', 'gift'],
     ['/admin/clienti', 'clienti', 'Clienți', 'user'],
     ['/admin/harta', 'harta', 'Harta comenzilor', 'map'],
+    ['/admin/activitate', 'activitate', 'Activitate pe site', 'pulse'],
     ['/admin/mesaje', 'mesaje', 'Mesaje', 'mail'],
     ['/admin/setari', 'setari', 'Setări', 'gear'],
   ];
@@ -31,7 +32,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0, msgCount
 <title>${title} · Admin Chimag</title>
 <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/admin.css?v=23">
+<link rel="stylesheet" href="/assets/admin.css?v=24">
 <meta name="theme-color" content="#0e192a">
 <script src="/assets/admin.js?v=2" defer></script>
 </head><body>
@@ -71,7 +72,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0, msgCount
 
 export function loginView(error) {
   return html`<html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex"><title>Autentificare · Admin</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/assets/admin.css?v=23"></head>
+<meta name="robots" content="noindex"><title>Autentificare · Admin</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/assets/admin.css?v=24"></head>
 <body class="login-body"><form class="login" method="post" action="/admin/login">
   <div class="brand">${logoMark()}<span>chimag</span></div>
   <h1>Administrare</h1>
@@ -1128,4 +1129,122 @@ export function ordersMapView({ rows, period, sources }) {
   <script type="application/json" id="hm-data">${raw(JSON.stringify(rows).replace(/</g, '\\u003c'))}</script>
   <script src="/assets/ro-judete.js?v=1"></script>
   <script src="/assets/harta.js?v=2"></script>`;
+}
+
+// ---------------- Activitate pe site ----------------
+const ACT_SRC = { facebook: ['meta', 'Facebook'], instagram: ['meta', 'Instagram'], tiktok: ['tiktok', 'TikTok'], google: ['google', 'Google'], direct: ['direct', 'Direct'], intern: ['direct', 'Revenit pe site'] };
+export const actSource = (k) => ACT_SRC[k] || ['other', String(k || 'Altele').replace(/^./, (c) => c.toUpperCase())];
+const actSrcChip = (k, camp = '') => { const [c, l] = actSource(k); return html`<span class="src src-${c}" title="${camp ? `Campanie: ${camp}` : ''}"><i></i>${l}${camp ? html`<small>${camp}</small>` : ''}</span>`; };
+export const fmtDur = (s) => { s = Math.round(s || 0); if (s < 60) return `${s} s`; if (s < 3600) return `${Math.floor(s / 60)} min${s % 60 ? ` ${s % 60} s` : ''}`; return `${Math.floor(s / 3600)} h ${Math.floor((s % 3600) / 60)} min`; };
+const DEV = { mobil: 'Telefon', desktop: 'Calculator', tableta: 'Tabletă' };
+const COUNTRY = { RO: 'România', MD: 'Moldova', US: 'SUA', DE: 'Germania', IT: 'Italia', ES: 'Spania', GB: 'Marea Britanie', FR: 'Franța', NL: 'Olanda', AT: 'Austria', HU: 'Ungaria', BG: 'Bulgaria', IE: 'Irlanda', BE: 'Belgia', '': 'Necunoscut' };
+const ctry = (c) => COUNTRY[c] || c;
+
+function actChart(series, unit) {
+  const max = Math.max(1, ...series.map((x) => x.visitors));
+  const every = Math.ceil(series.length / 12), everyM = Math.ceil(series.length / 6);
+  return html`<div class="chart2 act-chart">
+    <div class="y-axis">${[1, 0.5, 0].map((f) => html`<span>${f ? Math.round(max * f) : '0'}</span>`)}</div>
+    <div class="plot">
+      <div class="grid"><i></i><i></i><i></i></div>
+      <div class="chart-cols">${series.map((x, i) => html`<div class="col ${i > series.length * 0.7 ? 'tip-left' : ''}" tabindex="0">
+        <div class="col-bars"><span class="b-rev" style="height:${Math.round((x.visitors / max) * 100)}%"></span><span class="b-prof" style="height:${Math.round((x.engaged / max) * 100)}%"></span></div>
+        <small class="${i % everyM === 0 ? 'lm' : ''}">${i % every === 0 || i % everyM === 0 ? x.label : ''}</small>
+        <div class="tip"><b>${x.long || (unit === 'ora' ? `${x.label} – ${String((Number(x.key) + 1) % 24).padStart(2, '0')}:00` : x.label)}</b><span>Vizitatori <b>${x.visitors}</b></span><span>Implicați <b>${x.engaged}</b></span><span>Pagini văzute <b>${x.pages}</b></span><span>${x.orders} ${x.orders === 1 ? 'comandă' : 'comenzi'}</span></div>
+      </div>`)}</div>
+    </div>
+  </div>
+  <div class="act-legend"><span><i class="l1"></i>Vizitatori</span><span><i class="l2"></i>Implicați (au stat peste 10 secunde sau au deschis mai multe pagini)</span></div>`;
+}
+
+function actShare(rows, total, label) {
+  if (!rows.length) return html`<p class="muted">Nicio vizită în perioada aleasă.</p>`;
+  return html`<ul class="share">${rows.map((r) => html`<li><div class="share-top"><span>${label(r)}</span><b>${r.n}</b></div>
+    <div class="share-bar"><span style="width:${Math.max(2, Math.round((r.n / (total || 1)) * 100))}%"></span></div><small class="muted">${pct(r.n, total)}</small></li>`)}</ul>`;
+}
+
+export function activityView(d, periods) {
+  const k = d.kpi, V = k.visitors || 0;
+  const merge = (rows, key) => { const m = new Map(); for (const r of rows) { const kk = key(r); m.set(kk, (m.get(kk) || 0) + r.n); } return [...m.entries()].map(([kk, n]) => ({ k: kk, n })).sort((a, b) => b.n - a.n); };
+  const devs = merge(d.devices, (r) => r.k), oses = merge(d.devices, (r) => r.os || 'Altul'), brs = merge(d.devices, (r) => r.br);
+  const kpi = (ic, tone, label, val, sub) => html`<div class="d2-kpi"><div class="d2-kpi-top"><span class="kpi2-ic ${tone}">${icons[ic] ? icons[ic](16) : ''}</span><span>${label}</span></div><div class="d2-kpi-val"><strong>${val}</strong></div><small>${sub}</small></div>`;
+  return html`
+  <header class="page-head d2-head">
+    <div><h1>Activitate pe site</h1><p class="muted">Oameni reali pe chimag.ro · fără roboți și fără vizitele tale din panou</p></div>
+    <nav class="d2-chips">${periods.map(([p, l]) => html`<a class="${d.period === p ? 'on' : ''}" href="/admin/activitate?perioada=${p}">${l}</a>`)}</nav>
+  </header>
+
+  <section class="panel act-live" id="act-live">
+    <div class="panel-head"><h2><span class="act-dot"></span><span id="al-now">…</span></h2><span class="muted" id="al-meta">se încarcă</span></div>
+    <div id="al-list" class="al-list"></div>
+  </section>
+
+  <section class="d2-kpis act-kpis">
+    ${kpi('user', 't-blue', 'Vizitatori', V, `${k.pages || 0} pagini văzute`)}
+    ${kpi('check', 't-green', 'Oameni implicați', V ? pct(k.engaged, V) : '–', `${k.engaged || 0} au stat peste 10 s sau au navigat`)}
+    ${kpi('clock', 't-indigo', 'Timp mediu pe site', V ? fmtDur(k.secs / V) : '–', `${V ? String(Math.round((k.pages / V) * 10) / 10).replace('.', ',') : 0} pagini de vizitator`)}
+    ${kpi('box', 't-teal', 'Au văzut un produs', V ? pct(k.saw_prod, V) : '–', `${k.saw_prod || 0} vizitatori`)}
+    ${kpi('cart', 't-amber', 'Au ajuns la coș', V ? pct(k.saw_cart, V) : '–', `${k.saw_cart || 0} vizitatori`)}
+    ${kpi('cash', 't-rose', 'Comenzi', k.orders, V ? `conversie ${pct(k.orders, V)} din vizitatori` : 'fără vizitatori încă')}
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Vizitatori ${d.range.unit === 'ora' ? 'pe ore' : d.range.unit === 'zi' ? 'pe zile' : d.range.unit === 'sapt' ? 'pe săptămâni' : 'pe luni'}</h2>
+      <span class="muted">${k.bounced || 0} au plecat în primele 10 secunde · ${k.bots} roboți filtrați</span></div>
+    ${V ? actChart(d.series, d.range.unit) : html`<p class="muted act-empty">Încă nu sunt vizite înregistrate în această perioadă. Datele încep să se adune din momentul în care pagina a fost pornită.</p>`}
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Drumul spre comandă</h2><span class="muted">din ${V} vizitatori</span></div>
+    <div class="act-funnel">${[['Au intrat pe site', V], ['Au văzut un produs', k.saw_prod || 0], ['Au ajuns la coș / finalizare', k.saw_cart || 0], ['Au trimis comanda', k.bought || 0]].map(([l, n], i, a) => html`
+      <div class="af-step"><div class="af-top"><span>${l}</span><b>${n}</b></div><div class="share-bar"><span style="width:${V ? Math.max(2, Math.round((n / V) * 100)) : 0}%"></span></div>
+      <small class="muted">${i ? `${pct(n, a[i - 1][1])} din pasul anterior` : '100%'}</small></div>`)}</div>
+  </section>
+
+  <div class="act-grid">
+    <section class="panel">
+      <div class="panel-head"><h2>Produse văzute</h2><span class="muted">vizitatori · timp mediu · comenzi</span></div>
+      ${d.products.length ? html`<table class="tbl act-tbl"><thead><tr><th>Produs</th><th class="num">Vizitatori</th><th class="num">Timp mediu</th><th class="num">Derulat</th><th class="num">Comenzi</th></tr></thead><tbody>
+        ${d.products.map((p) => html`<tr><td><div class="act-prod">${p.img ? html`<img src="${p.img}" alt="" loading="lazy">` : ''}<span>${p.title}</span></div></td><td class="num"><b>${p.visitors}</b><small class="muted"> · ${p.views} afișări</small></td><td class="num">${fmtDur(p.avg_secs)}</td><td class="num">${Math.round(p.avg_sc || 0)}%</td><td class="num">${p.orders ? html`<b>${p.orders}</b> <small class="muted">(${pct(p.orders, p.visitors)})</small>` : '–'}</td></tr>`)}
+      </tbody></table>` : html`<p class="muted">Niciun produs văzut în perioada aleasă.</p>`}
+    </section>
+    <section class="panel">
+      <div class="panel-head"><h2>De unde vin</h2><span class="muted">prima pagină din vizită</span></div>
+      ${d.sources.length ? html`<ul class="act-src">${d.sources.map((s) => html`<li>${actSrcChip(s.k, s.camp)}<span class="muted">${fmtDur(s.n ? s.secs / s.n : 0)} / vizitator · ${pct(s.engaged, s.n)} implicați${s.bought ? html` · <b class="ok">${s.bought} comenzi</b>` : ''}</span><b>${s.n}</b></li>`)}</ul>` : html`<p class="muted">Nicio vizită în perioada aleasă.</p>`}
+    </section>
+  </div>
+
+  <div class="act-grid act-grid3">
+    <section class="panel"><div class="panel-head"><h2>Dispozitive</h2></div>${actShare(devs, V, (r) => DEV[r.k] || r.k)}
+      <h3 class="act-sub">Sistem</h3>${actShare(oses.slice(0, 5), V, (r) => r.k)}</section>
+    <section class="panel"><div class="panel-head"><h2>Browser / aplicație</h2></div>${actShare(brs.slice(0, 7), V, (r) => r.k)}</section>
+    <section class="panel"><div class="panel-head"><h2>Locație</h2></div>${actShare(d.countries.slice(0, 6), V, (r) => ctry(r.k))}
+      ${d.cities.length ? html`<h3 class="act-sub">Orașe</h3>${actShare(d.cities.map((c) => ({ ...c, n: c.n })), V, (r) => `${r.k}${r.c && r.c !== 'RO' ? ` (${r.c})` : ''}`)}` : ''}</section>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Pagini văzute</h2><span class="muted">toate paginile</span></div>
+    ${d.pages.length ? html`<table class="tbl act-tbl"><thead><tr><th>Pagina</th><th class="num">Afișări</th><th class="num">Vizitatori</th><th class="num">Timp mediu</th></tr></thead><tbody>
+      ${d.pages.map((p) => html`<tr><td>${p.label}</td><td class="num">${p.views}</td><td class="num">${p.visitors}</td><td class="num">${fmtDur(p.avg_secs)}</td></tr>`)}</tbody></table>` : html`<p class="muted">Nicio pagină văzută în perioada aleasă.</p>`}
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Ultimii vizitatori</h2><span class="muted">traseul fiecăruia pe site</span></div>
+    ${d.recent.length ? html`<ul class="act-visits">${d.recent.map((v) => visitRow(v))}</ul>` : html`<p class="muted">Nicio vizită în perioada aleasă.</p>`}
+    <p class="muted act-note">Fiecare vizitator e anonim: nu folosim cookie-uri și nu salvăm IP-ul. Același om care revine în altă zi apare ca vizitator nou.</p>
+  </section>
+  <script src="/assets/activitate.js?v=1" defer></script>`;
+}
+
+function visitRow(v) {
+  const real = v.secs >= 10 || v.steps.length > 1;
+  return html`<li class="av ${v.bought ? 'av-buy' : ''}">
+    <div class="av-head">
+      <span class="av-time">${formatDate(v.first_at)}</span>
+      ${actSrcChip(v.source, v.campaign)}
+      <span class="av-meta">${DEV[v.device] || v.device}${v.os ? ` · ${v.os}` : ''} · ${v.browser}${v.city || v.country ? ` · ${v.city ? v.city : ''}${v.country && v.country !== 'RO' ? ` ${ctry(v.country)}` : ''}` : ''}</span>
+      <span class="av-tag ${v.bought ? 'buy' : real ? 'real' : 'quick'}">${v.bought ? 'A comandat ✓' : real ? `${fmtDur(v.secs)} pe site` : 'A plecat repede'}</span>
+    </div>
+    <ol class="av-steps">${v.steps.map((s) => html`<li class="k-${s.kind}">${s.label}${s.secs ? html`<small>${fmtDur(s.secs)}</small>` : ''}</li>`)}</ol>
+  </li>`;
 }

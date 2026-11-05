@@ -9,7 +9,7 @@ import { getProvider } from './shipping/providers.js';
 import { JUDETE } from './lib/judete.js';
 import {
   adminLayout, loginView, dashboardView, ordersView, orderView, labelView, productsView, productFormView, settingsView, couponsView, messagesView,
-  customersView, customerFormView, customerView, invoicesView, emailsView, realProfitView, ordersMapView, orderSource,
+  customersView, customerFormView, customerView, invoicesView, emailsView, realProfitView, ordersMapView, orderSource, activityView,
 } from './views/admin-views.js';
 import { COUPON_TYPES, CODE_TYPES, normalizeCode } from './lib/coupons.js';
 import { emailStatus, sendEmail } from './lib/email.js';
@@ -82,6 +82,20 @@ export async function handleAdmin(request, env, ctx, path) {
   }
 
   // ---------- Harta comenzilor (doar citire) ----------
+  if (path === '/admin/activitate' && method === 'GET') {
+    const { activityData, ACT_PERIODS } = await import('./lib/activity.js');
+    const period = ACT_PERIODS.some(([k]) => k === url.searchParams.get('perioada')) ? url.searchParams.get('perioada') : 'azi';
+    const data = await activityData(env, period);
+    return render(env, url, { title: 'Activitate pe site', active: 'activitate', body: activityView(data, ACT_PERIODS) });
+  }
+  if (path === '/admin/activitate/live' && method === 'GET') {
+    const { liveData } = await import('./lib/activity.js');
+    const { actSource, fmtDur } = await import('./views/admin-views.js');
+    const d = await liveData(env);
+    const list = d.list.map((v) => { const [cls, label] = actSource(v.source); const cur = v.steps[v.steps.length - 1];
+      return { src: label, cls, camp: v.campaign, device: v.device, os: v.os, browser: v.browser, city: v.city, country: v.country, page: cur?.label || '', pages: v.steps.length, time: fmtDur(v.secs), since: v.first_at, bought: v.bought, path: v.steps.map((x) => x.label) }; });
+    return new Response(JSON.stringify({ now: d.now, today: d.today, hour: d.hour, list }), { headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
+  }
   if (path === '/admin/harta' && method === 'GET') {
     const { roToday, roMidnightUtc } = await import('./lib/profit.js');
     const period = ['7z', '30z', 'luna', 'tot'].includes(url.searchParams.get('perioada')) ? url.searchParams.get('perioada') : '30z';

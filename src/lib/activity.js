@@ -73,15 +73,21 @@ export async function recordVisit(request, env, text) {
   const { os, dev, br } = device(ua);
   const host = (() => { try { return new URL(request.url).hostname; } catch { return ''; } })();
   const src = sourceOf(d.q, d.r, br, host);
-  // pagina de mulțumire = comandă nouă doar dacă vine din coș (sau de la plata cu cardul);
-  // deschisă din emailul „Vezi statusul comenzii” e doar o verificare a unei comenzi existente
-  const kindFinal = kind === 'multumim' && !(src.s === 'intern' || /(^|[?&])plata=ok/.test(String(d.q || ''))) ? 'status' : kind;
+  // pagina de mulțumire: comandă nouă dacă acea comandă a fost plasată în ultimele 15 minute;
+  // altfel e un client care își verifică o comandă mai veche (de ex. din linkul din email)
+  let kindFinal = kind, slugFinal = slug;
+  if (kind === 'multumim') {
+    const tok = (path.match(/^\/multumim\/([a-f0-9]{32})/) || [])[1] || '';
+    const o = tok ? await env.DB.prepare("SELECT number, created_at > datetime('now', '-15 minutes') AS fresh FROM orders WHERE token = ?").bind(tok).first().catch(() => null) : null;
+    slugFinal = o?.number || '';
+    if (!o?.fresh) kindFinal = 'status';
+  }
   const bot = !ua || BOT.test(ua) || d.wd === 1 ? 1 : 0;
   const admin = (await isAdmin(request, env).catch(() => false)) ? 1 : 0;
   const cf = request.cf || {};
   await env.DB.prepare(`INSERT OR IGNORE INTO visits (pv, vid, path, kind, slug, source, campaign, referrer, device, os, browser, country, city, is_bot, is_admin)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-    .bind(d.pv, vid, path, kindFinal, slug, src.s, src.camp, src.ref, dev, os, br, String(cf.country || '').slice(0, 2), String(cf.city || '').slice(0, 60), bot, admin).run();
+    .bind(d.pv, vid, path, kindFinal, slugFinal, src.s, src.camp, src.ref, dev, os, br, String(cf.country || '').slice(0, 2), String(cf.city || '').slice(0, 60), bot, admin).run();
 }
 
 // păstrăm istoricul 400 de zile (rulează din cron)
@@ -175,7 +181,9 @@ export async function activityData(env, period) {
 }
 
 export function pageLabel(kind, slug, T) {
-  return { acasa: 'Pagina principală', cos: 'Coș / finalizare comandă', multumim: 'Comandă trimisă ✓', cont: 'Contul clientului', factura: 'Factură', status: 'A verificat comanda (link din email)' }[kind]
+  if (kind === 'multumim') return `Comandă trimisă ✓${slug ? ` ${slug}` : ''}`;
+  if (kind === 'status') return `A verificat comanda${slug ? ` ${slug}` : ''} (din email / cont)`;
+  return { acasa: 'Pagina principală', cos: 'Coș / finalizare comandă', cont: 'Contul clientului', factura: 'Factură' }[kind]
     || (kind === 'produs' ? T.get(slug)?.title || slug : kind === 'categorie' ? `Categorie: ${slug}` : kind === 'pagina' ? `Pagina: ${slug}` : 'Altă pagină');
 }
 

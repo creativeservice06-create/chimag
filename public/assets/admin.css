@@ -909,3 +909,4 @@ input[type=checkbox] { box-shadow: none; }
   .al-list { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 760px) { .act-live .panel-head { flex-direction: column; align-items: flex-start; gap: 4px; } .act-live h2 { font-size: 1.05rem; } }
+.av-steps .k-status { background: #f1f4f9; color: var(--muted); }

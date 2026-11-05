@@ -32,7 +32,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0, msgCount
 <title>${title} · Admin Chimag</title>
 <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/admin.css?v=24">
+<link rel="stylesheet" href="/assets/admin.css?v=25">
 <meta name="theme-color" content="#0e192a">
 <script src="/assets/admin.js?v=2" defer></script>
 </head><body>
@@ -72,7 +72,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0, msgCount
 
 export function loginView(error) {
   return html`<html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex"><title>Autentificare · Admin</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/assets/admin.css?v=24"></head>
+<meta name="robots" content="noindex"><title>Autentificare · Admin</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/assets/admin.css?v=25"></head>
 <body class="login-body"><form class="login" method="post" action="/admin/login">
   <div class="brand">${logoMark()}<span>chimag</span></div>
   <h1>Administrare</h1>
@@ -1238,12 +1238,13 @@ export function activityView(d, periods) {
 
 function visitRow(v) {
   const real = v.secs >= 10 || v.steps.length > 1;
+  const check = v.steps.some((x) => x.kind === 'status');
   return html`<li class="av ${v.bought ? 'av-buy' : ''}">
     <div class="av-head">
       <span class="av-time">${formatDate(v.first_at)}</span>
       ${actSrcChip(v.source, v.campaign)}
       <span class="av-meta">${DEV[v.device] || v.device}${v.os ? ` · ${v.os}` : ''} · ${v.browser}${v.city || v.country ? ` · ${v.city ? v.city : ''}${v.country && v.country !== 'RO' ? ` ${ctry(v.country)}` : ''}` : ''}</span>
-      <span class="av-tag ${v.bought ? 'buy' : real ? 'real' : 'quick'}">${v.bought ? 'A comandat ✓' : real ? `${fmtDur(v.secs)} pe site` : 'A plecat repede'}</span>
+      <span class="av-tag ${v.bought ? 'buy' : check ? 'real' : real ? 'real' : 'quick'}">${v.bought ? 'A comandat ✓' : check ? 'Client care și-a verificat comanda' : real ? `${fmtDur(v.secs)} pe site` : 'A plecat repede'}</span>
     </div>
     <ol class="av-steps">${v.steps.map((s) => html`<li class="k-${s.kind}">${s.label}${s.secs ? html`<small>${fmtDur(s.secs)}</small>` : ''}</li>`)}</ol>
   </li>`;

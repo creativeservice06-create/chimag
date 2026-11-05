@@ -73,12 +73,15 @@ export async function recordVisit(request, env, text) {
   const { os, dev, br } = device(ua);
   const host = (() => { try { return new URL(request.url).hostname; } catch { return ''; } })();
   const src = sourceOf(d.q, d.r, br, host);
+  // pagina de mulțumire = comandă nouă doar dacă vine din coș (sau de la plata cu cardul);
+  // deschisă din emailul „Vezi statusul comenzii” e doar o verificare a unei comenzi existente
+  const kindFinal = kind === 'multumim' && !(src.s === 'intern' || /(^|[?&])plata=ok/.test(String(d.q || ''))) ? 'status' : kind;
   const bot = !ua || BOT.test(ua) || d.wd === 1 ? 1 : 0;
   const admin = (await isAdmin(request, env).catch(() => false)) ? 1 : 0;
   const cf = request.cf || {};
   await env.DB.prepare(`INSERT OR IGNORE INTO visits (pv, vid, path, kind, slug, source, campaign, referrer, device, os, browser, country, city, is_bot, is_admin)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-    .bind(d.pv, vid, path, kind, slug, src.s, src.camp, src.ref, dev, os, br, String(cf.country || '').slice(0, 2), String(cf.city || '').slice(0, 60), bot, admin).run();
+    .bind(d.pv, vid, path, kindFinal, slug, src.s, src.camp, src.ref, dev, os, br, String(cf.country || '').slice(0, 2), String(cf.city || '').slice(0, 60), bot, admin).run();
 }
 
 // păstrăm istoricul 400 de zile (rulează din cron)
@@ -172,7 +175,7 @@ export async function activityData(env, period) {
 }
 
 export function pageLabel(kind, slug, T) {
-  return { acasa: 'Pagina principală', cos: 'Coș / finalizare comandă', multumim: 'Comandă trimisă ✓', cont: 'Contul clientului', factura: 'Factură' }[kind]
+  return { acasa: 'Pagina principală', cos: 'Coș / finalizare comandă', multumim: 'Comandă trimisă ✓', cont: 'Contul clientului', factura: 'Factură', status: 'A verificat comanda (link din email)' }[kind]
     || (kind === 'produs' ? T.get(slug)?.title || slug : kind === 'categorie' ? `Categorie: ${slug}` : kind === 'pagina' ? `Pagina: ${slug}` : 'Altă pagină');
 }
 

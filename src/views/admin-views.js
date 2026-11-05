@@ -31,7 +31,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0, msgCount
 <title>${title} · Admin Chimag</title>
 <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/admin.css?v=22">
+<link rel="stylesheet" href="/assets/admin.css?v=23">
 <meta name="theme-color" content="#0e192a">
 <script src="/assets/admin.js?v=2" defer></script>
 </head><body>
@@ -71,7 +71,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0, msgCount
 
 export function loginView(error) {
   return html`<html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex"><title>Autentificare · Admin</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/assets/admin.css?v=22"></head>
+<meta name="robots" content="noindex"><title>Autentificare · Admin</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/assets/admin.css?v=23"></head>
 <body class="login-body"><form class="login" method="post" action="/admin/login">
   <div class="brand">${logoMark()}<span>chimag</span></div>
   <h1>Administrare</h1>
@@ -92,6 +92,9 @@ export function orderSource(o) {
   if (u) return { key: 'other', label: u.charAt(0).toUpperCase() + u.slice(1, 30), camp };
   return { key: 'direct', label: 'Direct', camp };
 }
+// comandă plasată din afara României (după IP) → posibil falsă
+const riskChip = (o, long = false) => o.country && o.country !== 'RO'
+  ? html`<span class="src src-risk" title="${`Plasată din afara României (${o.country}, IP ${o.ip || '–'}). Verifică telefonul și adresa înainte de confirmare.`}"><i></i>Posibil fals${long ? html`<small>comandă din ${o.country} · IP ${o.ip || '–'}</small>` : ''}</span>` : '';
 const sourceChip = (o, long = false) => { const s = orderSource(o); return html`<span class="src src-${s.key}" title="${s.camp ? `Campanie: ${s.camp}` : s.key === 'direct' ? 'Fără reclamă: a intrat direct pe site' : ''}"><i></i>${s.label}${long && s.camp ? html`<small>${s.camp}</small>` : ''}</span>`; };
 
 const statusChip = (s) => html`<span class="chip st-${s}">${ORDER_STATUSES[s] || s}</span>`;
@@ -305,7 +308,7 @@ function ordersTable(orders, selectable = true) {
       ${selectable ? html`<td><input type="checkbox" name="ids" value="${o.id}" form="bulk" aria-label="Selectează ${o.number}"></td>` : ''}
       <td><a href="/admin/comenzi/${o.id}"><b>${o.number}</b></a>${o.fulfillment_mode !== 'own' ? html`<br><span class="chip ${o.hs_error ? 'st-anulata' : 'chip-hs'}" title="${o.hs_error || ''}">${o.fulfillment_mode === 'mixt' ? '2 colete · ' : ''}${o.hs_error ? 'Helpship: eroare' : o.hs_order_id ? 'Trimisă la depozit' : o.status === 'anulata' ? 'Helpship' : 'Helpship: netrimisă'}</span>` : ''}</td>
       <td class="nowrap o-date">${formatDate(o.created_at)}</td>
-      <td class="o-client">${o.customer_name}<br><a class="muted" href="tel:${o.phone}">${o.phone}</a><span class="o-src">${sourceChip(o)}</span></td>
+      <td class="o-client">${o.customer_name}<br><a class="muted" href="tel:${o.phone}">${o.phone}</a><span class="o-src">${sourceChip(o)} ${riskChip(o)}</span></td>
       <td class="o-loc">${o.city}<br><span class="muted">${o.county}</span></td>
       <td class="r nowrap o-total"><b>${money(o.total)}</b></td>
       <td class="o-pay">${payChip(o)}</td>
@@ -362,7 +365,7 @@ export function orderView({ order: o, items, events, settings, provider, hsOn = 
   return html`
   <header class="page-head">
     <div><a class="back" href="/admin/comenzi">Comenzi</a><h1>${o.number} ${statusChip(o.status)}</h1>
-    <p class="muted">Plasată ${formatDate(o.created_at)} · ${payChip(o)} · Sursa: ${sourceChip(o, true)}</p>
+    <p class="muted">Plasată ${formatDate(o.created_at)} · ${payChip(o)} · Sursa: ${sourceChip(o, true)} ${riskChip(o, true)}</p>
     ${['noua', 'confirmata'].includes(o.status) ? html`<p class="hint">Clientul nu primește email la confirmare. Primește unul singur, „confirmată și pe drum”, cu AWB-ul, când pleacă coletul.</p>` : ''}</div>
     <div class="actions">
       ${quick.map(([s, label, cls]) => html`<form method="post" action="/admin/comenzi/${o.id}/status"><input type="hidden" name="status" value="${s}"><button class="btn ${cls}" ${s === 'anulata' ? raw('data-confirm="Sigur anulezi comanda? Stocul se readaugă."') : ''}>${label}</button></form>`)}

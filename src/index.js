@@ -381,6 +381,8 @@ async function placeOrder(request, env, ctx) {
   if (me && !customer.email) customer.email = me.email;
   meta.customerId = me ? me.id : 0;
   const created = await createOrder(env, { customer, priced, paymentMethod, meta });
+  // țara de unde s-a plasat comanda (Cloudflare); comenzile din afara României primesc „posibil fals” în admin
+  try { const cc = String(request.cf?.country || '').slice(0, 2).toUpperCase(); if (cc) await env.DB.prepare('UPDATE orders SET country = ? WHERE id = ?').bind(cc, created.id).run(); } catch (e) { /* nu blocăm comanda */ }
   if (me) {
     // salvează adresa în cont dacă nu avea una
     if (!me.address) {

@@ -68,7 +68,9 @@ export const isEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(e || '
 // Numere evident false: aceeași cifră repetată sau cifre consecutive (0711111111, 0712345678, 0700000000).
 export function isFakePhone(p) {
   const rest = String(p || '').slice(2);
-  return /^(\d)\1+$/.test(rest) || '0123456789'.includes(rest) || '9876543210'.includes(rest) || /^0{4,}/.test(rest);
+  const sub = String(p || '').slice(3); // după prefixul 07X: 0720000000, 0745555555
+  return /^(\d)\1+$/.test(rest) || '0123456789'.includes(rest) || '9876543210'.includes(rest) || /^0{4,}/.test(rest)
+    || /^(\d)\1{6}$/.test(sub) || '0123456789'.includes(sub) || '9876543210'.includes(sub);
 }
 
 // Email strict pentru comenzi: format corect + greșeli frecvente de tastare la domeniu.

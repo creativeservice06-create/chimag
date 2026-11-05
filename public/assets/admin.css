@@ -812,6 +812,7 @@ input[type=checkbox] { box-shadow: none; }
 .src-google { background: #e6f5ec; color: #1a7a43; }
 .src-other { background: #fff3dc; color: #8a5a00; }
 .src-direct { background: #eef1f5; color: #5d6b80; }
+.src-risk { background: #fde7e7; color: #b42318; }
 .o-src { display: block; margin-top: 4px; }
 @media (max-width: 700px) { .tbl.orders.cardable .o-src { display: inline; margin: 0 0 0 6px; } }
 

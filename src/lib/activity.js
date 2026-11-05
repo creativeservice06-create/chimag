@@ -81,6 +81,11 @@ export async function recordVisit(request, env, text) {
     const o = tok ? await env.DB.prepare("SELECT number, created_at > datetime('now', '-15 minutes') AS fresh FROM orders WHERE token = ?").bind(tok).first().catch(() => null) : null;
     slugFinal = o?.number || '';
     if (!o?.fresh) kindFinal = 'status';
+    else {
+      // o comandă se numără o singură dată: doar primul vizitator care ajunge pe confirmarea ei
+      const first = await env.DB.prepare("SELECT vid FROM visits WHERE kind = 'multumim' AND slug = ? ORDER BY id LIMIT 1").bind(o.number).first().catch(() => null);
+      if (first && first.vid !== vid) kindFinal = 'status';
+    }
   }
   const bot = !ua || BOT.test(ua) || d.wd === 1 ? 1 : 0;
   const admin = (await isAdmin(request, env).catch(() => false)) ? 1 : 0;

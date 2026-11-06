@@ -129,6 +129,12 @@ function findTracking(o) {
     }
   };
   walk(o, 0);
+  // Helpship trimite statusurile ca numere (status: 3, trackingStatus: 2) și numele lor separat
+  // (statusName: "Fulfilled", trackingStatusName: "Delivered") — folosim numele + datele de livrare/retur
+  if (o.trackingStatusName) tracking = String(o.trackingStatusName);
+  if (o.statusName) status = String(o.statusName);
+  if (!/^(delivered|returned)$/i.test(tracking)) { if (o.returnedOn) tracking = 'Returned'; else if (o.deliveredOn) tracking = 'Delivered'; }
+  if (o.trackingNumber) awb = String(o.trackingNumber).trim() || awb;
   return { awb, courier, status, tracking };
 }
 

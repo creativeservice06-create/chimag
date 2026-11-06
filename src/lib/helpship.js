@@ -99,7 +99,18 @@ export async function sendToHelpship(env, settings, orderId, { force = false } =
   if (order.hs_order_id && !force) return { ok: true, already: true };
   if (order.status === 'anulata') return { ok: false, error: 'Comanda este anulată.' };
   if (order.payment_method === 'card' && order.payment_status !== 'platita') return { ok: false, error: 'Comanda cu cardul nu este încă plătită.' };
+  // blocare: o singură trimitere odată pentru aceeași comandă (comanda nouă + cron + confirmarea din admin pot porni în același timp)
+  const now = Math.floor(Date.now() / 1000);
+  let locked = false;
   try {
+    await env.DB.prepare('DELETE FROM hs_locks WHERE order_id = ? AND at < ?').bind(orderId, now - 300).run();
+    const r = await env.DB.prepare('INSERT OR IGNORE INTO hs_locks (order_id, at) VALUES (?, ?)').bind(orderId, now).run();
+    locked = (r?.meta?.changes || 0) === 1;
+  } catch (e) { locked = true; /* fără tabelă de blocare: comportamentul de dinainte */ }
+  if (!locked) return { ok: true, already: true };
+  try {
+    const fresh = await getOrder(env, orderId);
+    if (fresh?.hs_order_id && !force) return { ok: true, already: true };
     const payload = buildOrderPayload(env, order, await getOrderItems(env, orderId), await romaniaId(env));
     const res = await api(env, 'POST', '/api/Order', payload);
     const id = (typeof res === 'string' ? res.replace(/"/g, '') : res?.id || res?.Id || res?.orderId || '') || '';
@@ -110,6 +121,8 @@ export async function sendToHelpship(env, settings, orderId, { force = false } =
     await updateOrder(env, orderId, { hs_error: String(e.message).slice(0, 300) });
     await addOrderEvent(env, orderId, `Helpship: eroare la trimitere – ${String(e.message).slice(0, 200)}`);
     return { ok: false, error: e.message };
+  } finally {
+    await env.DB.prepare('DELETE FROM hs_locks WHERE order_id = ?').bind(orderId).run().catch(() => {});
   }
 }
 

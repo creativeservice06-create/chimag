@@ -18,6 +18,7 @@ function kindOf(path) {
   if (path === '/cont' || path.startsWith('/cont/')) return ['cont', ''];
   if (path.startsWith('/factura/')) return ['factura', ''];
   if (path === '/cautare') return ['cautare', ''];
+  if (path === '/retur' || path.startsWith('/retur/')) return ['retur', ''];
   if (path === '/comanda') return ['comanda', ''];
   return ['alta', path.slice(0, 80)];
 }
@@ -191,7 +192,7 @@ export async function activityData(env, period) {
 export function pageLabel(kind, slug, T) {
   if (kind === 'multumim') return `Comandă trimisă ✓${slug ? ` ${slug}` : ''}`;
   if (kind === 'status') return `A verificat comanda${slug ? ` ${slug}` : ''} (din email / cont)`;
-  return { acasa: 'Pagina principală', cos: 'Coș / finalizare comandă', cont: 'Contul clientului', factura: 'Factură', cautare: 'Căutare', comanda: 'Verifică o comandă' }[kind]
+  return { acasa: 'Pagina principală', cos: 'Coș / finalizare comandă', cont: 'Contul clientului', factura: 'Factură', cautare: 'Căutare', comanda: 'Verifică o comandă', retur: 'Pagina de retur' }[kind]
     || (kind === 'produs' ? T.get(slug)?.title || slug : kind === 'categorie' ? `Categorie: ${slug}` : kind === 'pagina' ? `Pagina: ${slug}` : `Altă pagină${slug ? `: ${slug}` : ''}`);
 }
 

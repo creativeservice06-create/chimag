@@ -8,11 +8,12 @@ import { icons } from './icons.js';
 import { COUPON_TYPES, CODE_TYPES, wheelConfig, prizeOdds, describeCoupon } from '../lib/coupons.js';
 import { parseJSON } from '../lib/util.js';
 
-export function adminLayout({ title, active, body, flash, newCount = 0, msgCount = 0 }) {
+export function adminLayout({ title, active, body, flash, newCount = 0, msgCount = 0, retCount = 0 }) {
   const nav = [
     ['/admin', 'panou', 'Panou', 'home'],
     ['/admin/profit-real', 'profit', 'Profit real', 'cash'],
     ['/admin/comenzi', 'comenzi', 'Comenzi', 'cart'],
+    ['/admin/retururi', 'retururi', 'Retururi', 'back'],
     ['/admin/facturi', 'facturi', 'Facturi', 'doc'],
     ['/admin/produse', 'produse', 'Produse', 'box'],
     ['/admin/coduri', 'coduri', 'Roată și coduri', 'gift'],
@@ -22,7 +23,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0, msgCount
     ['/admin/mesaje', 'mesaje', 'Mesaje', 'mail'],
     ['/admin/setari', 'setari', 'Setări', 'gear'],
   ];
-  const badge = (key) => (key === 'comenzi' && newCount ? html`<b class="count">${newCount}</b>` : key === 'mesaje' && msgCount ? html`<b class="count">${msgCount}</b>` : '');
+  const badge = (key) => (key === 'comenzi' && newCount ? html`<b class="count">${newCount}</b>` : key === 'mesaje' && msgCount ? html`<b class="count">${msgCount}</b>` : key === 'retururi' && retCount ? html`<b class="count">${retCount}</b>` : '');
   const TAB = ['panou', 'comenzi', 'facturi', 'produse'];
   const main = nav.filter(([, k]) => TAB.includes(k)), more = nav.filter(([, k]) => !TAB.includes(k));
   const moreActive = more.some(([, key]) => key === active);
@@ -32,7 +33,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0, msgCount
 <title>${title} · Admin Chimag</title>
 <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/admin.css?v=25">
+<link rel="stylesheet" href="/assets/admin.css?v=26">
 <meta name="theme-color" content="#0e192a">
 <script src="/assets/admin.js?v=2" defer></script>
 </head><body>
@@ -59,7 +60,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0, msgCount
 <nav class="tabbar" aria-label="Meniu">
   ${main.map(([href, key, label, ic]) => html`<a href="${href}" class="${active === key ? 'on' : ''}">${icons[ic](22)}<span>${label}</span>${badge(key)}</a>`)}
   <details class="more">
-    <summary class="${moreActive ? 'on' : ''}">${icons.menu(22)}<span>Mai mult</span>${msgCount ? html`<b class="count">${msgCount}</b>` : ''}</summary>
+    <summary class="${moreActive ? 'on' : ''}">${icons.menu(22)}<span>Mai mult</span>${msgCount + retCount ? html`<b class="count">${msgCount + retCount}</b>` : ''}</summary>
     <div class="sheet">
       ${more.map(([href, key, label, ic]) => html`<a href="${href}" class="${active === key ? 'on' : ''}">${icons[ic](20)}<span>${label}</span>${badge(key)}</a>`)}
       <a href="/" target="_blank">${icons.ext(20)}<span>Vezi magazinul</span></a>
@@ -72,7 +73,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0, msgCount
 
 export function loginView(error) {
   return html`<html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex"><title>Autentificare · Admin</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/assets/admin.css?v=25"></head>
+<meta name="robots" content="noindex"><title>Autentificare · Admin</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/assets/admin.css?v=26"></head>
 <body class="login-body"><form class="login" method="post" action="/admin/login">
   <div class="brand">${logoMark()}<span>chimag</span></div>
   <h1>Administrare</h1>
@@ -355,7 +356,7 @@ export function ordersView({ orders, status, q, counts, page, hasMore }) {
   </nav>`;
 }
 
-export function orderView({ order: o, items, events, settings, provider, hsOn = false, invoices = [], invProblem = '' }) {
+export function orderView({ order: o, items, events, settings, provider, hsOn = false, invoices = [], invProblem = '', returns = [] }) {
   const providerObj = PROVIDERS[o.shipping_provider || settings.shipping_provider] || PROVIDERS.test;
   const quick = {
     noua: [['confirmata', 'Confirmă comanda', 'primary'], ['anulata', 'Anulează', '']], // clientul primește emailul abia când comanda are AWB
@@ -464,6 +465,8 @@ export function orderView({ order: o, items, events, settings, provider, hsOn = 
           ${o.utm_medium ? html`<div><dt>Mediu</dt><dd>${o.utm_medium}</dd></div>` : ''}
         </dl>
       </section>
+
+      ${returns.length ? html`<section class="panel ret-panel"><h2>Retur cerut de client</h2>${returns.map((r) => returnCard(r, `/admin/comenzi/${o.id}`))}</section>` : ''}
 
       <section class="panel">
         <h2>Istoric</h2>
@@ -1248,4 +1251,43 @@ function visitRow(v) {
     </div>
     <ol class="av-steps">${v.steps.map((s) => html`<li class="k-${s.kind}">${s.label}${s.secs ? html`<small>${fmtDur(s.secs)}</small>` : ''}</li>`)}</ol>
   </li>`;
+}
+
+// ---------------- Retururi ----------------
+const RET_ST = { noua: ['Cerere nouă', 'st-noua'], primita: ['Colet primit', 'st-confirmata'], rambursata: ['Bani returnați', 'st-livrata'], respinsa: ['Respinsă', 'st-anulata'] };
+const ibanFmt = (s) => String(s || '').replace(/(.{4})/g, '$1 ').trim();
+
+function returnCard(r, back) {
+  const [lbl, cls] = RET_ST[r.status] || [r.status, ''];
+  const btn = (status, label, cls2 = 'btn', confirm = '') => html`<form method="post" action="/admin/retururi/${r.id}" class="ret-act"><input type="hidden" name="back" value="${back}"><input type="hidden" name="status" value="${status}"><button class="${cls2}" ${confirm ? raw(`data-confirm="${confirm}"`) : ''}>${label}</button></form>`;
+  return html`<article class="ret-card">
+    <div class="ret-top"><b>R-${r.id}</b>${r.number ? html` · <a href="/admin/comenzi/${r.order_id}">${r.number}</a> · ${r.customer_name}` : ''}<span class="chip ${cls}">${lbl}</span></div>
+    <p class="muted">Cerută pe ${formatDate(r.created_at)}${r.received_at ? ` · colet primit ${formatDate(r.received_at)}` : ''}${r.refunded_at ? ` · bani trimiși ${formatDate(r.refunded_at)}` : ''}</p>
+    <ul class="ret-prod">${r.items.map((i) => html`<li>${i.qty} × ${i.title}${i.of > i.qty ? html` <small class="muted">(din ${i.of})</small>` : ''}</li>`)}</ul>
+    <dl class="ret-dl">
+      <div><dt>De returnat</dt><dd><b>${money(r.amount)}</b>${r.full_return ? ' · toată comanda' : ' · retur parțial'}</dd></div>
+      ${r.iban ? html`<div><dt>IBAN</dt><dd><code class="ret-iban">${ibanFmt(r.iban)}</code>${r.holder ? html`<br><small>${r.holder}</small>` : ''}</dd></div>` : html`<div><dt>Rambursare</dt><dd>pe cardul folosit la plată</dd></div>`}
+      ${r.reason ? html`<div><dt>Motiv</dt><dd>${r.reason}</dd></div>` : ''}
+      ${r.message ? html`<div><dt>Mesaj</dt><dd>${r.message}</dd></div>` : ''}
+      ${r.admin_note ? html`<div><dt>Notă</dt><dd>${r.admin_note}</dd></div>` : ''}
+    </dl>
+    <div class="ret-actions">
+      ${r.status === 'noua' ? btn('primita', 'Coletul a ajuns la depozit', 'btn') : ''}
+      ${r.status === 'noua' || r.status === 'primita' ? btn('rambursata', `Am trimis banii (${money(r.amount)})`, 'btn btn-primary', `Confirmi că ai trimis ${money(r.amount)} prin transfer? Clientul primește email${r.full_return ? ', iar comanda trece pe Retur (factura se stornează automat)' : ''}.`) : ''}
+      ${r.status === 'noua' || r.status === 'primita' ? btn('respinsa', 'Respinge', 'btn btn-ghost', 'Respingi cererea de retur? (de ex. produs deteriorat sau trimis după termen) Clientul NU primește email automat; anunță-l tu.') : ''}
+    </div>
+  </article>`;
+}
+
+export function returnsView({ returns, status }) {
+  const tabs = [['', 'Toate'], ['noua', 'Cereri noi'], ['primita', 'Colet primit'], ['rambursata', 'Bani returnați'], ['respinsa', 'Respinse']];
+  return html`
+  <header class="page-head d2-head"><div><h1>Retururi</h1><p class="muted">Cererile de retragere trimise de clienți din site, în 14 zile de la livrare</p></div>
+    <nav class="d2-chips">${tabs.map(([k, l]) => html`<a class="${status === k ? 'on' : ''}" href="/admin/retururi${k ? `?status=${k}` : ''}">${l}</a>`)}</nav></header>
+  <section class="panel ret-help"><h2>Cum procedezi</h2><ol>
+    <li>Clientul trimite cererea din site și primește automat confirmarea pe email, cu adresa de retur (depozitul Helpship din Oradea).</li>
+    <li>Când Helpship primește coletul, apasă <b>„Coletul a ajuns la depozit”</b>.</li>
+    <li>Trimite banii prin transfer în IBAN-ul clientului, apoi apasă <b>„Am trimis banii”</b>: clientul primește email, iar la returul complet comanda trece pe „Retur”.</li>
+    <li>Termen legal: banii trebuie trimiși în cel mult 14 zile de la cerere (poți aștepta până ajunge coletul).</li></ol></section>
+  ${returns.length ? returns.map((r) => returnCard(r, `/admin/retururi${status ? `?status=${status}` : ''}`)) : html`<section class="panel"><p class="muted">Nicio cerere de retur${status ? ' în această categorie' : ''}.</p></section>`}`;
 }

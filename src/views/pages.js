@@ -55,8 +55,8 @@ export const PAGES = {
       <p>Conform OUG nr. 34/2014, ai dreptul să te retragi din contract în termen de <strong>${returnDays(s)} zile calendaristice</strong> de la data la care tu (sau o persoană desemnată de tine) ai intrat în posesia produselor, fără să precizezi motivul și fără penalități.</p>
       <h2>Cum returnezi</h2>
       <ol>
-        <li>Ne anunți decizia de retragere înainte de expirarea termenului: ${contactShort(s)}. Poți folosi <a href="/pagina/formular-retragere">formularul de retragere</a>, dar nu este obligatoriu; ajunge orice declarație clară.</li>
-        <li>Ne trimiți produsele în cel mult 14 zile de la data la care ne-ai anunțat. Îți comunicăm adresa de retur când ne contactezi.</li>
+        <li>Ne anunți decizia de retragere înainte de expirarea termenului. Cel mai simplu e direct pe site, din pagina <a href="/retur"><strong>Returnează un produs</strong></a>: scrii numărul comenzii și primești imediat confirmarea pe email. Ne poți anunța și ${contactShort(s)}, folosind <a href="/pagina/formular-retragere">formularul de retragere</a> sau orice declarație clară.</li>
+        <li>Ne trimiți produsele în cel mult 14 zile de la data la care ne-ai anunțat, la adresa de retur: <strong>Helpship-Hard Service SRL retur, Str. Anghel I. Saligny nr. 40, Oradea, jud. Bihor, 410085</strong>. Scrie pe colet „Retur” și numărul comenzii.</li>
         <li>Costul transportului de retur este suportat de tine, cu excepția cazului în care produsul este neconform sau am greșit noi comanda.</li>
       </ol>
       <h2>Rambursarea banilor</h2>
@@ -72,6 +72,7 @@ export const PAGES = {
   'formular-retragere': {
     title: 'Formular de retragere',
     body: (s) => html`
+      <p class="legal-cta"><strong>Cel mai rapid:</strong> trimite cererea direct pe site, în pagina <a href="/retur">Returnează un produs</a>. Primești imediat confirmarea pe email.</p>
       <p>Completează și trimite acest formular doar dacă dorești să te retragi din contract (conform Anexei nr. 2 la OUG nr. 34/2014). Îl poți copia într-un email sau îl poți tipări.</p>
       <div class="legal-form">
         <p>Către ${s.company_name || shop(s)}${s.company_address ? `, ${s.company_address}` : ''}${s.email ? `, ${s.email}` : ''}:</p>

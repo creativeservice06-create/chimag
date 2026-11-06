@@ -171,7 +171,8 @@ export function customerStatusEmail(s, base, o, items, images, invoice = null) {
     subject: c.subject.replace('{n}', o.number),
     html: layout(s, base, {
       preheader: c.intro, title: c.title, intro: c.intro,
-      body: awb + (invoice ? invoiceBox(base, invoice) : '') + summaryStrip(o) + itemsTable(base, items, images) + totalsTable(o) + addressBox(o),
+      body: awb + (invoice ? invoiceBox(base, invoice) : '') + summaryStrip(o) + itemsTable(base, items, images) + totalsTable(o) + addressBox(o)
+        + (o.status === 'livrata' ? `<p style="margin:0 0 12px;font-size:13px;line-height:1.6;color:${C.muted};${FONT}">Te-ai răzgândit? Ai 14 zile să returnezi produsele: <a href="${esc(base)}/retur/${esc(o.token)}" style="color:${C.blue};font-weight:700;">trimite cererea de retur</a>.</p>` : ''),
       cta: invoice && o.status === 'livrata' ? { label: 'Descarcă factura (PDF)', href: `${base}/factura/${invoice.token}?descarca` } : { label: 'Vezi comanda', href: `${base}/multumim/${o.token}` },
       cta2: invoice && o.status === 'livrata' ? { label: 'Vezi comanda pe site', href: `${base}/multumim/${o.token}` }
         : o.status === 'expediata' && o.tracking_url ? { label: 'Urmărește coletul', href: o.tracking_url } : null,
@@ -314,3 +315,59 @@ export async function itemImages(env, items) {
 }
 
 export { ORDER_STATUSES };
+
+// ---------- Retur (dreptul de retragere) ----------
+const box = (inner, bg = C.bg) => `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;background:${bg};border-radius:12px;${FONT}"><tr><td style="padding:14px 16px;font-size:15px;line-height:1.55;color:${C.ink};">${inner}</td></tr></table>`;
+const retItems = (r) => r.items.map((i) => `${i.qty} × ${esc(i.title)}${i.of > i.qty ? ` <span style="color:${C.muted}">(din ${i.of})</span>` : ''}`).join('<br>');
+const last4 = (iban) => (iban ? `cont terminat în ${esc(String(iban).slice(-4))}` : '');
+
+export function returnCustomerEmail(s, base, o, r, addr) {
+  const when = formatDate(r.created_at);
+  const steps = `<ol style="margin:0;padding-left:20px;font-size:15px;line-height:1.6;color:${C.ink};">
+    <li>Pune produsele în cutie, împreună cu accesoriile primite.</li>
+    <li>Scrie pe colet: <strong>Retur ${esc(o.number)}</strong>.</li>
+    <li>Trimite coletul în cel mult 14 zile, cu orice curier, la adresa de mai jos. Costul transportului de retur este suportat de tine.</li>
+    <li>Când coletul ajunge la depozit, îți trimitem banii în contul indicat.</li></ol>`;
+  return {
+    subject: `Am primit cererea ta de retur R-${r.id} · comanda ${o.number}`,
+    html: layout(s, base, {
+      preheader: `Confirmare: cererea de retragere pentru comanda ${o.number} a fost înregistrată pe ${when}.`,
+      title: 'Am primit cererea ta de retur',
+      intro: `Confirmăm că ai solicitat pe <strong style="color:${C.ink}">${esc(when)}</strong> retragerea din contract pentru comanda <strong style="color:${C.ink}">${esc(o.number)}</strong>. Numărul cererii: <strong style="color:${C.ink}">R-${r.id}</strong>.`,
+      body: box(`<strong>Produse returnate</strong><br>${retItems(r)}<br><br><strong>Suma de rambursat:</strong> ${money(r.amount)}${r.full_return ? ' (toată comanda, inclusiv transportul inițial)' : ''}${r.iban ? `<br><strong>În contul:</strong> ${last4(r.iban)}` : ''}`)
+        + `<h2 style="margin:6px 0 10px;font-size:17px;${FONT}color:${C.ink};">Ce ai de făcut</h2>${steps}`
+        + box(`<strong>Adresa de retur</strong><br>${addr.map(esc).join('<br>')}`, C.tint)
+        + `<p style="margin:0 0 16px;font-size:13px;line-height:1.6;color:${C.muted};${FONT}">Îți returnăm banii în cel mult 14 zile de la data cererii; putem aștepta până primim produsele sau dovada că le-ai expediat. Produsele trebuie să nu fie deteriorate prin folosire peste ce era necesar pentru a le verifica.</p>`,
+      cta: { label: 'Vezi cererea de retur', href: `${base}/retur/${o.token}` },
+    }),
+    text: `Am primit cererea ta de retur R-${r.id} pentru comanda ${o.number} (${when}).\n\nProduse: ${r.items.map((i) => `${i.qty} x ${i.title}`).join(', ')}\nSuma: ${money(r.amount)}\n\nTrimite coletul, cu "Retur ${o.number}" scris pe el, la:\n${addr.join('\n')}\n\nCostul transportului de retur e suportat de tine. Banii îi primești după ce coletul ajunge la depozit.\n\n${base}/retur/${o.token}`,
+  };
+}
+
+export function returnAdminEmail(s, base, o, r) {
+  return {
+    subject: `↩️ Cerere de retur R-${r.id} – ${o.number} – ${money(r.amount)}`,
+    html: layout(s, base, {
+      preheader: `${o.customer_name} vrea să returneze ${r.items.map((i) => `${i.qty} x ${i.title}`).join(', ')}`,
+      title: `Cerere de retur ${o.number}`,
+      intro: `${esc(o.customer_name)} · ${esc(o.phone)} · ${formatDate(r.created_at)}`,
+      body: box(`<strong>Produse</strong><br>${retItems(r)}<br><br><strong>De returnat:</strong> ${money(r.amount)}${r.full_return ? ' (toată comanda)' : ''}<br><strong>IBAN:</strong> ${esc(fmtIbanE(r.iban)) || '–'}${r.holder ? ` · ${esc(r.holder)}` : ''}${r.reason ? `<br><strong>Motiv:</strong> ${esc(r.reason)}` : ''}${r.message ? `<br><strong>Mesaj:</strong> ${esc(r.message)}` : ''}`),
+      cta: { label: 'Deschide returul în admin', href: `${base}/admin/retururi` },
+    }),
+    text: `Cerere de retur R-${r.id} pentru ${o.number}: ${r.items.map((i) => `${i.qty} x ${i.title}`).join(', ')} – ${money(r.amount)}. IBAN ${r.iban}. ${base}/admin/retururi`,
+  };
+}
+const fmtIbanE = (s) => String(s || '').replace(/(.{4})/g, '$1 ').trim();
+
+export function returnRefundedEmail(s, base, o, r) {
+  return {
+    subject: `Ți-am returnat banii pentru comanda ${o.number}`,
+    html: layout(s, base, {
+      preheader: `Am trimis ${money(r.amount)} pentru returul R-${r.id}.`,
+      title: 'Ți-am returnat banii ✅',
+      intro: `Am primit produsele returnate din comanda <strong style="color:${C.ink}">${esc(o.number)}</strong> și am trimis <strong style="color:${C.ink}">${money(r.amount)}</strong>${r.iban ? ` în ${last4(r.iban)}` : ''}. Transferul bancar poate dura 1–2 zile lucrătoare.`,
+      body: box(`<strong>Retur R-${r.id}</strong><br>${retItems(r)}`),
+    }),
+    text: `Am returnat ${money(r.amount)} pentru comanda ${o.number} (retur R-${r.id}).`,
+  };
+}

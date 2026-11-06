@@ -910,3 +910,19 @@ input[type=checkbox] { box-shadow: none; }
 }
 @media (max-width: 760px) { .act-live .panel-head { flex-direction: column; align-items: flex-start; gap: 4px; } .act-live h2 { font-size: 1.05rem; } }
 .av-steps .k-status { background: #f1f4f9; color: var(--muted); }
+
+/* ---------- Retururi ---------- */
+.ret-card { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; margin-bottom: 12px; }
+.ret-panel .ret-card { border-color: #f3c98b; background: #fffaf2; }
+.ret-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: .95rem; }
+.ret-top .chip { margin-left: auto; }
+.ret-card > .muted { margin: 4px 0 10px; font-size: .8rem; }
+.ret-prod { margin: 0 0 10px; padding-left: 18px; }
+.ret-dl { display: grid; gap: 6px; margin: 0 0 12px; }
+.ret-dl div { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 10px; }
+.ret-dl dt { color: var(--muted); font-size: .84rem; } .ret-dl dd { margin: 0; }
+.ret-iban { font-size: .95rem; background: #f3f6fb; padding: 2px 6px; border-radius: 6px; user-select: all; }
+.ret-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.ret-act { margin: 0; }
+.ret-help ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; font-size: .9rem; }
+@media (max-width: 600px) { .ret-dl div { grid-template-columns: minmax(0, 1fr); gap: 0; } .ret-actions .btn { width: 100%; } .ret-act { width: 100%; } }

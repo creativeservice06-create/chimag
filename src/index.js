@@ -233,6 +233,58 @@ async function route(request, env, ctx) {
     return page(env, request, { settings, title: 'Unde e comanda mea?', body: trackOrderPage({ settings, error }) });
   }
 
+  // ---------- Retur (dreptul de retragere în 14 zile) ----------
+  if (path === '/retur' && (method === 'GET' || method === 'POST')) {
+    const settings = await getSettings(env);
+    const { returnLookupPage } = await import('./views/returns.js');
+    let error = '', number = '';
+    if (method === 'POST') {
+      const form = await request.formData().catch(() => new FormData());
+      const num = String(form.get('number') || '').trim().toUpperCase().replace(/\s/g, '');
+      number = /^\d+$/.test(num) ? `CHI-${num}` : num;
+      const contact = String(form.get('contact') || '').trim();
+      const phone = normalizePhone(contact);
+      const o = number && contact ? await env.DB.prepare('SELECT token FROM orders WHERE number = ? AND ((? != \'\' AND phone = ?) OR (? != \'\' AND lower(email) = ?))')
+        .bind(number, phone || '', phone || '', contact.includes('@') ? 'x' : '', contact.toLowerCase()).first() : null;
+      if (o) return redirect(`/retur/${o.token}`);
+      error = 'Nu am găsit nicio comandă cu acest număr și acest telefon sau email. Verifică datele sau scrie-ne.';
+    }
+    return page(env, request, { settings, title: 'Returnează un produs', body: returnLookupPage({ settings, error, number }) });
+  }
+  if ((m = path.match(/^\/retur\/([a-f0-9]{32})$/)) && (method === 'GET' || method === 'POST')) {
+    const settings = await getSettings(env);
+    const order = await env.DB.prepare('SELECT * FROM orders WHERE token = ?').bind(m[1]).first();
+    if (!order) return notFound(env, request);
+    const R = await import('./lib/returns.js');
+    const { returnOrderPage } = await import('./views/returns.js');
+    const { itemImages } = await import('./emails.js');
+    const items = await getOrderItems(env, order.id);
+    const elig = await R.eligibility(env, order, R.returnWindow(settings));
+    let error = '', form = {};
+    if (method === 'POST' && elig.ok) {
+      const f = await request.formData().catch(() => new FormData());
+      form = { items: {}, reason: String(f.get('reason') || ''), iban: R.cleanIban(f.get('iban')), holder: String(f.get('holder') || '').trim(), message: String(f.get('message') || '').trim() };
+      for (const i of items) form.items[i.id] = Math.max(0, Math.min(i.qty, Number(f.get(`qty_${i.id}`)) || 0));
+      const card = order.payment_method === 'card' && order.payment_status === 'platita';
+      const chosen = items.map((i) => ({ id: i.id, qty: form.items[i.id] })).filter((c) => c.qty > 0);
+      if (!chosen.length) error = 'Alege cel puțin un produs pe care vrei să-l returnezi.';
+      else if (!card && !R.validIban(form.iban)) error = 'IBAN-ul nu pare corect. Verifică-l (ex: RO49 AAAA 1B31 0075 9384 0000).';
+      else if (!card && form.holder.length < 3) error = 'Scrie numele titularului contului.';
+      else if (form.reason && !R.RETURN_REASONS.includes(form.reason)) form.reason = '';
+      if (!error) {
+        try {
+          const ret = await R.createReturn(env, order, { ...form, items: chosen, iban: card ? '' : form.iban, holder: card ? '' : form.holder });
+          const { notifyReturnCreated } = await import('./lib/notify.js');
+          ctx.waitUntil(notifyReturnCreated(env, settings, order, ret).catch((e) => console.log('retur email', e?.message || e)));
+          return redirect(`/retur/${order.token}?trimis=1`);
+        } catch (e) { error = String(e.message || e); }
+      }
+    }
+    const existing = await R.getReturnsForOrder(env, order.id);
+    const body = returnOrderPage({ order, items, images: await itemImages(env, items), elig, existing, error, form, sent: url.searchParams.has('trimis') });
+    return page(env, request, { settings, title: `Retur ${order.number}`, body });
+  }
+
   if (method === 'GET' && (m = path.match(/^\/pagina\/([a-z-]+)$/))) {
     const settings = await getSettings(env);
     const p = staticPage(m[1], settings);
@@ -255,7 +307,7 @@ async function route(request, env, ctx) {
 
   // ---------- SEO ----------
   if (path === '/robots.txt') {
-    return new Response(`User-agent: *\nDisallow: /api/\nDisallow: /multumim/\nDisallow: /finalizare\nDisallow: /cos\nSitemap: ${siteUrl(env, request)}/sitemap.xml\n`, { headers: { 'content-type': 'text/plain' } });
+    return new Response(`User-agent: *\nDisallow: /api/\nDisallow: /multumim/\nDisallow: /retur/\nDisallow: /finalizare\nDisallow: /cos\nSitemap: ${siteUrl(env, request)}/sitemap.xml\n`, { headers: { 'content-type': 'text/plain' } });
   }
   if (path === '/sitemap.xml') {
     const base = siteUrl(env, request);

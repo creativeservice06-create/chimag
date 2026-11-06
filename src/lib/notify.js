@@ -1,6 +1,6 @@
 import { sendMail, sendEmail } from './email.js';
 import { getOrderItems } from './db.js';
-import { adminNewOrderEmail, customerOrderEmail, customerStatusEmail, STATUS_EMAILS, itemImages, contactAdminEmail, contactAutoReply, parcelShippedEmail, invoiceEmail } from '../emails.js';
+import { adminNewOrderEmail, customerOrderEmail, customerStatusEmail, STATUS_EMAILS, itemImages, contactAdminEmail, contactAutoReply, parcelShippedEmail, invoiceEmail, returnCustomerEmail, returnAdminEmail, returnRefundedEmail } from '../emails.js';
 
 // Toate notificările pe email ale magazinului. Erorile de email nu blochează niciodată comanda.
 const baseUrl = (env) => String(env.SITE_URL || '').replace(/\/$/, '');
@@ -24,6 +24,9 @@ export async function notifyOrderPlaced(env, settings, order) {
 
 export async function notifyStatus(env, settings, order) {
   if (settings.customer_emails === '0' || !order.email || !STATUS_EMAILS.includes(order.status)) return;
+  // „Retur”: colet nelivrat întors la depozit (clientul n-a plătit nimic) sau retur de la client, care are deja emailurile lui
+  // (confirmarea cererii + „Ți-am returnat banii”) — deci nu mai trimitem emailul generic de status
+  if (order.status === 'retur') return;
   // „confirmată + pe drum” pleacă doar împreună cu AWB-ul (dacă AWB-ul se adaugă mai târziu, emailul pleacă atunci)
   if (order.status === 'expediata' && !order.awb) {
     await env.DB.prepare('INSERT INTO order_events(order_id, message) VALUES (?, ?)').bind(order.id, 'Emailul de expediere către client pleacă după ce comanda are AWB.').run();
@@ -70,4 +73,26 @@ async function pdfAttachment(env, settings, inv) {
     const content = await invoicePdf(env, inv, { storeName: settings.store_name, site: baseUrl(env).replace(/^https?:\/\//, '') || 'www.chimag.ro' });
     return [{ name: invoicePdfName(inv), type: 'application/pdf', content }];
   } catch (e) { console.log('pdf', e?.message || e); return []; }
+}
+
+// cerere de retur trimisă de client: confirmare pe email (obligatorie legal, pleacă indiferent de setarea emailurilor) + anunț pentru noi
+export async function notifyReturnCreated(env, settings, order, ret) {
+  const base = baseUrl(env);
+  const { returnAddressLines } = await import('./returns.js');
+  const tasks = [safe(sendEmail(env, settings, returnAdminEmail(settings, base, order, ret)))];
+  if (order.email) {
+    const mail = returnCustomerEmail(settings, base, order, ret, returnAddressLines());
+    tasks.push(safe(sendMail(env, settings, { to: order.email, ...mail })).then(async (r) => {
+      if (r && r.ok) await env.DB.prepare('INSERT INTO order_events(order_id, message) VALUES (?, ?)').bind(order.id, `Email trimis clientului: ${mail.subject}`).run().catch(() => {});
+      return r;
+    }));
+  }
+  await Promise.all(tasks);
+}
+
+export async function notifyReturnRefunded(env, settings, order, ret) {
+  if (!order.email) return;
+  const mail = returnRefundedEmail(settings, baseUrl(env), order, ret);
+  const r = await safe(sendMail(env, settings, { to: order.email, ...mail }));
+  if (r && r.ok) await env.DB.prepare('INSERT INTO order_events(order_id, message) VALUES (?, ?)').bind(order.id, `Email trimis clientului: ${mail.subject}`).run().catch(() => {});
 }

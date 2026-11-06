@@ -9,7 +9,7 @@ import { getProvider } from './shipping/providers.js';
 import { JUDETE } from './lib/judete.js';
 import {
   adminLayout, loginView, dashboardView, ordersView, orderView, labelView, productsView, productFormView, settingsView, couponsView, messagesView,
-  customersView, customerFormView, customerView, invoicesView, emailsView, realProfitView, ordersMapView, orderSource, activityView,
+  customersView, customerFormView, customerView, invoicesView, emailsView, realProfitView, ordersMapView, orderSource, activityView, returnsView,
 } from './views/admin-views.js';
 import { COUPON_TYPES, CODE_TYPES, normalizeCode } from './lib/coupons.js';
 import { emailStatus, sendEmail } from './lib/email.js';
@@ -25,7 +25,8 @@ const withFlash = (path, type, msg) => `${path}${path.includes('?') ? '&' : '?'}
 async function render(env, url, { title, active, body }) {
   const n = await env.DB.prepare("SELECT COUNT(*) AS n FROM orders WHERE status = 'noua'").first();
   const msg = await env.DB.prepare('SELECT COUNT(*) AS n FROM messages WHERE is_read = 0').first().catch(() => ({ n: 0 }));
-  return htmlResponse(adminLayout({ title, active, body, flash: flashFrom(url), newCount: n?.n || 0, msgCount: msg?.n || 0 }), 200, {
+  const ret = await env.DB.prepare("SELECT COUNT(*) AS n FROM returns WHERE status IN ('noua', 'primita')").first().catch(() => ({ n: 0 }));
+  return htmlResponse(adminLayout({ title, active, body, flash: flashFrom(url), newCount: n?.n || 0, msgCount: msg?.n || 0, retCount: ret?.n || 0 }), 200, {
     'cache-control': 'no-store', 'x-robots-tag': 'noindex', 'x-frame-options': 'DENY',
   });
 }
@@ -82,6 +83,33 @@ export async function handleAdmin(request, env, ctx, path) {
   }
 
   // ---------- Harta comenzilor (doar citire) ----------
+  if (path === '/admin/retururi' && method === 'GET') {
+    const { listReturns, RETURN_STATUSES } = await import('./lib/returns.js');
+    const st = RETURN_STATUSES[url.searchParams.get('status')] ? url.searchParams.get('status') : '';
+    return render(env, url, { title: 'Retururi', active: 'retururi', body: returnsView({ returns: await listReturns(env, st), status: st }) });
+  }
+  if ((m = path.match(/^\/admin\/retururi\/(\d+)$/)) && method === 'POST') {
+    const R = await import('./lib/returns.js');
+    const form = await readForm(request);
+    const back = String(form.get('back') || '/admin/retururi').startsWith('/admin/') ? String(form.get('back')) : '/admin/retururi';
+    const status = String(form.get('status') || '');
+    const before = await R.getReturn(env, Number(m[1]));
+    if (!before || !R.RETURN_STATUSES[status]) return redirect(withFlash(back, 'err', 'Cererea de retur nu există.'));
+    const ret = await R.setReturnStatus(env, before.id, status, String(form.get('note') || '').trim().slice(0, 300));
+    let msg = `Retur R-${ret.id}: ${R.RETURN_STATUSES[status]}.`;
+    if (status === 'rambursata' && before.status !== 'rambursata') {
+      const order = await getOrder(env, ret.order_id);
+      const { notifyReturnRefunded } = await import('./lib/notify.js');
+      await notifyReturnRefunded(env, settings, order, ret).catch(() => {});
+      // retur complet: comanda trece pe „Retur” (se emite automat factura storno, dacă există factură)
+      if (ret.full_return && !['retur', 'anulata', 'refuzata'].includes(order.status)) {
+        await setStatus(env, settings, order.id, 'retur', { by: 'retur client' });
+        msg += ' Comanda a trecut pe „Retur”.';
+      } else if (!ret.full_return) msg += ' Retur parțial: dacă există factură, emite storno parțial cu contabilul.';
+      msg += ' Clientul a primit email.';
+    }
+    return redirect(withFlash(back, 'ok', msg));
+  }
   if (path === '/admin/activitate' && method === 'GET') {
     const { activityData, ACT_PERIODS } = await import('./lib/activity.js');
     const period = ACT_PERIODS.some(([k]) => k === url.searchParams.get('perioada')) ? url.searchParams.get('perioada') : 'azi';
@@ -175,7 +203,8 @@ export async function handleAdmin(request, env, ctx, path) {
     const { results: events } = await env.DB.prepare('SELECT * FROM order_events WHERE order_id = ? ORDER BY id DESC').bind(order.id).all();
     const { getOrderInvoices, invoicingProblem } = await import('./lib/invoices.js');
     const invoices = await getOrderInvoices(env, order.id);
-    return render(env, url, { title: order.number, active: 'comenzi', body: orderView({ order, items, events: events || [], settings, invoices, invProblem: invoicingProblem(settings), hsOn: !!(env.HELPSHIP_CLIENT_ID && env.HELPSHIP_CLIENT_SECRET && env.HELPSHIP_ACCOUNT_ID) }) });
+    const returns = await (await import('./lib/returns.js')).getReturnsForOrder(env, order.id).catch(() => []);
+    return render(env, url, { title: order.number, active: 'comenzi', body: orderView({ order, items, events: events || [], settings, invoices, returns, invProblem: invoicingProblem(settings), hsOn: !!(env.HELPSHIP_CLIENT_ID && env.HELPSHIP_CLIENT_SECRET && env.HELPSHIP_ACCOUNT_ID) }) });
   }
 
   if ((m = path.match(/^\/admin\/comenzi\/(\d+)\/sterge$/)) && method === 'POST') {

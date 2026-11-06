@@ -585,7 +585,7 @@ export function thankYouPage({ settings, order, items, payment, invoices = [], e
     </section>
 
     <p class="center"><a class="btn btn-ghost" href="/">Înapoi la magazin</a></p>
-    <p class="center muted">Ai o întrebare? <a href="/pagina/contact">Scrie-ne</a> și te ajutăm.</p>
+    <p class="center muted">Ai o întrebare? <a href="/pagina/contact">Scrie-ne</a> și te ajutăm.${['expediata', 'livrata'].includes(order.status) ? html` Vrei să returnezi ceva? <a href="/retur/${order.token}">Trimite cererea de retur</a>.` : ''}</p>
   </div>`;
 }
 

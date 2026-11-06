@@ -3,7 +3,7 @@ import { waLink } from './pages.js';
 import { icons } from './icons.js';
 import { wheelConfig } from '../lib/coupons.js';
 
-const ASSET_V = '74';
+const ASSET_V = '75';
 
 export function layout({ settings, title, description = '', canonical = '', ogImage = '', body, bodyClass = '', jsonLd = null, pageData = null, siteUrl = '', customer = null, categories = [], wheelState = null }) {
   const storeName = settings.store_name || 'Chimag';
@@ -71,6 +71,7 @@ ${settings.announcement ? html`<div class="announce">${settings.announcement}</d
       <a href="/#produse">Toate produsele</a>
       ${categories.map((c) => html`<a href="/?categorie=${c.slug}#produse" data-nav-cat="${c.slug}">${c.name}</a>`)}
       <a href="/comanda">Comanda mea</a>
+      <a href="/retur">Retur</a>
       <a href="/pagina/contact">Contact</a>
     </div>
   </nav>
@@ -93,6 +94,7 @@ ${settings.announcement ? html`<div class="announce">${settings.announcement}</d
       <a href="/#produse">${icons.grid(22)} Toate produsele</a>
       ${categories.length ? html`<div class="drawer-cats">${categories.map((c) => html`<a href="/?categorie=${c.slug}#produse" data-nav-cat="${c.slug}">${c.name}<small>${c.count}</small></a>`)}</div>` : ''}
       <a href="/comanda">${icons.box(22)} Unde e comanda mea?</a>
+      <a href="/retur">${icons.back(22)} Returnează un produs</a>
       <a href="/pagina/contact">${icons.mail(22)} Contact</a>
       ${wheel.enabled ? html`<button type="button" data-wheel-open data-drawer-close>🎁 Roata norocului</button>` : ''}
     </nav>
@@ -182,6 +184,7 @@ function footer(s) {
         <ul>
           <li><a href="/pagina/contact">Contact</a></li>
           <li><a href="/pagina/livrare">Livrare și plată</a></li>
+          <li><a href="/retur"><b>Returnează un produs</b></a></li>
           <li><a href="/pagina/retur">Returnări și garanție</a></li>
           <li><a href="/pagina/formular-retragere">Formular de retragere</a></li>
         </ul>

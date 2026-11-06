@@ -1132,7 +1132,7 @@ export function ordersMapView({ rows, period, sources }) {
 }
 
 // ---------------- Activitate pe site ----------------
-const ACT_SRC = { facebook: ['meta', 'Facebook'], instagram: ['meta', 'Instagram'], tiktok: ['tiktok', 'TikTok'], google: ['google', 'Google'], direct: ['direct', 'Direct'], intern: ['direct', 'Revenit pe site'] };
+const ACT_SRC = { facebook: ['meta', 'Facebook'], instagram: ['meta', 'Instagram'], tiktok: ['tiktok', 'TikTok'], google: ['google', 'Google'], direct: ['direct', 'Direct'], intern: ['direct', 'Revenit pe site'], 'link-vechi': ['direct', 'Link vechi (magazinul de jucării)'] };
 export const actSource = (k) => ACT_SRC[k] || ['other', String(k || 'Altele').replace(/^./, (c) => c.toUpperCase())];
 const actSrcChip = (k, camp = '') => { const [c, l] = actSource(k); return html`<span class="src src-${c}" title="${camp ? `Campanie: ${camp}` : ''}"><i></i>${l}${camp ? html`<small>${camp}</small>` : ''}</span>`; };
 export const fmtDur = (s) => { s = Math.round(s || 0); if (s < 60) return `${s} s`; if (s < 3600) return `${Math.floor(s / 60)} min${s % 60 ? ` ${s % 60} s` : ''}`; return `${Math.floor(s / 3600)} h ${Math.floor((s % 3600) / 60)} min`; };

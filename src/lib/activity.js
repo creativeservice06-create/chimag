@@ -40,7 +40,8 @@ function sourceOf(q, ref, br, host) {
   try { rh = ref ? new URL(ref).hostname.replace(/^www\./, '') : ''; } catch { rh = ''; }
   const own = rh && host && rh.replace(/^www\./, '') === host.replace(/^www\./, '');
   let s = '';
-  if (p.get('ttclid') || /tiktok|^tt$/.test(u) || /tiktok\.com$/.test(rh) || br.startsWith('TikTok')) s = 'tiktok';
+  if (p.get('din') === 'link-vechi') s = 'link-vechi';
+  else if (p.get('ttclid') || /tiktok|^tt$/.test(u) || /tiktok\.com$/.test(rh) || br.startsWith('TikTok')) s = 'tiktok';
   else if (/instagram|^ig$/.test(u) || /instagram\.com$/.test(rh) || br.startsWith('Instagram')) s = 'instagram';
   else if (p.get('fbclid') || /facebook|^fb$|^meta$/.test(u) || /facebook\.com$|fb\.me$/.test(rh) || br.startsWith('Facebook')) s = 'facebook';
   else if (p.get('gclid') || /google/.test(u) || /(^|\.)google\./.test(rh)) s = 'google';

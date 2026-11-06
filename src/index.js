@@ -92,6 +92,11 @@ async function route(request, env, ctx) {
     }
   }
 
+  // ---------- Linkuri vechi din fostul magazin (WordPress/WooCommerce) → pagina principală ----------
+  if ((method === 'GET' || method === 'HEAD') && /^\/(product|produs|product-category|categorie-produs|product-tag|shop|magazin|my-account|contul-meu|cart|checkout|finalizare-comanda|cos-cumparaturi)(\/|$)/i.test(path)) {
+    return new Response(null, { status: 301, headers: { location: '/?din=link-vechi', 'cache-control': 'public, max-age=3600' } });
+  }
+
   // ---------- Panoul de admin, ascuns ----------
   // Dacă ADMIN_PATH e setat (ex: "intrare-k7m2p9"), /admin pare o pagină inexistentă pentru oricine
   // nu a deschis întâi adresa secretă /intrare-k7m2p9 pe acel dispozitiv.

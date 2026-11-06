@@ -421,7 +421,7 @@ export function orderView({ order: o, items, events, settings, provider, hsOn = 
             ${o.hs_awb ? html`<p class="awb">AWB <b>${o.hs_awb}</b>${o.hs_courier ? ` · ${o.hs_courier}` : ''}${o.hs_tracking_url ? html` · <a href="${o.hs_tracking_url}" target="_blank">urmărește</a>` : ''}</p>` : html`<p class="muted">Așteaptă AWB de la depozit${o.hs_status ? ` · ${o.hs_status}` : ''}.</p>`}`
           : html`<p>Toată comanda se livrează din depozitul Helpship. AWB-ul îl generează depozitul și apare aici automat.</p>`}
         ${o.hs_error ? html`<p class="flash err">${o.hs_error}</p>` : ''}
-        <p class="muted">${o.hs_order_id ? html`Trimisă la depozit${o.hs_sent_at ? ` · ${formatDate(o.hs_sent_at)}` : ''}${o.hs_status ? ` · status: ${o.hs_status}` : ''}` : hsOn ? 'Încă netrimisă la depozit.' : 'Legătura cu Helpship nu este încă configurată.'}</p>
+        <p class="muted">${o.hs_order_id ? html`Trimisă la depozit${o.hs_sent_at ? ` · ${formatDate(o.hs_sent_at)}` : ''}${o.hs_status ? ` · status: ${o.hs_status}` : ''} · <a href="/admin/comenzi/${o.id}/helpship-date" target="_blank">vezi datele de la Helpship</a>` : hsOn ? 'Încă netrimisă la depozit.' : 'Legătura cu Helpship nu este încă configurată.'}</p>
         ${hsOn && o.status !== 'anulata' ? html`<form method="post" action="/admin/comenzi/${o.id}/helpship"><button class="btn" ${o.hs_order_id ? raw('data-confirm="Comanda a fost deja trimisă. O retrimiți (poate crea un duplicat la depozit)?"') : ''}>${o.hs_order_id ? 'Retrimite la Helpship' : 'Trimite acum la Helpship'}</button></form>` : ''}
       </section>` : ''}
 

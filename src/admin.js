@@ -241,6 +241,11 @@ export async function handleAdmin(request, env, ctx, path) {
     return new Response(await backupSql(env), { headers: { 'content-type': 'application/sql; charset=utf-8', 'content-disposition': `attachment; filename="chimag-backup-${day}.sql"`, 'cache-control': 'no-store', 'x-robots-tag': 'noindex' } });
   }
 
+  if ((m = path.match(/^\/admin\/comenzi\/(\d+)\/helpship-date$/)) && method === 'GET') {
+    const { helpshipRaw } = await import('./lib/helpship.js');
+    const data = await helpshipRaw(env, Number(m[1])).catch((e) => ({ eroare: String(e.message || e) }));
+    return new Response(JSON.stringify(data, null, 2), { headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'x-robots-tag': 'noindex' } });
+  }
   if ((m = path.match(/^\/admin\/comenzi\/(\d+)\/helpship$/)) && method === 'POST') {
     const { sendToHelpship } = await import('./lib/helpship.js');
     const r = await sendToHelpship(env, await getSettings(env), Number(m[1]), { force: true });

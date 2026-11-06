@@ -118,13 +118,13 @@ function findTracking(o) {
   if (!o || typeof o !== 'object') return {};
   let awb = '', courier = '', status = '', tracking = '';
   const walk = (x, depth) => {
-    if (!x || typeof x !== 'object' || depth > 3) return;
+    if (!x || typeof x !== 'object' || depth > 5) return;
     for (const [k, v] of Object.entries(x)) {
       if (typeof v === 'string' || typeof v === 'number') {
         if (!awb && /^(trackingNumber|trackingCode|awb|awbNumber)$/i.test(k) && String(v).trim()) awb = String(v).trim();
         if (!courier && /^(carrierName|courierName|deliveryServiceName|carrier|courier)$/i.test(k) && String(v).trim()) courier = String(v).trim();
-        if (!tracking && /^trackingStatus$/i.test(k)) tracking = String(v);
-        if (!status && /^(status|orderStatus)$/i.test(k)) status = String(v);
+        if (!tracking && /^(trackingStatus|deliveryStatus|shippingStatus|shipmentStatus|courierStatus|awbStatus)$/i.test(k) && String(v).trim()) tracking = String(v).trim();
+        if (!status && /^(status|orderStatus|fulfillmentStatus)$/i.test(k) && String(v).trim()) status = String(v).trim();
       } else walk(v, depth + 1);
     }
   };
@@ -134,8 +134,17 @@ function findTracking(o) {
 
 // statusul coletului la Helpship (trackingStatus) → statusul comenzii la noi.
 // „Fulfilled” la Helpship = coletul a plecat din depozit; „Delivered” = clientul l-a primit.
-const DONE = { Delivered: 'livrata', Returned: 'retur' };
-const finalStatus = (t) => DONE[t.tracking] || (t.status === 'Refused' ? 'refuzata' : '');
+const DONE = { delivered: 'livrata', livrat: 'livrata', livrata: 'livrata', returned: 'retur', retur: 'retur', returnat: 'retur', refused: 'refuzata', refuzat: 'refuzata', refuzata: 'refuzata' };
+const norm = (x) => String(x || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+const finalStatus = (t) => DONE[norm(t.tracking)] || (norm(t.status) === 'refused' || norm(t.status) === 'refuzat' ? 'refuzata' : '') || (norm(t.status) === 'delivered' ? 'livrata' : '');
+
+// pentru verificare în admin: ce răspunde Helpship despre o comandă (doar citire)
+export async function helpshipRaw(env, orderId) {
+  const order = await getOrder(env, orderId);
+  if (!order?.hs_order_id || order.hs_order_id === 'trimisa') return { eroare: 'Comanda nu are un id Helpship.' };
+  const raw = await api(env, 'GET', `/api/Order/${order.hs_order_id}`);
+  return { citit: findTracking(raw), raspuns_helpship: raw };
+}
 
 // Rulează din cron: trimite comenzile rămase netrimise și aduce AWB-ul / statusul pentru cele trimise.
 export async function syncHelpship(env) {

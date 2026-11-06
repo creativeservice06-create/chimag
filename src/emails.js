@@ -171,8 +171,7 @@ export function customerStatusEmail(s, base, o, items, images, invoice = null) {
     subject: c.subject.replace('{n}', o.number),
     html: layout(s, base, {
       preheader: c.intro, title: c.title, intro: c.intro,
-      body: awb + (invoice ? invoiceBox(base, invoice) : '') + summaryStrip(o) + itemsTable(base, items, images) + totalsTable(o) + addressBox(o)
-        + (o.status === 'livrata' ? `<p style="margin:0 0 12px;font-size:13px;line-height:1.6;color:${C.muted};${FONT}">Te-ai răzgândit? Ai 14 zile să returnezi produsele: <a href="${esc(base)}/retur/${esc(o.token)}" style="color:${C.blue};font-weight:700;">trimite cererea de retur</a>.</p>` : ''),
+      body: awb + (invoice ? invoiceBox(base, invoice) : '') + summaryStrip(o) + itemsTable(base, items, images) + totalsTable(o) + addressBox(o),
       cta: invoice && o.status === 'livrata' ? { label: 'Descarcă factura (PDF)', href: `${base}/factura/${invoice.token}?descarca` } : { label: 'Vezi comanda', href: `${base}/multumim/${o.token}` },
       cta2: invoice && o.status === 'livrata' ? { label: 'Vezi comanda pe site', href: `${base}/multumim/${o.token}` }
         : o.status === 'expediata' && o.tracking_url ? { label: 'Urmărește coletul', href: o.tracking_url } : null,

@@ -3,7 +3,10 @@ import { waLink } from './pages.js';
 import { icons } from './icons.js';
 import { wheelConfig } from '../lib/coupons.js';
 
-const ASSET_V = '75';
+const ASSET_V = '76';
+
+// varianta scurtă pentru telefon, ca bara de sus să încapă pe un rând
+const shortAnnounce = (t) => String(t || '').replace(/\s+la\s+comenzile\s+(de\s+)?peste\s+/i, ' peste ').replace(/\s+pentru\s+comenzi(le)?\s+(de\s+)?peste\s+/i, ' peste ').replace(/\s+la\s+comenzi\s+(de\s+)?peste\s+/i, ' peste ');
 
 export function layout({ settings, title, description = '', canonical = '', ogImage = '', body, bodyClass = '', jsonLd = null, pageData = null, siteUrl = '', customer = null, categories = [], wheelState = null }) {
   const storeName = settings.store_name || 'Chimag';
@@ -47,7 +50,7 @@ ${jsonLd ? html`<script type="application/ld+json">${jsonScript(jsonLd)}</script
 <script src="/assets/v.js?v=1" defer></script>
 </head>
 <body class="${bodyClass}">
-${settings.announcement ? html`<div class="announce">${settings.announcement}</div>` : ''}
+${settings.announcement ? html`<div class="announce"><span class="an-long">${settings.announcement}</span><span class="an-short">${shortAnnounce(settings.announcement)}</span></div>` : ''}
 <header class="site-header">
   <div class="wrap header-inner">
     <button type="button" class="icon-btn menu-btn" data-drawer-open aria-label="Deschide meniul" aria-controls="meniu-mobil">${icons.menu(24)}</button>

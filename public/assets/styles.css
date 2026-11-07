@@ -64,6 +64,11 @@ p { margin: 0 0 1em; }
 
 /* ---------- Antet ---------- */
 .announce { background: var(--navy); color: #fff; text-align: center; font-size: .88rem; font-weight: 500; padding: 8px var(--gutter); }
+.announce .an-short { display: none; }
+@media (max-width: 600px) {
+  .announce { font-size: clamp(.7rem, 3.3vw, .84rem); padding: 7px 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -.005em; }
+  .announce .an-long { display: none; } .announce .an-short { display: inline; }
+}
 .site-header { position: sticky; top: 0; z-index: 30; background: rgba(255,255,255,.94); backdrop-filter: saturate(1.4) blur(10px); border-bottom: 1px solid var(--line); }
 
 .logo { display: inline-flex; align-items: center; gap: 9px; text-decoration: none; color: var(--ink); font: 800 1.45rem/1 var(--font-display); letter-spacing: -0.03em; }

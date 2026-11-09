@@ -57,8 +57,7 @@ export function homePage({ settings, products, categories = [], bestsellers = []
     ['Ce fac dacă produsul are o problemă?', 'Ne scrii din pagina de contact, cu numărul comenzii și o poză. Găsim împreună soluția: înlocuire sau returnarea banilor, conform garanției legale.'],
   ];
   const tile = (p, big) => html`<a class="hv-tile ${big ? 'hv-tile-big' : ''}" href="/p/${p.slug}">
-    ${big ? html`<img class="hv-tile-bg" src="${img(p)}" alt="" aria-hidden="true" width="720" height="720">` : ''}
-    <img class="${big ? 'hv-tile-main' : ''}" src="${img(p)}" alt="${p.title}" width="${big ? 720 : 360}" height="${big ? 720 : 360}" ${big ? raw('fetchpriority="high"') : raw('loading="lazy"')}>
+    <img src="${img(p)}" alt="${p.title}" width="${big ? 720 : 360}" height="${big ? 720 : 360}" ${big ? raw('fetchpriority="high"') : raw('loading="lazy"')}>
     ${pctOff(p) ? html`<span class="tag-save">−${pctOff(p)}%</span>` : ''}
     <span class="hv-tile-info"><span class="hv-tile-name">${p.title}</span><span class="hv-tile-price"><b>${money(p.price)}</b>${p.compare_at_price > p.price ? html`<s>${money(p.compare_at_price)}</s>` : ''}</span></span>
   </a>`;
@@ -74,11 +73,6 @@ export function homePage({ settings, products, categories = [], bestsellers = []
           <a class="btn btn-primary btn-lg" href="#produse">Vezi produsele</a>
           ${spot ? html`<a class="btn btn-ghost btn-lg" href="/p/${spot.slug}">Recomandarea noastră</a>` : ''}
         </div>
-        <ul class="hv-ticks" aria-label="Avantaje">
-          <li>${icons.check(16)}Plata la livrare</li>
-          <li>${icons.check(16)}Livrare 1–3 zile</li>
-          <li>${icons.check(16)}Retur ${returnDays} zile</li>
-        </ul>
       </div>
       ${mosaic.length ? html`<div class="hv-mosaic hv-n${mosaic.length}">
         ${tile(mosaic[0], true)}

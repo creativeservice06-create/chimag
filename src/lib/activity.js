@@ -152,7 +152,7 @@ export async function activityData(env, period) {
       FROM (${perVisitor}) f JOIN visits v ON v.id = f.fid GROUP BY v.source, v.campaign ORDER BY n DESC`, ...b),
     all(`SELECT v.device AS k, v.os AS os, v.browser AS br, COUNT(*) AS n FROM (${perVisitor}) f JOIN visits v ON v.id = f.fid GROUP BY v.device, v.os, v.browser ORDER BY n DESC`, ...b),
     all(`SELECT v.country AS k, COUNT(*) AS n FROM (${perVisitor}) f JOIN visits v ON v.id = f.fid GROUP BY v.country ORDER BY n DESC`, ...b),
-    all(`SELECT v.city AS k, v.country AS c, COUNT(*) AS n FROM (${perVisitor}) f JOIN visits v ON v.id = f.fid WHERE v.city != '' GROUP BY v.city, v.country ORDER BY n DESC LIMIT 12`, ...b),
+    all(`SELECT v.city AS k, v.country AS c, COUNT(*) AS n FROM (${perVisitor}) f JOIN visits v ON v.id = f.fid WHERE v.city != '' GROUP BY v.city, v.country ORDER BY n DESC LIMIT 60`, ...b),
     all(`SELECT slug, COUNT(*) AS views, COUNT(DISTINCT vid) AS visitors, AVG(secs) AS avg_secs, AVG(scrolled) AS avg_sc FROM visits WHERE ${W} AND kind = 'produs' GROUP BY slug ORDER BY visitors DESC LIMIT 20`, ...b),
     all(`SELECT kind, slug, COUNT(*) AS views, COUNT(DISTINCT vid) AS visitors, AVG(secs) AS avg_secs FROM visits WHERE ${W} GROUP BY kind, slug ORDER BY views DESC LIMIT 15`, ...b),
     one(`SELECT COUNT(DISTINCT vid) AS n FROM visits WHERE created_at >= ? AND created_at < ? AND is_bot = 1`, ...b),

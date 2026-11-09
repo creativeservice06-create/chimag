@@ -33,7 +33,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0, msgCount
 <title>${title} · Admin Chimag</title>
 <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/admin.css?v=26">
+<link rel="stylesheet" href="/assets/admin.css?v=27">
 <meta name="theme-color" content="#0e192a">
 <script src="/assets/admin.js?v=2" defer></script>
 </head><body>
@@ -73,7 +73,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0, msgCount
 
 export function loginView(error) {
   return html`<html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex"><title>Autentificare · Admin</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/assets/admin.css?v=26"></head>
+<meta name="robots" content="noindex"><title>Autentificare · Admin</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/assets/admin.css?v=27"></head>
 <body class="login-body"><form class="login" method="post" action="/admin/login">
   <div class="brand">${logoMark()}<span>chimag</span></div>
   <h1>Administrare</h1>
@@ -1221,7 +1221,7 @@ export function activityView(d, periods) {
     <section class="panel"><div class="panel-head"><h2>Dispozitive</h2></div>${actShare(devs, V, (r) => DEV[r.k] || r.k)}
       <h3 class="act-sub">Sistem</h3>${actShare(oses.slice(0, 5), V, (r) => r.k)}</section>
     <section class="panel"><div class="panel-head"><h2>Browser / aplicație</h2></div>${actShare(brs.slice(0, 7), V, (r) => r.k)}</section>
-    <section class="panel"><div class="panel-head"><h2>Locație</h2></div>${actShare(d.countries.slice(0, 6), V, (r) => ctry(r.k))}
+    <section class="panel act-loc"><div class="panel-head"><h2>Locație</h2></div>${actShare(d.countries, V, (r) => ctry(r.k))}
       ${d.cities.length ? html`<h3 class="act-sub">Orașe</h3>${actShare(d.cities.map((c) => ({ ...c, n: c.n })), V, (r) => `${r.k}${r.c && r.c !== 'RO' ? ` (${r.c})` : ''}`)}` : ''}</section>
   </div>
 

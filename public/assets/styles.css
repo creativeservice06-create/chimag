@@ -1618,3 +1618,9 @@ a.oi-link:hover .oi-name { color: var(--brand); }
   .hv-tile:not(.hv-tile-big) .hv-tile-info { flex-direction: column; align-items: flex-start; gap: 1px; }
 }
 @media (max-width: 359px) { .hv-ticks { flex-wrap: wrap; white-space: normal; } .hv-actions { flex-wrap: wrap; } .hv-actions .btn { flex: 1 1 100%; } }
+
+/* poza mare din hero: produsul întreg (fără decupare), pe un fundal estompat din aceeași poză */
+.hv-tile-big .hv-tile-bg { filter: blur(22px) saturate(1.15); transform: scale(1.25); z-index: -2; }
+.hv-tile-big:hover .hv-tile-bg { transform: scale(1.25); }
+.hv-tile-big img.hv-tile-main { object-fit: contain; object-position: center 30%; -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 14%, #000 86%, transparent 100%); mask-image: linear-gradient(180deg, transparent 0%, #000 14%, #000 86%, transparent 100%); }
+.hv-tile-big:hover img.hv-tile-main { transform: scale(1.03); }

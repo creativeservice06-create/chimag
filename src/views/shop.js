@@ -279,6 +279,9 @@ export function productPage({ settings, product: p, reviews, related = [], siteU
           </div></details>
           ${specs.length ? html`<details><summary>Specificații</summary><dl class="specs">${specs.map((x) => html`<div><dt>${x.k}</dt><dd>${x.v}</dd></div>`)}</dl></details>` : ''}
         </div>
+        ${p.mobile_video ? html`<div class="pdp-mvideo">
+          <video data-autoplay-video muted loop playsinline preload="none" poster="${p.mobile_video.replace(/\.mp4$/i, '.jpg')}" aria-label="Video: ${p.title} în folosință"><source src="${p.mobile_video}" type="video/mp4"></video>
+        </div>` : ''}
       </div>
     </div>
 
@@ -289,10 +292,6 @@ export function productPage({ settings, product: p, reviews, related = [], siteU
       const [t, ...rest] = String(b).split(/,\s*|\s+–\s+|:\s*/);
       return html`<li><span class="hl-ico">${benefitIcon(b, i)(24)}</span><strong>${t}</strong>${rest.length ? html`<span>${rest.join(', ')}</span>` : ''}</li>`;
     })}</ul>
-  </div></section>` : ''}
-
-  ${p.mobile_video ? html`<section class="pdp-mvideo" aria-label="Video cu produsul"><div class="wrap">
-    <video data-autoplay-video muted loop playsinline preload="none" poster="${p.mobile_video.replace(/\.mp4$/i, '.jpg')}" aria-label="Video: ${p.title} în folosință"><source src="${p.mobile_video}" type="video/mp4"></video>
   </div></section>` : ''}
 
   ${p.description ? html`<section class="pdp-about"><div class="wrap about-grid">

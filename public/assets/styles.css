@@ -1623,6 +1623,6 @@ a.oi-link:hover .oi-name { color: var(--brand); }
 /* clip scurt doar pe telefon, deasupra „Despre produs” */
 .pdp-mvideo { display: none; }
 @media (max-width: 760px) {
-  .pdp-mvideo { display: block; padding: 8px 0 4px; }
+  .pdp-mvideo { display: block; margin-top: 18px; }
   .pdp-mvideo video { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 20px; background: #1a1206; }
 }

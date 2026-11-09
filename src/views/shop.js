@@ -59,7 +59,7 @@ export function homePage({ settings, products, categories = [], bestsellers = []
   const tile = (p, big) => html`<a class="hv-tile ${big ? 'hv-tile-big' : ''}" href="/p/${p.slug}">
     <img src="${img(p)}" alt="${p.title}" width="${big ? 720 : 360}" height="${big ? 720 : 360}" ${big ? raw('fetchpriority="high"') : raw('loading="lazy"')}>
     ${pctOff(p) ? html`<span class="tag-save">−${pctOff(p)}%</span>` : ''}
-    <span class="hv-tile-info"><span class="hv-tile-name">${p.title}</span><b>${money(p.price)}</b></span>
+    <span class="hv-tile-info"><span class="hv-tile-name">${p.title}</span><span class="hv-tile-price"><b>${money(p.price)}</b>${p.compare_at_price > p.price ? html`<s>${money(p.compare_at_price)}</s>` : ''}</span></span>
   </a>`;
 
   return html`
@@ -68,11 +68,16 @@ export function homePage({ settings, products, categories = [], bestsellers = []
       <div class="hv-hero-copy">
         <p class="hv-kicker"><span class="hv-dot"></span>Magazin online · livrare în toată țara</p>
         <h1>${settings.tagline || 'Produse utile, la prețuri bune, livrate rapid'}</h1>
-        <p class="hv-lead">Produse practice pentru casă, bucătărie, copii și aventură, alese cu grijă și descrise cinstit. Comanzi în două minute și plătești abia când primești coletul.</p>
+        <p class="hv-lead"><span class="hv-lead-long">Produse practice pentru casă, bucătărie, copii și aventură, alese cu grijă și descrise cinstit. Comanzi în două minute și plătești abia când primești coletul.</span><span class="hv-lead-short">Comanzi în 2 minute și plătești abia când primești coletul.</span></p>
         <div class="hv-actions">
           <a class="btn btn-primary btn-lg" href="#produse">Vezi produsele</a>
           ${spot ? html`<a class="btn btn-ghost btn-lg" href="/p/${spot.slug}">Recomandarea noastră</a>` : ''}
         </div>
+        <ul class="hv-ticks" aria-label="Avantaje">
+          <li>${icons.check(16)}Plata la livrare</li>
+          <li>${icons.check(16)}Livrare 1–3 zile</li>
+          <li>${icons.check(16)}Retur ${returnDays} zile</li>
+        </ul>
       </div>
       ${mosaic.length ? html`<div class="hv-mosaic hv-n${mosaic.length}">
         ${tile(mosaic[0], true)}
@@ -81,7 +86,7 @@ export function homePage({ settings, products, categories = [], bestsellers = []
     </div>
     <div class="wrap">
       <ul class="hv-strip" aria-label="Avantaje">
-        <li>${icons.truck(20)}<span><b>Livrare 24–48h</b>${threshold ? html`<small>gratuită peste ${money(threshold)}</small>` : html`<small>în toată țara</small>`}</span></li>
+        <li>${icons.truck(20)}<span><b>Livrare în 1–3 zile</b>${threshold ? html`<small>gratuită peste ${money(threshold)}</small>` : html`<small>în toată țara</small>`}</span></li>
         <li>${icons.cash(20)}<span><b>Plata la livrare</b><small>fără niciun avans</small></span></li>
         <li>${icons.back(20)}<span><b>Retur ${returnDays} zile</b><small>fără explicații</small></span></li>
         <li>${icons.doc(20)}<span><b>Factură pe email</b><small>pe numele tău</small></span></li>

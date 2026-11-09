@@ -1596,3 +1596,25 @@ a.oi-link:hover .oi-name { color: var(--brand); }
 .ret-st.st-rambursata { background: #e5f6ec; color: #1d7a4f; } .ret-st.st-respinsa { background: #fde7e7; color: #b42318; } .ret-st.st-primita { background: #eaf2fd; color: #155ecc; }
 .legal-cta { background: var(--brand-tint, #eaf2fd); border-radius: 12px; padding: 12px 14px; }
 @media (max-width: 600px) { .ret-item { grid-template-columns: 44px minmax(0, 1fr); } .ret-item select { grid-column: 1 / -1; } .ri-img img { width: 44px; height: 44px; } }
+
+/* ---------- Pagina principală: retușuri hero (nov. 2026) ---------- */
+.hv-lead-short { display: none; }
+.hv-ticks { display: none; list-style: none; margin: 18px 0 0; padding: 0; flex-wrap: wrap; gap: 8px 18px; font-size: .92rem; font-weight: 600; color: var(--navy-2); }
+.hv-ticks li { display: inline-flex; align-items: center; gap: 6px; }
+.hv-ticks svg { width: 18px; height: 18px; padding: 3px; border-radius: 50%; background: #e5f6ec; color: #1d7a4f; flex: none; }
+.hv-tile-price { display: inline-flex; align-items: baseline; gap: 6px; white-space: nowrap; }
+.hv-tile-price s { color: var(--muted); font-size: .78rem; font-weight: 500; text-decoration-color: #c8102e; }
+@media (max-width: 760px) {
+  .hv-hero-inner { gap: 22px; padding-top: 22px; }
+  .hv-hero h1 { font-size: clamp(1.6rem, 7.4vw, 1.95rem); line-height: 1.1; margin-bottom: 10px; }
+  .hv-lead-long { display: none; } .hv-lead-short { display: inline; }
+  .hv-lead { font-size: 1rem; margin-bottom: 16px; }
+  .hv-actions { flex-wrap: nowrap; gap: 8px; }
+  .hv-actions .btn { flex: 1 1 0; padding: 13px 8px; font-size: .95rem; }
+  .hv-ticks { display: flex; margin-top: 14px; gap: 6px 10px; font-size: .76rem; flex-wrap: nowrap; white-space: nowrap; }
+  .hv-ticks li { gap: 4px; }
+  .hv-ticks svg { width: 16px; height: 16px; }
+  .hv-tile:not(.hv-tile-big) .hv-tile-name { display: -webkit-box; -webkit-line-clamp: 1; font-size: .72rem; }
+  .hv-tile:not(.hv-tile-big) .hv-tile-info { flex-direction: column; align-items: flex-start; gap: 1px; }
+}
+@media (max-width: 359px) { .hv-ticks { flex-wrap: wrap; white-space: normal; } .hv-actions { flex-wrap: wrap; } .hv-actions .btn { flex: 1 1 100%; } }

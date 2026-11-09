@@ -926,19 +926,41 @@ input[type=checkbox] { box-shadow: none; }
 .ret-act { margin: 0; }
 .ret-help ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; font-size: .9rem; }
 @media (max-width: 600px) { .ret-dl div { grid-template-columns: minmax(0, 1fr); gap: 0; } .ret-actions .btn { width: 100%; } .ret-act { width: 100%; } }
-/* Activitate › Dispozitive / Browser / Locație: liste compacte, aceeași înălțime, max. 5 rânduri vizibile */
-.ar-grid { align-items: stretch; }
-.ar-grid > .ar-panel { display: flex; flex-direction: column; gap: 14px; }
-.ar-panel .panel-head { margin-bottom: 0; }
-.ar-block { display: flex; flex-direction: column; gap: 6px; }
-.ar-title { margin: 0; font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-.ar-list { list-style: none; margin: 0; padding: 0 4px 0 0; max-height: calc(5 * 34px); overflow-y: auto; scrollbar-width: thin; scrollbar-color: #c9d3e1 transparent; overscroll-behavior: contain; }
+/* Activitate › Dispozitive / Sistem / Browser / Locație: 4 casete pe un rând, aceeași înălțime */
+.ar-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; align-items: stretch; margin-bottom: 14px; }
+.ar-grid > .ar-panel { margin: 0; display: flex; flex-direction: column; gap: 10px; min-height: 0; position: relative; }
+.ar-panel .panel-head { margin-bottom: 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ar-head, .ar-list li { display: grid; grid-template-columns: minmax(0, 1fr) 34px 26px 38px 32px; align-items: center; gap: 6px; }
+.ar-head { font-size: .66rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); padding: 0 4px 2px 0; }
+.ar-head span { text-align: right; }
+.ar-list { list-style: none; margin: 0; padding: 0 4px 0 0; max-height: calc(5 * 36px); overflow-y: auto; scrollbar-width: thin; scrollbar-color: #c9d3e1 transparent; overscroll-behavior: contain; }
 .ar-list::-webkit-scrollbar { width: 6px; } .ar-list::-webkit-scrollbar-thumb { background: #c9d3e1; border-radius: 6px; }
-.ar-list li { display: grid; grid-template-columns: minmax(0, 1fr) 72px 34px 40px; align-items: center; gap: 10px; height: 34px; border-bottom: 1px solid var(--line-soft, #eef2f6); font-size: .86rem; }
-.ar-list li:last-child { border-bottom: 0; }
+.ar-list li { height: 36px; border-top: 1px solid var(--line-soft, #eef2f6); font-size: .86rem; }
 .ar-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ar-bar { height: 6px; background: #eef2f6; border-radius: 999px; overflow: hidden; }
 .ar-bar i { display: block; height: 100%; background: var(--brand); border-radius: 999px; }
-.ar-n { text-align: right; font-variant-numeric: tabular-nums; }
-.ar-p { text-align: right; color: var(--muted); font-size: .76rem; font-variant-numeric: tabular-nums; }
+.ar-n, .ar-p, .ar-b { text-align: right; font-variant-numeric: tabular-nums; }
+.ar-p { color: var(--muted); font-size: .76rem; }
+.ar-b { color: #b6bfcc; font-size: .8rem; }
+.ar-b em { font-style: normal; font-weight: 700; color: #0f8a4b; background: #e5f6ed; border-radius: 999px; padding: 1px 7px; }
 .ar-empty { margin: 0; font-size: .85rem; }
+/* dispozitive */
+.ad-split { display: flex; height: 10px; border-radius: 999px; overflow: hidden; gap: 2px; background: #eef2f6; }
+.ad-split i { display: block; min-width: 4px; }
+.d-m { background: var(--brand); } .d-d { background: #8b5cf6; } .d-t { background: #f59e0b; } .d-x { background: #94a3b8; }
+.ad-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.ad-list li { border: 1px solid var(--line-soft, #eef2f6); background: #f8fafc; border-radius: 10px; padding: 9px 11px; }
+.ad-top { display: flex; align-items: center; gap: 8px; font-size: .9rem; }
+.ad-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.ad-pct { margin-left: auto; font-weight: 700; font-size: 1rem; font-variant-numeric: tabular-nums; }
+.ad-stats { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 5px; font-size: .78rem; color: var(--muted); }
+.ad-stats b { color: var(--text, #0f172a); font-variant-numeric: tabular-nums; } .ad-stats b.ok { color: #0f8a4b; }
+/* locație: file Țări / Orașe */
+.ar-loc > input { position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px; }
+.ar-tabs { display: inline-flex; background: #eef2f6; border-radius: 999px; padding: 3px; }
+.ar-tabs label { font-size: .76rem; font-weight: 600; padding: 4px 11px; border-radius: 999px; cursor: pointer; color: var(--muted); user-select: none; }
+#ar-loc-t:checked ~ .panel-head label[for=ar-loc-t], #ar-loc-o:checked ~ .panel-head label[for=ar-loc-o] { background: #fff; color: var(--text, #0f172a); box-shadow: 0 1px 2px rgba(15,23,42,.12); }
+#ar-loc-t:checked ~ .ar-pane-o, #ar-loc-o:checked ~ .ar-pane-t { display: none; }
+#ar-loc-t:focus-visible ~ .panel-head label[for=ar-loc-t], #ar-loc-o:focus-visible ~ .panel-head label[for=ar-loc-o] { outline: 2px solid var(--brand); }
+@media (max-width: 1280px) { .ar-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 700px) { .ar-grid { grid-template-columns: minmax(0, 1fr); } }

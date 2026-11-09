@@ -33,7 +33,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0, msgCount
 <title>${title} · Admin Chimag</title>
 <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/admin.css?v=28">
+<link rel="stylesheet" href="/assets/admin.css?v=29">
 <meta name="theme-color" content="#0e192a">
 <script src="/assets/admin.js?v=2" defer></script>
 </head><body>
@@ -73,7 +73,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0, msgCount
 
 export function loginView(error) {
   return html`<html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex"><title>Autentificare · Admin</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/assets/admin.css?v=28"></head>
+<meta name="robots" content="noindex"><title>Autentificare · Admin</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/assets/admin.css?v=29"></head>
 <body class="login-body"><form class="login" method="post" action="/admin/login">
   <div class="brand">${logoMark()}<span>chimag</span></div>
   <h1>Administrare</h1>
@@ -1161,13 +1161,29 @@ function actChart(series, unit) {
   <div class="act-legend"><span><i class="l1"></i>Vizitatori</span><span><i class="l2"></i>Implicați (au stat peste 10 secunde sau au deschis mai multe pagini)</span></div>`;
 }
 
-// listă compactă: o linie pe rând (nume · bară · număr · procent), maximum 5 rânduri vizibile
-function actRows(title, rows, total, label) {
-  return html`<div class="ar-block">${title ? html`<h3 class="ar-title">${title}</h3>` : ''}
-    ${rows.length ? html`<ul class="ar-list">${rows.map((r) => html`<li>
+// listă compactă: nume · bară · vizitatori · procent · comenzi (max. 5 rânduri vizibile, restul cu derulare)
+function actRows(rows, total, label) {
+  if (!rows.length) return html`<p class="muted ar-empty">Nicio vizită în perioada aleasă.</p>`;
+  return html`<div class="ar-head"><span></span><span></span><span>Viz.</span><span>%</span><span>Com.</span></div>
+    <ul class="ar-list">${rows.map((r) => html`<li>
       <span class="ar-name" title="${label(r)}">${label(r)}</span>
       <span class="ar-bar"><i style="width:${Math.max(3, Math.round((r.n / (total || 1)) * 100))}%"></i></span>
-      <b class="ar-n">${r.n}</b><span class="ar-p">${pct(r.n, total)}</span></li>`)}</ul>` : html`<p class="muted ar-empty">Nicio vizită în perioada aleasă.</p>`}</div>`;
+      <b class="ar-n">${r.n}</b><span class="ar-p">${pct(r.n, total)}</span>
+      <span class="ar-b">${r.b ? html`<em>${r.b}</em>` : '–'}</span></li>`)}</ul>`;
+}
+
+// dispozitive: bară împărțită + câte un card pe dispozitiv (vizitatori, comenzi, conversie, timp)
+function actDevices(devs, total) {
+  if (!devs.length) return html`<p class="muted ar-empty">Nicio vizită în perioada aleasă.</p>`;
+  const tone = { mobil: 'd-m', desktop: 'd-d', tableta: 'd-t' };
+  return html`<div class="ad-split">${devs.map((r) => html`<i class="${tone[r.k] || 'd-x'}" style="flex:${r.n}" title="${DEV[r.k] || r.k}: ${pct(r.n, total)}"></i>`)}</div>
+    <ul class="ad-list">${devs.map((r) => html`<li>
+      <div class="ad-top"><span class="ad-dot ${tone[r.k] || 'd-x'}"></span><b>${DEV[r.k] || r.k}</b><span class="ad-pct">${pct(r.n, total)}</span></div>
+      <div class="ad-stats">
+        <span><b>${r.n}</b> vizitatori</span>
+        <span><b class="${r.b ? 'ok' : ''}">${r.b || 0}</b> comenzi${r.b ? ` (${pct(r.b, r.n)})` : ''}</span>
+        <span><b>${fmtDur(r.n ? r.s / r.n : 0)}</b> / vizită</span>
+      </div></li>`)}</ul>`;
 }
 
 function actShare(rows, total, label) {
@@ -1178,7 +1194,7 @@ function actShare(rows, total, label) {
 
 export function activityView(d, periods) {
   const k = d.kpi, V = k.visitors || 0;
-  const merge = (rows, key) => { const m = new Map(); for (const r of rows) { const kk = key(r); m.set(kk, (m.get(kk) || 0) + r.n); } return [...m.entries()].map(([kk, n]) => ({ k: kk, n })).sort((a, b) => b.n - a.n); };
+  const merge = (rows, key) => { const m = new Map(); for (const r of rows) { const kk = key(r); const o = m.get(kk) || { k: kk, n: 0, b: 0, s: 0 }; o.n += r.n; o.b += r.b || 0; o.s += r.s || 0; m.set(kk, o); } return [...m.values()].sort((a, b) => b.n - a.n); };
   const devs = merge(d.devices, (r) => r.k), oses = merge(d.devices, (r) => r.os || 'Altul'), brs = merge(d.devices, (r) => r.br);
   const kpi = (ic, tone, label, val, sub) => html`<div class="d2-kpi"><div class="d2-kpi-top"><span class="kpi2-ic ${tone}">${icons[ic] ? icons[ic](16) : ''}</span><span>${label}</span></div><div class="d2-kpi-val"><strong>${val}</strong></div><small>${sub}</small></div>`;
   return html`
@@ -1227,15 +1243,16 @@ export function activityView(d, periods) {
     </section>
   </div>
 
-  <div class="act-grid act-grid3 ar-grid">
-    <section class="panel ar-panel"><div class="panel-head"><h2>Dispozitive</h2></div>
-      ${actRows('', devs.map((r) => ({ ...r, label: DEV[r.k] || r.k })), V, (r) => r.label)}
-      ${actRows('Sistem de operare', oses, V, (r) => r.k)}</section>
-    <section class="panel ar-panel"><div class="panel-head"><h2>Browser / aplicație</h2></div>
-      ${actRows('', brs, V, (r) => r.k)}</section>
-    <section class="panel ar-panel"><div class="panel-head"><h2>Locație</h2></div>
-      ${actRows('Țări', d.countries, V, (r) => ctry(r.k))}
-      ${actRows('Orașe', d.cities, V, (r) => `${r.k}${r.c && r.c !== 'RO' ? ` (${ctry(r.c)})` : ''}`)}</section>
+  <div class="ar-grid">
+    <section class="panel ar-panel"><div class="panel-head"><h2>Dispozitive</h2></div>${actDevices(devs, V)}</section>
+    <section class="panel ar-panel"><div class="panel-head"><h2>Sistem de operare</h2></div>${actRows(oses, V, (r) => r.k)}</section>
+    <section class="panel ar-panel"><div class="panel-head"><h2>Browser / aplicație</h2></div>${actRows(brs, V, (r) => r.k)}</section>
+    <section class="panel ar-panel ar-loc">
+      <input type="radio" name="ar-loc" id="ar-loc-t" checked><input type="radio" name="ar-loc" id="ar-loc-o">
+      <div class="panel-head"><h2>Locație</h2><div class="ar-tabs"><label for="ar-loc-t">Țări</label><label for="ar-loc-o">Orașe</label></div></div>
+      <div class="ar-pane ar-pane-t">${actRows(d.countries, V, (r) => ctry(r.k))}</div>
+      <div class="ar-pane ar-pane-o">${actRows(d.cities, V, (r) => `${r.k}${r.c && r.c !== 'RO' ? ` (${ctry(r.c)})` : ''}`)}</div>
+    </section>
   </div>
 
   <section class="panel">

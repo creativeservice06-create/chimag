@@ -263,7 +263,7 @@ export function productPage({ settings, product: p, reviews, related = [], siteU
         </form>
 
         <ul class="assurance">
-          <li>${icons.truck(22)}<strong>Livrare rapidă</strong><small data-delivery-date data-short>În 24–48h</small></li>
+          <li>${icons.truck(22)}<strong>Livrare rapidă</strong><small data-delivery-date data-short>În 1–3 zile lucrătoare</small></li>
           <li>${icons.cash(22)}<strong>Plata la livrare</strong><small>Plătești curierului</small></li>
           <li>${icons.back(22)}<strong>Retur ${settings.return_days || 14} zile</strong><small>Fără explicații</small></li>
         </ul>

@@ -33,7 +33,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0, msgCount
 <title>${title} · Admin Chimag</title>
 <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/admin.css?v=27">
+<link rel="stylesheet" href="/assets/admin.css?v=28">
 <meta name="theme-color" content="#0e192a">
 <script src="/assets/admin.js?v=2" defer></script>
 </head><body>
@@ -73,7 +73,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0, msgCount
 
 export function loginView(error) {
   return html`<html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex"><title>Autentificare · Admin</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/assets/admin.css?v=27"></head>
+<meta name="robots" content="noindex"><title>Autentificare · Admin</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/assets/admin.css?v=28"></head>
 <body class="login-body"><form class="login" method="post" action="/admin/login">
   <div class="brand">${logoMark()}<span>chimag</span></div>
   <h1>Administrare</h1>
@@ -1141,7 +1141,8 @@ const actSrcChip = (k, camp = '') => { const [c, l] = actSource(k); return html`
 export const fmtDur = (s) => { s = Math.round(s || 0); if (s < 60) return `${s} s`; if (s < 3600) return `${Math.floor(s / 60)} min${s % 60 ? ` ${s % 60} s` : ''}`; return `${Math.floor(s / 3600)} h ${Math.floor((s % 3600) / 60)} min`; };
 const DEV = { mobil: 'Telefon', desktop: 'Calculator', tableta: 'Tabletă' };
 const COUNTRY = { RO: 'România', MD: 'Moldova', US: 'SUA', DE: 'Germania', IT: 'Italia', ES: 'Spania', GB: 'Marea Britanie', FR: 'Franța', NL: 'Olanda', AT: 'Austria', HU: 'Ungaria', BG: 'Bulgaria', IE: 'Irlanda', BE: 'Belgia', '': 'Necunoscut' };
-const ctry = (c) => COUNTRY[c] || c;
+const ctryNames = (() => { try { return new Intl.DisplayNames(['ro'], { type: 'region' }); } catch { return null; } })();
+const ctry = (c) => COUNTRY[c] || (c && ctryNames ? (() => { try { return ctryNames.of(c); } catch { return c; } })() : c) || 'Necunoscut';
 
 function actChart(series, unit) {
   const max = Math.max(1, ...series.map((x) => x.visitors));
@@ -1158,6 +1159,15 @@ function actChart(series, unit) {
     </div>
   </div>
   <div class="act-legend"><span><i class="l1"></i>Vizitatori</span><span><i class="l2"></i>Implicați (au stat peste 10 secunde sau au deschis mai multe pagini)</span></div>`;
+}
+
+// listă compactă: o linie pe rând (nume · bară · număr · procent), maximum 5 rânduri vizibile
+function actRows(title, rows, total, label) {
+  return html`<div class="ar-block">${title ? html`<h3 class="ar-title">${title}</h3>` : ''}
+    ${rows.length ? html`<ul class="ar-list">${rows.map((r) => html`<li>
+      <span class="ar-name" title="${label(r)}">${label(r)}</span>
+      <span class="ar-bar"><i style="width:${Math.max(3, Math.round((r.n / (total || 1)) * 100))}%"></i></span>
+      <b class="ar-n">${r.n}</b><span class="ar-p">${pct(r.n, total)}</span></li>`)}</ul>` : html`<p class="muted ar-empty">Nicio vizită în perioada aleasă.</p>`}</div>`;
 }
 
 function actShare(rows, total, label) {
@@ -1217,12 +1227,15 @@ export function activityView(d, periods) {
     </section>
   </div>
 
-  <div class="act-grid act-grid3">
-    <section class="panel"><div class="panel-head"><h2>Dispozitive</h2></div>${actShare(devs, V, (r) => DEV[r.k] || r.k)}
-      <h3 class="act-sub">Sistem</h3>${actShare(oses.slice(0, 5), V, (r) => r.k)}</section>
-    <section class="panel"><div class="panel-head"><h2>Browser / aplicație</h2></div>${actShare(brs.slice(0, 7), V, (r) => r.k)}</section>
-    <section class="panel act-loc"><div class="panel-head"><h2>Locație</h2></div>${actShare(d.countries, V, (r) => ctry(r.k))}
-      ${d.cities.length ? html`<h3 class="act-sub">Orașe</h3>${actShare(d.cities.map((c) => ({ ...c, n: c.n })), V, (r) => `${r.k}${r.c && r.c !== 'RO' ? ` (${r.c})` : ''}`)}` : ''}</section>
+  <div class="act-grid act-grid3 ar-grid">
+    <section class="panel ar-panel"><div class="panel-head"><h2>Dispozitive</h2></div>
+      ${actRows('', devs.map((r) => ({ ...r, label: DEV[r.k] || r.k })), V, (r) => r.label)}
+      ${actRows('Sistem de operare', oses, V, (r) => r.k)}</section>
+    <section class="panel ar-panel"><div class="panel-head"><h2>Browser / aplicație</h2></div>
+      ${actRows('', brs, V, (r) => r.k)}</section>
+    <section class="panel ar-panel"><div class="panel-head"><h2>Locație</h2></div>
+      ${actRows('Țări', d.countries, V, (r) => ctry(r.k))}
+      ${actRows('Orașe', d.cities, V, (r) => `${r.k}${r.c && r.c !== 'RO' ? ` (${ctry(r.c)})` : ''}`)}</section>
   </div>
 
   <section class="panel">

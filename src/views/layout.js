@@ -3,7 +3,7 @@ import { waLink } from './pages.js';
 import { icons } from './icons.js';
 import { wheelConfig } from '../lib/coupons.js';
 
-const ASSET_V = '81';
+const ASSET_V = '82';
 
 // varianta scurtă pentru telefon, ca bara de sus să încapă pe un rând
 const shortAnnounce = (t) => String(t || '').replace(/\s+la\s+comenzile\s+(de\s+)?peste\s+/i, ' peste ').replace(/\s+pentru\s+comenzi(le)?\s+(de\s+)?peste\s+/i, ' peste ').replace(/\s+la\s+comenzi\s+(de\s+)?peste\s+/i, ' peste ');

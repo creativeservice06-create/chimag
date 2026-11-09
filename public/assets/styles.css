@@ -146,7 +146,7 @@ p { margin: 0 0 1em; }
 .crumbs { display: flex; flex-wrap: wrap; gap: 8px; font-size: .88rem; color: var(--muted); padding: 18px 0; }
 .crumbs a { color: var(--muted); text-decoration: none; }
 .crumbs a:hover { color: var(--brand); }
-.pdp-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 48px; align-items: start; }
+.pdp-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 48px; align-items: start; }
 .gallery { position: sticky; top: 84px; }
 .gallery-main { position: relative; border-radius: var(--radius-l); overflow: hidden; background: var(--surface); }
 .gallery-track { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }

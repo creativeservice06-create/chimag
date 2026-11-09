@@ -229,7 +229,7 @@ export function productPage({ settings, product: p, reviews, related = [], siteU
 
         <form class="buy-form" data-buy-form data-product-id="${p.id}" data-product-price="${p.price}" data-product-title="${p.title}">
           ${bundles.length > 1 ? html`
-          <fieldset class="bundles">
+          <fieldset class="bundles" id="oferte">
             <legend>Alege oferta</legend>
             ${bundles.map((b, i) => {
               const gross = p.price * b.qty;
@@ -352,7 +352,7 @@ export function productPage({ settings, product: p, reviews, related = [], siteU
 
   ${outOfStock ? '' : html`<div class="sticky-buy" data-sticky-buy>
     <div class="sticky-info"><strong>${money(p.price)}</strong>${p.compare_at_price > p.price ? html`<s>${money(p.compare_at_price)}</s>` : ''}</div>
-    <a href="#cumpara" class="btn btn-primary">Comandă acum</a>
+    <a href="${bundles.length > 1 ? '#oferte' : '#cumpara'}" class="btn btn-primary">Comandă acum</a>
   </div>`}`;
 }
 

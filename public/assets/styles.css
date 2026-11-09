@@ -1626,3 +1626,6 @@ a.oi-link:hover .oi-name { color: var(--brand); }
   .pdp-mvideo { display: block; margin-top: 18px; }
   .pdp-mvideo video { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 20px; background: #1a1206; }
 }
+
+/* bara „Comandă acum” de jos duce la ofertele de cantitate */
+#oferte, #cumpara { scroll-margin-top: 84px; }

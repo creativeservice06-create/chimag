@@ -1618,3 +1618,4 @@ a.oi-link:hover .oi-name { color: var(--brand); }
   .hv-tile:not(.hv-tile-big) .hv-tile-info { flex-direction: column; align-items: flex-start; gap: 1px; }
 }
 @media (max-width: 359px) { .hv-ticks { flex-wrap: wrap; white-space: normal; } .hv-actions { flex-wrap: wrap; } .hv-actions .btn { flex: 1 1 100%; } }
+.hv-tile-big img { object-position: center 18%; }

@@ -57,7 +57,7 @@ export function homePage({ settings, products, categories = [], bestsellers = []
     ['Ce fac dacă produsul are o problemă?', 'Ne scrii din pagina de contact, cu numărul comenzii și o poză. Găsim împreună soluția: înlocuire sau returnarea banilor, conform garanției legale.'],
   ];
   const tile = (p, big) => html`<a class="hv-tile ${big ? 'hv-tile-big' : ''}" href="/p/${p.slug}">
-    <img src="${img(p)}" alt="${p.title}" width="${big ? 720 : 360}" height="${big ? 720 : 360}" ${big ? raw('fetchpriority="high"') : raw('loading="lazy"')}>
+    <img src="${big && p.hero_image ? p.hero_image : img(p)}" alt="${p.title}" width="${big ? 720 : 360}" height="${big ? 720 : 360}" ${big ? raw('fetchpriority="high"') : raw('loading="lazy"')}>
     ${pctOff(p) ? html`<span class="tag-save">−${pctOff(p)}%</span>` : ''}
     <span class="hv-tile-info"><span class="hv-tile-name">${p.title}</span><span class="hv-tile-price"><b>${money(p.price)}</b>${p.compare_at_price > p.price ? html`<s>${money(p.compare_at_price)}</s>` : ''}</span></span>
   </a>`;

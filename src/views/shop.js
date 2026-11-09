@@ -291,6 +291,10 @@ export function productPage({ settings, product: p, reviews, related = [], siteU
     })}</ul>
   </div></section>` : ''}
 
+  ${p.mobile_video ? html`<section class="pdp-mvideo" aria-label="Video cu produsul"><div class="wrap">
+    <video data-autoplay-video muted loop playsinline preload="none" poster="${p.mobile_video.replace(/\.mp4$/i, '.jpg')}" aria-label="Video: ${p.title} în folosință"><source src="${p.mobile_video}" type="video/mp4"></video>
+  </div></section>` : ''}
+
   ${p.description ? html`<section class="pdp-about"><div class="wrap about-grid">
     <div class="about-head">
       <p class="eyebrow">Despre produs</p>

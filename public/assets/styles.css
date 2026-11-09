@@ -1619,3 +1619,10 @@ a.oi-link:hover .oi-name { color: var(--brand); }
 }
 @media (max-width: 359px) { .hv-ticks { flex-wrap: wrap; white-space: normal; } .hv-actions { flex-wrap: wrap; } .hv-actions .btn { flex: 1 1 100%; } }
 .hv-tile-big img { object-position: center 18%; }
+
+/* clip scurt doar pe telefon, deasupra „Despre produs” */
+.pdp-mvideo { display: none; }
+@media (max-width: 760px) {
+  .pdp-mvideo { display: block; padding: 8px 0 4px; }
+  .pdp-mvideo video { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 20px; background: #1a1206; }
+}

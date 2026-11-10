@@ -770,22 +770,24 @@ html.drawer-open { overflow: hidden; }
 .consent-opt input:checked + .switch::after { transform: translateX(18px); }
 .consent-opt input:disabled + .switch { opacity: .55; }
 .consent-opt input:focus-visible + .switch { outline: 3px solid var(--saffron); outline-offset: 2px; }
+.consent-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.consent-actions .btn { flex: 1 1 0; }
+.consent-actions [data-consent-settings] { flex: 0 0 auto; }
+.consent-actions .btn { padding: 11px 14px; font-size: .92rem; white-space: nowrap; }
+.consent-actions [data-consent-settings] { border-color: transparent; color: var(--muted); padding-left: 8px; padding-right: 8px; }
+.consent-actions [data-consent-settings]:hover { color: var(--ink); }
 .consent-actions .btn[hidden] { display: none; }
-/* banner cookie: un buton mare „Accept”, dedesubt linkuri mici „Setări” și „Refuz” */
-.consent-actions { display: grid; gap: 10px; margin-top: 16px; }
-.consent-actions .consent-main { width: 100%; min-height: 48px; font-size: 1rem; justify-content: center; }
-.consent-links { display: flex; justify-content: center; gap: 22px; }
-.consent-link { background: none; border: 0; padding: 6px 4px; font: inherit; font-size: .88rem; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
-.consent-link:hover { color: var(--ink); }
-.consent-link[hidden] { display: none; }
+.c-short { display: none; }
 @media (max-width: 560px) {
   .consent { left: 8px; right: 8px; bottom: calc(8px + env(safe-area-inset-bottom)); width: auto; border-radius: 16px; padding: 12px 14px; }
   .consent-ico { display: none; }
   .consent-head { display: block; }
   .consent h2 { font-size: .92rem; margin: 0 0 2px; }
   .consent p { font-size: .8rem; line-height: 1.4; }
-  .consent-actions { margin-top: 12px; gap: 4px; }
-  .consent-actions .consent-main { min-height: 46px; }
+  .c-long { display: none; } .c-short { display: inline; }
+  .consent-actions { margin-top: 10px; gap: 6px; flex-wrap: nowrap; }
+  .consent-actions .btn { padding: 8px 10px; font-size: .85rem; min-height: 38px; }
+  .consent-actions [data-consent-settings] { flex: 0 0 auto; order: 0; padding: 8px 4px; }
   .consent-prefs { margin-top: 10px; }
   .consent-opt { padding: 9px 12px; }
   .consent-opt small { display: none; }

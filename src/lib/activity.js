@@ -227,14 +227,14 @@ async function journeys(env, vids, T) {
 
 // cine e pe site acum (activ în ultimele 90 de secunde)
 export async function liveData(env, origin) {
-  const { results: ids } = await env.DB.prepare(`SELECT vid FROM visits WHERE last_at > datetime('now', '-90 seconds') AND ${REAL} GROUP BY vid ORDER BY MAX(last_at) DESC LIMIT 50`).all();
+  const { results: ids } = await env.DB.prepare(`SELECT vid FROM visits INDEXED BY idx_visits_last WHERE last_at > datetime('now', '-90 seconds') AND ${REAL} GROUP BY vid ORDER BY MAX(last_at) DESC LIMIT 50`).all();
   const { results: titles } = await env.DB.prepare('SELECT slug, title, images FROM products').all();
   const T = new Map((titles || []).map((p) => [p.slug, { title: p.title }]));
   const list = await journeys(env, (ids || []).map((x) => x.vid), T);
   // totalurile „azi” și „ultima oră” citesc multe rânduri — se recalculează cel mult o dată la 5 minute
   const counts = await cached(origin, 'act-counts', 300, async () => {
     const today = await env.DB.prepare(`SELECT COUNT(DISTINCT vid) AS n FROM visits WHERE created_at >= ? AND ${REAL}`).bind(roMidnightUtc(roToday())).first();
-    const hour = await env.DB.prepare(`SELECT COUNT(DISTINCT vid) AS n FROM visits WHERE last_at > datetime('now', '-60 minutes') AND ${REAL}`).first();
+    const hour = await env.DB.prepare(`SELECT COUNT(DISTINCT vid) AS n FROM visits INDEXED BY idx_visits_last WHERE last_at > datetime('now', '-60 minutes') AND ${REAL}`).first();
     return { today: today?.n || 0, hour: hour?.n || 0 };
   });
   return { now: list.length, list, today: counts.today, hour: counts.hour, at: new Date().toISOString() };

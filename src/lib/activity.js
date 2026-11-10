@@ -105,6 +105,17 @@ export async function cleanupVisits(env) {
 }
 
 // ---------------- calcule pentru admin ----------------
+// cache scurt (Cache API Cloudflare) ca paginile din admin să nu recitească tabelul visits la fiecare deschidere
+export async function cached(origin, key, ttl, fn) {
+  let cache = null;
+  try { cache = origin && typeof caches !== 'undefined' ? caches.default : null; } catch { cache = null; }
+  if (!cache) return fn();
+  const req = new Request(`${origin}/__cache/${key}`);
+  try { const hit = await cache.match(req); if (hit) return await hit.json(); } catch { /* fără cache */ }
+  const data = await fn();
+  try { await cache.put(req, new Response(JSON.stringify(data), { headers: { 'content-type': 'application/json', 'cache-control': `max-age=${ttl}` } })); } catch { /* fără cache */ }
+  return data;
+}
 const REAL = 'is_bot = 0 AND is_admin = 0';
 const addDays = (s, n) => { const d = new Date(s + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 export const ACT_PERIODS = [['azi', 'Azi'], ['ieri', 'Ieri'], ['7z', '7 zile'], ['30z', '30 de zile'], ['12s', '12 săptămâni'], ['12l', '12 luni']];
@@ -215,12 +226,16 @@ async function journeys(env, vids, T) {
 }
 
 // cine e pe site acum (activ în ultimele 90 de secunde)
-export async function liveData(env) {
+export async function liveData(env, origin) {
   const { results: ids } = await env.DB.prepare(`SELECT vid FROM visits WHERE last_at > datetime('now', '-90 seconds') AND ${REAL} GROUP BY vid ORDER BY MAX(last_at) DESC LIMIT 50`).all();
   const { results: titles } = await env.DB.prepare('SELECT slug, title, images FROM products').all();
   const T = new Map((titles || []).map((p) => [p.slug, { title: p.title }]));
   const list = await journeys(env, (ids || []).map((x) => x.vid), T);
-  const today = await env.DB.prepare(`SELECT COUNT(DISTINCT vid) AS n FROM visits WHERE created_at >= ? AND ${REAL}`).bind(roMidnightUtc(roToday())).first();
-  const hour = await env.DB.prepare(`SELECT COUNT(DISTINCT vid) AS n FROM visits WHERE last_at > datetime('now', '-60 minutes') AND ${REAL}`).first();
-  return { now: list.length, list, today: today?.n || 0, hour: hour?.n || 0, at: new Date().toISOString() };
+  // totalurile „azi” și „ultima oră” citesc multe rânduri — se recalculează cel mult o dată la 5 minute
+  const counts = await cached(origin, 'act-counts', 300, async () => {
+    const today = await env.DB.prepare(`SELECT COUNT(DISTINCT vid) AS n FROM visits WHERE created_at >= ? AND ${REAL}`).bind(roMidnightUtc(roToday())).first();
+    const hour = await env.DB.prepare(`SELECT COUNT(DISTINCT vid) AS n FROM visits WHERE last_at > datetime('now', '-60 minutes') AND ${REAL}`).first();
+    return { today: today?.n || 0, hour: hour?.n || 0 };
+  });
+  return { now: list.length, list, today: counts.today, hour: counts.hour, at: new Date().toISOString() };
 }

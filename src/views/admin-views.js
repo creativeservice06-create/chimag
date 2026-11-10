@@ -1266,7 +1266,7 @@ export function activityView(d, periods) {
     ${d.recent.length ? html`<ul class="act-visits">${d.recent.map((v) => visitRow(v))}</ul>` : html`<p class="muted">Nicio vizită în perioada aleasă.</p>`}
     <p class="muted act-note">Fiecare vizitator e anonim: nu folosim cookie-uri și nu salvăm IP-ul. Același om care revine în altă zi apare ca vizitator nou.</p>
   </section>
-  <script src="/assets/activitate.js?v=1" defer></script>`;
+  <script src="/assets/activitate.js?v=2" defer></script>`;
 }
 
 function visitRow(v) {

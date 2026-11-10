@@ -111,15 +111,16 @@ export async function handleAdmin(request, env, ctx, path) {
     return redirect(withFlash(back, 'ok', msg));
   }
   if (path === '/admin/activitate' && method === 'GET') {
-    const { activityData, ACT_PERIODS } = await import('./lib/activity.js');
+    const { activityData, ACT_PERIODS, cached } = await import('./lib/activity.js');
     const period = ACT_PERIODS.some(([k]) => k === url.searchParams.get('perioada')) ? url.searchParams.get('perioada') : 'azi';
-    const data = await activityData(env, period);
+    // statisticile pe perioadă se recalculează cel mult o dată la 3 minute (economie de citiri D1)
+    const data = await cached(url.origin, `act-${period}`, 180, () => activityData(env, period));
     return render(env, url, { title: 'Activitate pe site', active: 'activitate', body: activityView(data, ACT_PERIODS) });
   }
   if (path === '/admin/activitate/live' && method === 'GET') {
     const { liveData } = await import('./lib/activity.js');
     const { actSource, fmtDur } = await import('./views/admin-views.js');
-    const d = await liveData(env);
+    const d = await liveData(env, url.origin);
     const list = d.list.map((v) => { const [cls, label] = actSource(v.source); const cur = v.steps[v.steps.length - 1];
       return { src: label, cls, camp: v.campaign, device: v.device, os: v.os, browser: v.browser, city: v.city, country: v.country, page: cur?.label || '', pages: v.steps.length, time: fmtDur(v.secs), since: v.first_at, bought: v.bought, path: v.steps.map((x) => x.label) }; });
     return new Response(JSON.stringify({ now: d.now, today: d.today, hour: d.hour, list }), { headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });

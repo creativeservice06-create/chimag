@@ -756,7 +756,7 @@ html.drawer-open { overflow: hidden; }
 .consent-ico { flex: none; width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: var(--brand-tint); color: var(--brand); }
 .consent h2 { font: 800 1.05rem/1.3 var(--font-display); margin: 1px 0 6px; letter-spacing: -0.01em; }
 .consent p { font-size: .9rem; line-height: 1.55; color: var(--muted); margin: 0; }
-.consent p a { color: var(--ink); font-weight: 600; text-underline-offset: 3px; }
+.consent p a { color: var(--ink); font-weight: 600; text-underline-offset: 3px; white-space: nowrap; }
 .consent-prefs { margin: 16px 0 0; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
 .consent-opt { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 14px; cursor: pointer; }
 .consent-opt + .consent-opt { border-top: 1px solid var(--line); }

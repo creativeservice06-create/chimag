@@ -185,9 +185,7 @@ export function productPage({ settings, product: p, reviews, related = [], siteU
   const lowStock = p.track_stock && p.stock > 0 && p.stock <= 10;
   const outOfStock = p.track_stock && p.stock <= 0;
   const threshold = Number(settings.free_shipping_threshold) || 0;
-  const freeQty = threshold && p.price > 0 ? Math.ceil(threshold / p.price) : 0;
   const shipNote = !threshold ? '' : p.price >= threshold ? '<strong>Transport gratuit</strong> pentru acest produs'
-    : freeQty <= 5 ? `<strong>Transport gratuit</strong> dacă iei ${freeQty} bucăți sau comanzi peste ${money(threshold)}`
     : `<strong>Transport gratuit</strong> la comenzile peste ${money(threshold)}`;
   const specs = (p.specs || []).filter((x) => x.k && x.v);
 

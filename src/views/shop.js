@@ -327,6 +327,23 @@ export function productPage({ settings, product: p, reviews, related = [], siteU
 
 
   ${p.faq.length || reviews.length ? html`<div class="wrap pdp-bottom">
+    ${reviews.length ? html`<section id="recenzii" class="rv" aria-labelledby="rv-title">
+      <div class="rv-head">
+        <div>
+          <h2 id="rv-title">Ce spun clienții</h2>
+          <div class="rv-sum">${stars(avg, 18)} <strong>${avg.toFixed(1)}</strong> <span>din 5 · ${reviews.length} ${reviews.length === 1 ? 'recenzie' : 'recenzii'}</span></div>
+        </div>
+        ${reviews.length > 1 ? html`<div class="rv-nav"><button type="button" class="rv-btn" data-rv="-1" aria-label="Recenzia anterioară">‹</button><button type="button" class="rv-btn" data-rv="1" aria-label="Recenzia următoare">›</button></div>` : ''}
+      </div>
+      <div class="rv-track" tabindex="0" aria-label="Recenzii clienți — derulează lateral">${[...reviews].sort((a, b) => (b.photo ? 1 : 0) - (a.photo ? 1 : 0)).map((r) => html`<article class="rv-card${r.photo ? ' has-photo' : ''}">
+        ${r.photo ? html`<a class="rv-photo" href="${r.photo}" target="_blank" rel="noopener"><img src="${r.photo}" alt="Poză trimisă de ${r.name}" loading="lazy"></a>` : ''}
+        <div class="rv-body">
+          ${stars(r.rating, 15)}
+          <div class="rv-text">${paragraphs(r.text)}</div>
+          <footer><span class="rv-av" aria-hidden="true">${String(r.name || '?').trim().charAt(0).toUpperCase()}</span><span><b>${r.name}</b>${r.city ? html`<small>${r.city}</small>` : ''}</span></footer>
+        </div>
+      </article>`)}</div>
+    </section>` : ''}
     ${p.faq.length ? html`<section class="faq3">
       <div class="faq3-head">
         <span class="faq3-ico" aria-hidden="true">?</span>
@@ -335,15 +352,7 @@ export function productPage({ settings, product: p, reviews, related = [], siteU
       </div>
       <div class="faq3-grid">${p.faq.map((f, i) => html`<details class="faq3-item" ${i === 0 ? raw('open') : ''}><summary><span class="faq3-q">${f.q}</span><span class="faq3-tog" aria-hidden="true"></span></summary><div class="faq3-a">${paragraphs(f.a)}</div></details>`)}</div>
     </section>` : ''}
-    ${reviews.length ? html`<section id="recenzii" class="reviews">
-      <h2>Ce spun clienții</h2>
-      <div class="reviews-summary">${stars(avg, 20)} <strong>${avg.toFixed(1)} din 5</strong> <span>din ${reviews.length} ${reviews.length === 1 ? 'recenzie' : 'recenzii'}</span></div>
-      <div class="review-list">${reviews.map((r) => html`<article class="review">
-        <header>${stars(r.rating, 14)}<strong>${r.name}</strong>${r.city ? html`<span>${r.city}</span>` : ''}</header>
-        ${paragraphs(r.text)}
-        ${r.photo ? html`<a class="review-photo" href="${r.photo}" target="_blank" rel="noopener"><img src="${r.photo}" alt="Poză trimisă de ${r.name}" loading="lazy" width="120" height="120"></a>` : ''}
-      </article>`)}</div>
-    </section>` : ''}
+
   </div>` : ''}
 
   ${related.length ? html`<section class="wrap related">

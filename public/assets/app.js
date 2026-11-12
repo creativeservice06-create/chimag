@@ -871,3 +871,19 @@
   }, { threshold: 0.35 });
   vids.forEach(function (v) { io.observe(v); });
 })();
+
+// Carusel recenzii (pagina produsului): săgețile derulează cu câte un card
+(function () {
+  document.querySelectorAll('.rv').forEach(function (sec) {
+    var track = sec.querySelector('.rv-track'); if (!track) return;
+    var btns = sec.querySelectorAll('.rv-btn');
+    function step() { var c = track.querySelector('.rv-card'); return c ? c.getBoundingClientRect().width + 18 : track.clientWidth; }
+    function upd() {
+      if (!btns.length) return;
+      btns[0].disabled = track.scrollLeft <= 2;
+      btns[1].disabled = track.scrollLeft + track.clientWidth >= track.scrollWidth - 2;
+    }
+    btns.forEach(function (b) { b.addEventListener('click', function () { track.scrollBy({ left: step() * Number(b.getAttribute('data-rv')), behavior: 'smooth' }); }); });
+    track.addEventListener('scroll', upd, { passive: true }); window.addEventListener('resize', upd); upd();
+  });
+})();

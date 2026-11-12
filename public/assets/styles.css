@@ -1632,3 +1632,35 @@ a.oi-link:hover .oi-name { color: var(--brand); }
 
 /* bara „Comandă acum” de jos duce la ofertele de cantitate */
 #oferte, #cumpara { scroll-margin-top: 84px; }
+
+/* ---------- Recenzii pe pagina produsului: carusel de carduri ---------- */
+.rv { min-width: 0; }
+.rv-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+.rv-head h2 { margin: 0 0 6px; }
+.rv-sum { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: .95rem; }
+.rv-sum strong { color: var(--ink); font-size: 1.05rem; }
+.rv-nav { display: flex; gap: 8px; }
+.rv-btn { width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--line); background: #fff; color: var(--ink); font-size: 1.5rem; line-height: 1; display: grid; place-items: center; cursor: pointer; transition: background .15s, opacity .15s; }
+.rv-btn:hover { background: var(--surface); }
+.rv-btn:disabled { opacity: .35; cursor: default; }
+.rv-track { display: grid; align-items: start; grid-auto-flow: column; grid-auto-columns: calc((100% - 36px) / 3); gap: 18px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth; padding-bottom: 6px; scrollbar-width: none; overscroll-behavior-x: contain; }
+.rv-track::-webkit-scrollbar { display: none; }
+.rv-track:focus-visible { outline: 3px solid var(--saffron); outline-offset: 4px; border-radius: 16px; }
+.rv-card { scroll-snap-align: start; display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: var(--radius-l); background: #fff; overflow: hidden; min-width: 0; }
+.rv-photo { display: block; aspect-ratio: 4 / 3; background: var(--surface); overflow: hidden; }
+.rv-photo img { width: 100%; height: 100%; object-fit: cover; object-position: center 25%; display: block; transition: transform .3s; }
+.rv-photo:hover img { transform: scale(1.03); }
+.rv-body { display: flex; flex-direction: column; gap: 10px; padding: 18px 20px 20px; flex: 1; }
+.rv-text p { margin: 0 0 6px; font-size: 1rem; line-height: 1.55; color: var(--ink); }
+.rv-text p:last-child { margin-bottom: 0; }
+.rv-card:not(.has-photo) .rv-text { position: relative; padding-top: 22px; }
+.rv-card:not(.has-photo) .rv-text::before { content: "\201C"; position: absolute; top: -14px; left: -2px; font-size: 3.4rem; line-height: 1; color: var(--line); font-family: Georgia, serif; }
+.rv-body footer { padding-top: 6px; display: flex; align-items: center; gap: 10px; }
+.rv-body footer > span:last-child { display: grid; line-height: 1.25; }
+.rv-body footer small { color: var(--muted); font-size: .85rem; }
+.rv-av { width: 36px; height: 36px; border-radius: 50%; background: var(--surface); color: var(--ink); font-weight: 700; display: grid; place-items: center; flex: none; }
+@media (max-width: 900px) { .rv-track { grid-auto-columns: calc((100% - 18px) / 2); } }
+@media (max-width: 600px) {
+  .rv-track { grid-auto-columns: 84%; gap: 12px; }
+  .rv-nav { display: none; }
+}

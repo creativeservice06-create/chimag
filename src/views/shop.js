@@ -151,6 +151,7 @@ export function homePage({ settings, products, categories = [], bestsellers = []
         <a class="rc-prod" href="/p/${r.slug}">${pimg ? html`<img src="${pimg}" alt="" width="40" height="40" loading="lazy">` : ''}<span>${r.product}</span><i aria-hidden="true">›</i></a>
       </div>
     </article>`; })}</div>
+    ${settings.contact_email ? html`<p class="rw-note">Ai cumpărat un produs de la noi? <a href="mailto:${settings.contact_email}?subject=${encodeURIComponent('Recenzie produs chimag')}">Trimite-ne părerea ta și o poză</a>. O publicăm aici, cu acordul tău.</p>` : ''}
   </section>` : ''}
 
   <section class="wrap section hv-sec" id="intrebari">

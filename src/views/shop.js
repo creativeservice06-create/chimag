@@ -142,11 +142,15 @@ export function homePage({ settings, products, categories = [], bestsellers = []
 
   ${reviews.length ? html`<section class="wrap section hv-sec">
     <div class="section-head section-head-row"><div><p class="eyebrow">Recenzii</p><h2>Ce spun clienții</h2></div></div>
-    <div class="review-scroller">${reviews.map((r) => html`<article class="review-card">
-      ${stars(r.rating, 16)}
-      <p>„${r.text.length > 220 ? r.text.slice(0, 217) + '…' : r.text}”</p>
-      <footer><strong>${r.name}</strong>${r.city ? html`<span>${r.city}</span>` : ''}<a href="/p/${r.slug}">${r.product}</a></footer>
-    </article>`)}</div>
+    <div class="review-scroller">${reviews.map((r) => { let pimg = ''; try { pimg = JSON.parse(r.pimages || '[]')[0] || ''; } catch { /* fără poză */ } return html`<article class="review-card${r.photo ? ' has-photo' : ''}">
+      ${r.photo ? html`<div class="rc-photo"><img class="rc-bg" src="${r.photo}" alt="" aria-hidden="true" draggable="false" loading="lazy"><img class="rc-img" src="${r.photo}" alt="Poză trimisă de ${r.name}" draggable="false" loading="lazy"></div>` : ''}
+      <div class="rc-body">
+        ${stars(r.rating, 16)}
+        <p>„${r.text.length > 220 ? r.text.slice(0, 217) + '…' : r.text}”</p>
+        <div class="rc-who"><strong>${r.name}</strong>${r.city ? html`<span>${r.city}</span>` : ''}</div>
+        <a class="rc-prod" href="/p/${r.slug}">${pimg ? html`<img src="${pimg}" alt="" width="40" height="40" loading="lazy">` : ''}<span>${r.product}</span><i aria-hidden="true">›</i></a>
+      </div>
+    </article>`; })}</div>
   </section>` : ''}
 
   <section class="wrap section hv-sec" id="intrebari">

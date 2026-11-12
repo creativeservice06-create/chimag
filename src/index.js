@@ -133,8 +133,8 @@ async function route(request, env, ctx) {
       const rank = new Map((top || []).map((t, i) => [t.product_id, i]));
       bestsellers = [...products].sort((a, b) => (rank.get(a.id) ?? 99 + a.sort) - (rank.get(b.id) ?? 99 + b.sort)).slice(0, 8);
     }
-    const { results: reviews } = await env.DB.prepare(`SELECT r.*, p.title AS product, p.slug FROM reviews r JOIN products p ON p.id = r.product_id
-      WHERE r.approved = 1 AND p.active = 1 AND r.rating >= 4 ORDER BY r.id DESC LIMIT 8`).all();
+    const { results: reviews } = await env.DB.prepare(`SELECT r.*, p.title AS product, p.slug, p.images AS pimages FROM reviews r JOIN products p ON p.id = r.product_id
+      WHERE r.approved = 1 AND p.active = 1 AND r.rating >= 4 ORDER BY (r.photo != '') DESC, r.id DESC LIMIT 8`).all();
     return page(env, request, {
       settings, canonical: siteUrl(env, request) + '/', ogImage: products[0]?.images?.[0],
       body: homePage({ settings, products, categories: [...catMap.values()], bestsellers, reviews: reviews || [], wheelOn: wheelConfig(settings).enabled && settings.accounts_enabled !== '0' }),

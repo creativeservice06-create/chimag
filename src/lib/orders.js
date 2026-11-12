@@ -57,7 +57,8 @@ async function restoreStock(env, orderId) {
   if (stmts.length) await env.DB.batch(stmts);
 }
 
-const RESTOCK = new Set(['anulata', 'retur']);
+// stocul revine când coletul nu ajunge la client: anulată, retur sau refuzată (coletul se întoarce în depozit)
+const RESTOCK = new Set(['anulata', 'retur', 'refuzata']);
 
 // factura / storno automat (erorile nu blochează schimbarea de status)
 async function invoiceSync(env, settings, orderId) {

@@ -327,35 +327,24 @@ export function productPage({ settings, product: p, reviews, related = [], siteU
 
 
   ${p.faq.length || reviews.length ? html`<div class="wrap pdp-bottom">
-    ${reviews.length ? html`<section id="recenzii" class="rv" aria-labelledby="rv-title">
-      <div class="rv-head">
-        <h2 id="rv-title">Ce spun clienții</h2>
-        <p class="rv-sub">Ai cumpărat produsul? Trimite-ne părerea ta și o poză${settings.contact_email ? html` pe email, la <a href="mailto:${settings.contact_email}?subject=${encodeURIComponent('Recenzie: ' + p.title)}">${settings.contact_email}</a>` : ''}. O publicăm aici, cu acordul tău.</p>
-      </div>
-      <div class="rv-wrap">
-        <aside class="rv-score">
-          <div class="rv-avg">${avg.toFixed(1)}</div>
-          ${stars(avg, 20)}
-          <div class="rv-count">${reviews.length} ${reviews.length === 1 ? 'recenzie' : 'recenzii'}</div>
-          <ul class="rv-dist">${[5, 4, 3, 2, 1].map((n) => { const c = reviews.filter((r) => r.rating === n).length; return html`<li><span>${n}★</span><i><b style="width:${Math.round((c / reviews.length) * 100)}%"></b></i><span>${c}</span></li>`; })}</ul>
-          ${settings.contact_email ? html`<a class="rv-cta" href="mailto:${settings.contact_email}?subject=${encodeURIComponent('Recenzie: ' + p.title)}">Scrie o recenzie</a>` : ''}
-        </aside>
-        <div class="rv-main">
-          <div class="rv-track" tabindex="0" aria-label="Recenzii clienți, derulează lateral">${[...reviews].sort((x, y) => (y.photo ? 1 : 0) - (x.photo ? 1 : 0)).map((r) => html`<article class="rv-card${r.photo ? ' has-photo' : ''}">
-            ${r.photo ? html`<div class="rv-photo"><img class="rv-bg" src="${r.photo}" alt="" aria-hidden="true" loading="lazy"><img class="rv-fg" src="${r.photo}" alt="Poză trimisă de ${r.name}" loading="lazy"></div>` : ''}
-            <div class="rv-body">
-              ${stars(r.rating, 15)}
-              <div class="rv-text">${paragraphs(r.text)}</div>
-              <footer><span class="rv-av" aria-hidden="true">${String(r.name || '?').trim().charAt(0).toUpperCase()}</span><span><b>${r.name}</b>${r.city ? html`<small>${r.city}</small>` : ''}</span></footer>
-            </div>
-          </article>`)}</div>
-          ${reviews.length > 1 ? html`<div class="rv-nav"><button type="button" class="rv-btn" data-rv="-1" aria-label="Recenzia anterioară">‹</button><button type="button" class="rv-btn" data-rv="1" aria-label="Recenzia următoare">›</button></div>` : ''}
+    ${reviews.length ? html`<section id="recenzii" class="rw" aria-labelledby="rw-title">
+      <div class="rw-head">
+        <div class="rw-title">
+          <h2 id="rw-title">Recenzii</h2>
+          <div class="rw-sum">${stars(avg, 18)}<strong>${avg.toFixed(1)}</strong><span>din ${reviews.length} ${reviews.length === 1 ? 'recenzie' : 'recenzii'}</span></div>
         </div>
-        ${settings.contact_email ? html`<div class="rv-ask">
-          <div><b>Ai cumpărat produsul?</b><span>Trimite-ne părerea ta și o poză. O publicăm aici, cu acordul tău.</span></div>
-          <a href="mailto:${settings.contact_email}?subject=${encodeURIComponent('Recenzie: ' + p.title)}">Trimite o recenzie</a>
-        </div>` : ''}
+        ${settings.contact_email ? html`<a class="rw-write" href="mailto:${settings.contact_email}?subject=${encodeURIComponent('Recenzie: ' + p.title)}">Scrie o recenzie</a>` : ''}
       </div>
+      <div class="rw-grid">${[...reviews].sort((x, y) => (y.photo ? 1 : 0) - (x.photo ? 1 : 0)).map((r, i) => html`<article class="rw-card${i >= 6 ? ' rw-more' : ''}">
+        ${r.photo ? html`<img class="rw-img" src="${r.photo}" alt="Poză trimisă de ${r.name}" loading="lazy">` : ''}
+        <div class="rw-body">
+          <div class="rw-who"><b>${r.name}</b>${r.city ? html`<span>${r.city}</span>` : ''}</div>
+          ${stars(r.rating, 14)}
+          <div class="rw-text">${paragraphs(r.text)}</div>
+        </div>
+      </article>`)}</div>
+      ${reviews.length > 6 ? html`<button type="button" class="rw-show" data-rw-more>Vezi toate cele ${reviews.length} recenzii</button>` : ''}
+      ${settings.contact_email ? html`<p class="rw-note">Ai cumpărat produsul? <a href="mailto:${settings.contact_email}?subject=${encodeURIComponent('Recenzie: ' + p.title)}">Trimite-ne părerea ta și o poză</a>. O publicăm aici, cu acordul tău.</p>` : ''}
     </section>` : ''}
     ${p.faq.length ? html`<section class="faq3">
       <div class="faq3-head">

@@ -1633,60 +1633,37 @@ a.oi-link:hover .oi-name { color: var(--brand); }
 /* bara „Comandă acum” de jos duce la ofertele de cantitate */
 #oferte, #cumpara { scroll-margin-top: 84px; }
 
-/* ---------- Recenzii pe pagina produsului: scor + carusel de carduri ---------- */
-.rv { min-width: 0; }
-.rv-head { margin-bottom: 22px; }
-.rv-head h2 { margin: 0 0 6px; }
-.rv-sub { margin: 0; color: var(--muted); font-size: .98rem; max-width: 640px; }
-.rv-sub a { color: var(--ink); font-weight: 600; text-underline-offset: 3px; }
-.rv-wrap { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 24px; align-items: start; }
-.rv-score { position: sticky; top: 90px; display: grid; justify-items: center; gap: 6px; padding: 24px 20px; border-radius: 22px; background: linear-gradient(180deg, #f3f7fd, #fff); border: 1px solid var(--line); text-align: center; }
-.rv-avg { font-size: 3.2rem; font-weight: 800; line-height: 1; letter-spacing: -.03em; color: var(--ink); }
-.rv-count { color: var(--muted); font-size: .9rem; }
-.rv-dist { list-style: none; margin: 10px 0 4px; padding: 0; width: 100%; display: grid; gap: 6px; }
-.rv-dist li { display: grid; grid-template-columns: 28px 1fr 20px; align-items: center; gap: 8px; font-size: .82rem; color: var(--muted); }
-.rv-dist i { height: 7px; border-radius: 999px; background: #e9eef5; overflow: hidden; }
-.rv-dist b { display: block; height: 100%; border-radius: 999px; background: var(--saffron); }
-.rv-cta { margin-top: 8px; width: 100%; padding: 11px 14px; border-radius: 999px; border: 1px solid var(--ink); color: var(--ink); font-weight: 600; font-size: .92rem; text-decoration: none; transition: background .15s, color .15s; }
-.rv-cta:hover { background: var(--ink); color: #fff; }
-.rv-main { position: relative; min-width: 0; }
-.rv-track { display: grid; align-items: start; grid-auto-flow: column; grid-auto-columns: calc((100% - 18px) / 2); gap: 18px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth; padding: 4px 2px 14px; scrollbar-width: none; overscroll-behavior-x: contain; }
-.rv-track::-webkit-scrollbar { display: none; }
-.rv-track:focus-visible { outline: 3px solid var(--saffron); outline-offset: 4px; border-radius: 22px; }
-.rv-card { scroll-snap-align: start; display: flex; flex-direction: column; border-radius: 22px; background: #fff; overflow: hidden; min-width: 0; border: 1px solid var(--line); box-shadow: 0 14px 32px -22px rgba(16, 37, 66, .35); }
-.rv-photo { position: relative; height: 300px; overflow: hidden; background: #eef2f7; }
-.rv-photo .rv-bg { position: absolute; inset: -24px; width: calc(100% + 48px); height: calc(100% + 48px); object-fit: cover; filter: blur(22px) saturate(1.1); opacity: .55; }
-.rv-photo .rv-fg { position: relative; width: 100%; height: 100%; object-fit: contain; display: block; }
-.rv-body { display: flex; flex-direction: column; gap: 10px; padding: 18px 20px 20px; }
-.rv-text p { margin: 0 0 6px; font-size: 1rem; line-height: 1.55; color: var(--ink); }
-.rv-text p:last-child { margin-bottom: 0; }
-.rv-card:not(.has-photo) .rv-text { position: relative; padding-top: 24px; }
-.rv-card:not(.has-photo) .rv-text::before { content: "\201C"; position: absolute; top: -12px; left: -2px; font-size: 3.4rem; line-height: 1; color: #c9d6ea; font-family: Georgia, serif; }
-.rv-body footer { padding-top: 10px; border-top: 1px solid #eef2f6; display: flex; align-items: center; gap: 10px; }
-.rv-body footer > span:last-child { display: grid; line-height: 1.25; }
-.rv-body footer small { color: var(--muted); font-size: .85rem; }
-.rv-av { width: 36px; height: 36px; border-radius: 50%; background: var(--brand); color: #fff; font-weight: 700; display: grid; place-items: center; flex: none; }
-.rv-nav { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
-.rv-btn { width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--line); background: #fff; color: var(--ink); font-size: 1.5rem; line-height: 1; display: grid; place-items: center; cursor: pointer; transition: background .15s, opacity .15s; }
-.rv-btn:hover { background: var(--surface); }
-.rv-btn:disabled { opacity: .35; cursor: default; }
-.rv-ask { display: none; }
-@media (max-width: 900px) {
-  .rv-head { margin-bottom: 8px; }
-  .rv-sub { display: none; }
-  .rv-wrap { grid-template-columns: minmax(0, 1fr); gap: 14px; }
-  .rv-score { position: static; display: flex; align-items: center; gap: 8px; padding: 0; border: 0; background: none; border-radius: 0; text-align: left; }
-  .rv-avg { font-size: 1.15rem; font-weight: 800; letter-spacing: 0; }
-  .rv-count { font-size: .9rem; }
-  .rv-count::before { content: "·"; margin-right: 8px; }
-  .rv-dist, .rv-cta { display: none; }
-  .rv-ask { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border-radius: 18px; background: #f3f7fd; border: 1px solid var(--line); }
-  .rv-ask div { display: grid; gap: 2px; font-size: .88rem; color: var(--muted); line-height: 1.35; }
-  .rv-ask b { color: var(--ink); font-size: .95rem; }
-  .rv-ask a { flex: none; padding: 10px 14px; border-radius: 999px; background: var(--ink); color: #fff; font-weight: 600; font-size: .85rem; text-decoration: none; white-space: nowrap; }
-}
+/* ---------- Recenzii pe pagina produsului: carduri în coloane (stil „perete de recenzii”) ---------- */
+.rw { min-width: 0; }
+.rw-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; padding-bottom: 18px; margin-bottom: 22px; border-bottom: 1px solid var(--line); }
+.rw-head h2 { margin: 0 0 8px; }
+.rw-sum { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: .95rem; }
+.rw-sum strong { color: var(--ink); font-size: 1.05rem; }
+.rw-write { flex: none; padding: 11px 20px; border-radius: 999px; border: 1px solid var(--ink); color: var(--ink); font-weight: 600; font-size: .92rem; text-decoration: none; transition: background .15s, color .15s; }
+.rw-write:hover { background: var(--ink); color: #fff; }
+.rw-grid { columns: 3; column-gap: 16px; }
+.rw-card { break-inside: avoid; margin: 0 0 16px; border-radius: 18px; background: #fff; border: 1px solid var(--line); overflow: hidden; display: block; }
+.rw-card.rw-more { display: none; }
+.rw.show-all .rw-card.rw-more { display: block; }
+.rw-img { display: block; width: 100%; height: auto; }
+.rw-body { display: grid; gap: 7px; padding: 14px 16px 16px; }
+.rw-who { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.rw-who b { font-size: .95rem; }
+.rw-who span { color: var(--muted); font-size: .85rem; }
+.rw-text p { margin: 0 0 6px; font-size: .95rem; line-height: 1.55; color: var(--ink); }
+.rw-text p:last-child { margin-bottom: 0; }
+.rw-show { display: block; margin: 4px auto 0; padding: 11px 22px; border-radius: 999px; border: 1px solid var(--line); background: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+.rw.show-all .rw-show { display: none; }
+.rw-note { margin: 10px 0 0; text-align: center; color: var(--muted); font-size: .9rem; }
+.rw-note a { color: var(--ink); font-weight: 600; text-underline-offset: 3px; }
+@media (max-width: 900px) { .rw-grid { columns: 2; } }
 @media (max-width: 600px) {
-  .rv-track { grid-auto-columns: 86%; gap: 12px; }
-  .rv-photo { height: 260px; }
-  .rv-nav { display: none; }
+  .rw-head { padding-bottom: 14px; margin-bottom: 14px; }
+  .rw-write { display: none; }
+  .rw-grid { columns: 2; column-gap: 10px; }
+  .rw-card { margin-bottom: 10px; border-radius: 14px; }
+  .rw-body { padding: 10px 11px 12px; gap: 5px; }
+  .rw-who b { font-size: .88rem; }
+  .rw-who span { font-size: .78rem; }
+  .rw-text p { font-size: .86rem; line-height: 1.45; }
 }

@@ -887,3 +887,6 @@
     track.addEventListener('scroll', upd, { passive: true }); window.addEventListener('resize', upd); upd();
   });
 })();
+
+// Recenzii: „Vezi toate”
+document.querySelectorAll('[data-rw-more]').forEach(function (b) { b.addEventListener('click', function () { var s = b.closest('.rw'); if (s) s.classList.add('show-all'); }); });

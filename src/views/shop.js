@@ -329,20 +329,29 @@ export function productPage({ settings, product: p, reviews, related = [], siteU
   ${p.faq.length || reviews.length ? html`<div class="wrap pdp-bottom">
     ${reviews.length ? html`<section id="recenzii" class="rv" aria-labelledby="rv-title">
       <div class="rv-head">
-        <div>
-          <h2 id="rv-title">Ce spun clienții</h2>
-          <div class="rv-sum">${stars(avg, 18)} <strong>${avg.toFixed(1)}</strong> <span>din 5 · ${reviews.length} ${reviews.length === 1 ? 'recenzie' : 'recenzii'}</span></div>
-        </div>
-        ${reviews.length > 1 ? html`<div class="rv-nav"><button type="button" class="rv-btn" data-rv="-1" aria-label="Recenzia anterioară">‹</button><button type="button" class="rv-btn" data-rv="1" aria-label="Recenzia următoare">›</button></div>` : ''}
+        <h2 id="rv-title">Ce spun clienții</h2>
+        <p class="rv-sub">Ai cumpărat produsul? Trimite-ne părerea ta și o poză${settings.contact_email ? html` pe email, la <a href="mailto:${settings.contact_email}?subject=${encodeURIComponent('Recenzie: ' + p.title)}">${settings.contact_email}</a>` : ''}. O publicăm aici, cu acordul tău.</p>
       </div>
-      <div class="rv-track" tabindex="0" aria-label="Recenzii clienți — derulează lateral">${[...reviews].sort((a, b) => (b.photo ? 1 : 0) - (a.photo ? 1 : 0)).map((r) => html`<article class="rv-card${r.photo ? ' has-photo' : ''}">
-        ${r.photo ? html`<a class="rv-photo" href="${r.photo}" target="_blank" rel="noopener"><img src="${r.photo}" alt="Poză trimisă de ${r.name}" loading="lazy"></a>` : ''}
-        <div class="rv-body">
-          ${stars(r.rating, 15)}
-          <div class="rv-text">${paragraphs(r.text)}</div>
-          <footer><span class="rv-av" aria-hidden="true">${String(r.name || '?').trim().charAt(0).toUpperCase()}</span><span><b>${r.name}</b>${r.city ? html`<small>${r.city}</small>` : ''}</span></footer>
+      <div class="rv-wrap">
+        <aside class="rv-score">
+          <div class="rv-avg">${avg.toFixed(1)}</div>
+          ${stars(avg, 20)}
+          <div class="rv-count">${reviews.length} ${reviews.length === 1 ? 'recenzie' : 'recenzii'}</div>
+          <ul class="rv-dist">${[5, 4, 3, 2, 1].map((n) => { const c = reviews.filter((r) => r.rating === n).length; return html`<li><span>${n}★</span><i><b style="width:${Math.round((c / reviews.length) * 100)}%"></b></i><span>${c}</span></li>`; })}</ul>
+          ${settings.contact_email ? html`<a class="rv-cta" href="mailto:${settings.contact_email}?subject=${encodeURIComponent('Recenzie: ' + p.title)}">Scrie o recenzie</a>` : ''}
+        </aside>
+        <div class="rv-main">
+          <div class="rv-track" tabindex="0" aria-label="Recenzii clienți, derulează lateral">${[...reviews].sort((x, y) => (y.photo ? 1 : 0) - (x.photo ? 1 : 0)).map((r) => html`<article class="rv-card${r.photo ? ' has-photo' : ''}">
+            ${r.photo ? html`<div class="rv-photo"><img class="rv-bg" src="${r.photo}" alt="" aria-hidden="true" loading="lazy"><img class="rv-fg" src="${r.photo}" alt="Poză trimisă de ${r.name}" loading="lazy"></div>` : ''}
+            <div class="rv-body">
+              ${stars(r.rating, 15)}
+              <div class="rv-text">${paragraphs(r.text)}</div>
+              <footer><span class="rv-av" aria-hidden="true">${String(r.name || '?').trim().charAt(0).toUpperCase()}</span><span><b>${r.name}</b>${r.city ? html`<small>${r.city}</small>` : ''}</span></footer>
+            </div>
+          </article>`)}</div>
+          ${reviews.length > 1 ? html`<div class="rv-nav"><button type="button" class="rv-btn" data-rv="-1" aria-label="Recenzia anterioară">‹</button><button type="button" class="rv-btn" data-rv="1" aria-label="Recenzia următoare">›</button></div>` : ''}
         </div>
-      </article>`)}</div>
+      </div>
     </section>` : ''}
     ${p.faq.length ? html`<section class="faq3">
       <div class="faq3-head">

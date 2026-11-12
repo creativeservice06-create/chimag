@@ -341,6 +341,7 @@ export function productPage({ settings, product: p, reviews, related = [], siteU
       <div class="review-list">${reviews.map((r) => html`<article class="review">
         <header>${stars(r.rating, 14)}<strong>${r.name}</strong>${r.city ? html`<span>${r.city}</span>` : ''}</header>
         ${paragraphs(r.text)}
+        ${r.photo ? html`<a class="review-photo" href="${r.photo}" target="_blank" rel="noopener"><img src="${r.photo}" alt="Poză trimisă de ${r.name}" loading="lazy" width="120" height="120"></a>` : ''}
       </article>`)}</div>
     </section>` : ''}
   </div>` : ''}

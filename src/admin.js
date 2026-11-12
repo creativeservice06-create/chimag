@@ -367,8 +367,11 @@ export async function handleAdmin(request, env, ctx, path) {
     const text = String(form.get('text') || '').trim();
     const name = String(form.get('name') || '').trim();
     if (text && name) {
-      await env.DB.prepare('INSERT INTO reviews(product_id, name, city, rating, text) VALUES (?, ?, ?, ?, ?)')
-        .bind(Number(m[1]), name.slice(0, 60), String(form.get('city') || '').slice(0, 60), Math.min(5, Math.max(1, Number(form.get('rating')) || 5)), text.slice(0, 2000)).run();
+      // poza: doar o adresă de imagine de pe site (/img/...) sau https://
+      const photoIn = String(form.get('photo') || '').trim();
+      const photo = /^(\/img\/[\w./-]+|https:\/\/[^\s"'<>]+)$/.test(photoIn) ? photoIn.slice(0, 300) : '';
+      await env.DB.prepare('INSERT INTO reviews(product_id, name, city, rating, text, photo) VALUES (?, ?, ?, ?, ?, ?)')
+        .bind(Number(m[1]), name.slice(0, 60), String(form.get('city') || '').slice(0, 60), Math.min(5, Math.max(1, Number(form.get('rating')) || 5)), text.slice(0, 2000), photo).run();
     }
     return redirect(withFlash(`/admin/produse/${m[1]}`, 'ok', 'Recenzie adăugată.'));
   }

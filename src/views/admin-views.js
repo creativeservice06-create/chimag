@@ -664,13 +664,14 @@ export function productFormView({ product: p, reviews = [], hasR2 }) {
   <section class="panel">
     <h2>Recenzii</h2>
     <p class="hint">Adaugă doar recenzii reale, primite de la clienți (ex: pe WhatsApp, email, telefon). Recenziile inventate sunt interzise de lege (Directiva Omnibus / OUG 58/2022) și pot aduce amenzi ANPC.</p>
-    ${reviews.length ? html`<table class="tbl"><tbody>${reviews.map((r) => html`<tr><td>${'★'.repeat(r.rating)}</td><td><b>${r.name}</b> ${r.city}<br>${r.text}</td>
+    ${reviews.length ? html`<table class="tbl"><tbody>${reviews.map((r) => html`<tr><td>${'★'.repeat(r.rating)}</td><td><b>${r.name}</b> ${r.city}<br>${r.text}</td><td>${r.photo ? html`<a href="${r.photo}" target="_blank"><img src="${r.photo}" alt="" width="56" height="56" style="object-fit:cover;border-radius:8px;display:block"></a>` : ''}</td>
       <td><form method="post" action="/admin/produse/${p.id}/recenzii/${r.id}/sterge"><button class="btn danger sm" data-confirm="Ștergi recenzia?">Șterge</button></form></td></tr>`)}</tbody></table>` : ''}
     <form method="post" action="/admin/produse/${p.id}/recenzii" class="form-grid">
       <label>Nume client<input name="name" required></label>
       <label>Oraș<input name="city"></label>
       <label>Stele<select name="rating">${[5, 4, 3, 2, 1].map((n) => html`<option>${n}</option>`)}</select></label>
       <label class="span2">Text recenzie<textarea name="text" rows="2" required></textarea></label>
+      <label class="span2">Poză de la client (opțional)<input name="photo" placeholder="/img/recenzie-trafalet-1.jpg"><small class="muted">Adresa pozei de pe site. Pozele primite de la clienți le urcăm noi pe site, apoi pui aici adresa.</small></label>
       <div class="span2"><button class="btn">Adaugă recenzia</button></div>
     </form>
   </section>

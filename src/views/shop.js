@@ -351,6 +351,10 @@ export function productPage({ settings, product: p, reviews, related = [], siteU
           </article>`)}</div>
           ${reviews.length > 1 ? html`<div class="rv-nav"><button type="button" class="rv-btn" data-rv="-1" aria-label="Recenzia anterioară">‹</button><button type="button" class="rv-btn" data-rv="1" aria-label="Recenzia următoare">›</button></div>` : ''}
         </div>
+        ${settings.contact_email ? html`<div class="rv-ask">
+          <div><b>Ai cumpărat produsul?</b><span>Trimite-ne părerea ta și o poză. O publicăm aici, cu acordul tău.</span></div>
+          <a href="mailto:${settings.contact_email}?subject=${encodeURIComponent('Recenzie: ' + p.title)}">Trimite o recenzie</a>
+        </div>` : ''}
       </div>
     </section>` : ''}
     ${p.faq.length ? html`<section class="faq3">

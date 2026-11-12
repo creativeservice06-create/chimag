@@ -335,15 +335,21 @@ export function productPage({ settings, product: p, reviews, related = [], siteU
         </div>
         ${settings.contact_email ? html`<a class="rw-write" href="mailto:${settings.contact_email}?subject=${encodeURIComponent('Recenzie: ' + p.title)}">Scrie o recenzie</a>` : ''}
       </div>
-      <div class="rw-grid">${[...reviews].sort((x, y) => (y.photo ? 1 : 0) - (x.photo ? 1 : 0)).map((r, i) => html`<article class="rw-card${i >= 6 ? ' rw-more' : ''}">
-        ${r.photo ? html`<img class="rw-img" src="${r.photo}" alt="Poză trimisă de ${r.name}" loading="lazy">` : ''}
-        <div class="rw-body">
-          <div class="rw-who"><b>${r.name}</b>${r.city ? html`<span>${r.city}</span>` : ''}</div>
-          ${stars(r.rating, 14)}
-          <div class="rw-text">${paragraphs(r.text)}</div>
-        </div>
-      </article>`)}</div>
-      ${reviews.length > 6 ? html`<button type="button" class="rw-show" data-rw-more>Vezi toate cele ${reviews.length} recenzii</button>` : ''}
+      <div class="rw-slider">
+        <div class="rw-track" tabindex="0" aria-label="Recenzii clienți, glisează pentru următoarea">${[...reviews].sort((x, y) => (y.photo ? 1 : 0) - (x.photo ? 1 : 0)).map((r) => html`<article class="rw-card">
+          ${r.photo ? html`<div class="rw-photo"><img class="rw-bg" src="${r.photo}" alt="" aria-hidden="true" draggable="false" loading="lazy"><img class="rw-img" src="${r.photo}" alt="Poză trimisă de ${r.name}" draggable="false" loading="lazy"></div>` : ''}
+          <div class="rw-body">
+            <div class="rw-who"><b>${r.name}</b>${r.city ? html`<span>${r.city}</span>` : ''}</div>
+            ${stars(r.rating, 15)}
+            <div class="rw-text">${paragraphs(r.text)}</div>
+          </div>
+        </article>`)}</div>
+        ${reviews.length > 1 ? html`<div class="rw-ctrl">
+          <button type="button" class="rw-arr" data-rw="-1" aria-label="Recenzia anterioară">‹</button>
+          <div class="rw-dots" aria-hidden="true">${reviews.map((_, i) => html`<i class="${i === 0 ? 'on' : ''}"></i>`)}</div>
+          <button type="button" class="rw-arr" data-rw="1" aria-label="Recenzia următoare">›</button>
+        </div>` : ''}
+      </div>
       ${settings.contact_email ? html`<p class="rw-note">Ai cumpărat produsul? <a href="mailto:${settings.contact_email}?subject=${encodeURIComponent('Recenzie: ' + p.title)}">Trimite-ne părerea ta și o poză</a>. O publicăm aici, cu acordul tău.</p>` : ''}
     </section>` : ''}
     ${p.faq.length ? html`<section class="faq3">

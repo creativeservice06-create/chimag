@@ -888,5 +888,20 @@
   });
 })();
 
-// Recenzii: „Vezi toate”
-document.querySelectorAll('[data-rw-more]').forEach(function (b) { b.addEventListener('click', function () { var s = b.closest('.rw'); if (s) s.classList.add('show-all'); }); });
+// Recenzii: slider (săgeți + puncte, glisare pe telefon)
+(function () {
+  document.querySelectorAll('.rw-slider').forEach(function (sl) {
+    var track = sl.querySelector('.rw-track'); if (!track) return;
+    var cards = track.querySelectorAll('.rw-card'), dots = sl.querySelectorAll('.rw-dots i'), arr = sl.querySelectorAll('.rw-arr');
+    function step() { return cards.length ? cards[0].getBoundingClientRect().width + parseFloat(getComputedStyle(track).columnGap || 0) : track.clientWidth; }
+    function upd() {
+      sl.classList.toggle('no-scroll', track.scrollWidth <= track.clientWidth + 2);
+      var i = Math.round(track.scrollLeft / Math.max(1, step()));
+      dots.forEach(function (d, k) { d.classList.toggle('on', k === Math.min(i, dots.length - 1)); });
+      if (arr.length) { arr[0].disabled = track.scrollLeft <= 2; arr[1].disabled = track.scrollLeft + track.clientWidth >= track.scrollWidth - 2; }
+    }
+    arr.forEach(function (b) { b.addEventListener('click', function () { track.scrollBy({ left: step() * Number(b.getAttribute('data-rw')), behavior: 'smooth' }); }); });
+    track.addEventListener('scroll', function () { window.requestAnimationFrame(upd); }, { passive: true });
+    window.addEventListener('resize', upd); upd();
+  });
+})();

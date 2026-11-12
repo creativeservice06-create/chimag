@@ -1641,29 +1641,34 @@ a.oi-link:hover .oi-name { color: var(--brand); }
 .rw-sum strong { color: var(--ink); font-size: 1.05rem; }
 .rw-write { flex: none; padding: 11px 20px; border-radius: 999px; border: 1px solid var(--ink); color: var(--ink); font-weight: 600; font-size: .92rem; text-decoration: none; transition: background .15s, color .15s; }
 .rw-write:hover { background: var(--ink); color: #fff; }
-.rw-grid { columns: 3; column-gap: 16px; }
-.rw-card { break-inside: avoid; margin: 0 0 16px; border-radius: 18px; background: #fff; border: 1px solid var(--line); overflow: hidden; display: block; }
-.rw-card.rw-more { display: none; }
-.rw.show-all .rw-card.rw-more { display: block; }
-.rw-img { display: block; width: 100%; height: auto; }
+.rw-slider { position: relative; min-width: 0; }
+.rw-track { display: grid; grid-auto-flow: column; grid-auto-columns: calc((100% - 32px) / 3); gap: 16px; align-items: stretch; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth; scrollbar-width: none; overscroll-behavior-x: contain; padding: 2px 2px 6px; }
+.rw-track::-webkit-scrollbar { display: none; }
+.rw-card { scroll-snap-align: start; scroll-snap-stop: always; border-radius: 18px; background: #fff; border: 1px solid var(--line); overflow: hidden; min-width: 0; }
+.rw-photo { position: relative; height: 320px; overflow: hidden; background: #eef2f7; }
+.rw-photo img { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; pointer-events: none; }
+.rw-photo .rw-bg { position: absolute; inset: -24px; width: calc(100% + 48px); height: calc(100% + 48px); object-fit: cover; filter: blur(22px); opacity: .5; }
+.rw-photo .rw-img { position: relative; display: block; width: 100%; height: 100%; object-fit: contain; }
 .rw-body { display: grid; gap: 7px; padding: 14px 16px 16px; }
 .rw-who { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
-.rw-who b { font-size: .95rem; }
-.rw-who span { color: var(--muted); font-size: .85rem; }
-.rw-text p { margin: 0 0 6px; font-size: .95rem; line-height: 1.55; color: var(--ink); }
+.rw-who b { font-size: .98rem; }
+.rw-who span { color: var(--muted); font-size: .86rem; }
+.rw-text p { margin: 0 0 6px; font-size: .97rem; line-height: 1.55; color: var(--ink); }
 .rw-text p:last-child { margin-bottom: 0; }
-.rw-show { display: block; margin: 4px auto 0; padding: 11px 22px; border-radius: 999px; border: 1px solid var(--line); background: #fff; font: inherit; font-weight: 600; cursor: pointer; }
-.rw.show-all .rw-show { display: none; }
-.rw-note { margin: 10px 0 0; text-align: center; color: var(--muted); font-size: .9rem; }
+.rw-ctrl { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 12px; }
+.rw-arr { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: #fff; color: var(--ink); font-size: 1.45rem; line-height: 1; display: grid; place-items: center; cursor: pointer; transition: opacity .15s, background .15s; }
+.rw-arr:hover { background: var(--surface); }
+.rw-arr:disabled { opacity: .3; cursor: default; }
+.rw-dots { display: flex; gap: 6px; }
+.rw-slider.no-scroll .rw-ctrl { display: none; }
+.rw-dots i { width: 7px; height: 7px; border-radius: 999px; background: #d3dbe6; transition: width .2s, background .2s; }
+.rw-dots i.on { width: 20px; background: var(--ink); }
+.rw-note { margin: 12px 0 0; text-align: center; color: var(--muted); font-size: .9rem; }
 .rw-note a { color: var(--ink); font-weight: 600; text-underline-offset: 3px; }
-@media (max-width: 900px) { .rw-grid { columns: 2; } }
+@media (max-width: 900px) { .rw-track { grid-auto-columns: calc((100% - 16px) / 2); } }
 @media (max-width: 600px) {
   .rw-head { padding-bottom: 14px; margin-bottom: 14px; }
   .rw-write { display: none; }
-  .rw-grid { columns: 2; column-gap: 10px; }
-  .rw-card { margin-bottom: 10px; border-radius: 14px; }
-  .rw-body { padding: 10px 11px 12px; gap: 5px; }
-  .rw-who b { font-size: .88rem; }
-  .rw-who span { font-size: .78rem; }
-  .rw-text p { font-size: .86rem; line-height: 1.45; }
+  .rw-track { grid-auto-columns: 100%; gap: 12px; }
+  .rw-photo { height: 360px; }
 }

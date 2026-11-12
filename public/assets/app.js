@@ -905,3 +905,21 @@
     window.addEventListener('resize', upd); upd();
   });
 })();
+
+// Miniaturi galerie: fără bară de derulare; cu mouse-ul se trag lateral (pe telefon merge glisarea normală)
+document.querySelectorAll('.gallery-thumbs').forEach(function (el) {
+  var down = false, moved = false, startX = 0, startLeft = 0;
+  el.addEventListener('pointerdown', function (e) {
+    if (e.pointerType !== 'mouse' || e.button !== 0) return;
+    down = true; moved = false; startX = e.clientX; startLeft = el.scrollLeft;
+  });
+  window.addEventListener('pointermove', function (e) {
+    if (!down) return;
+    var dx = e.clientX - startX;
+    if (!moved && Math.abs(dx) > 5) { moved = true; el.classList.add('dragging'); }
+    if (moved) { el.scrollLeft = startLeft - dx; e.preventDefault(); }
+  });
+  window.addEventListener('pointerup', function () { if (!down) return; down = false; setTimeout(function () { el.classList.remove('dragging'); }, 0); });
+  el.addEventListener('click', function (e) { if (moved) { e.preventDefault(); e.stopPropagation(); moved = false; } }, true);
+  el.addEventListener('dragstart', function (e) { e.preventDefault(); });
+});

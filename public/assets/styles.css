@@ -159,7 +159,11 @@ p { margin: 0 0 1em; }
 .gallery-dots { position: absolute; left: 0; right: 0; bottom: 12px; display: flex; justify-content: center; gap: 6px; pointer-events: none; }
 .gallery-dots span { width: 7px; height: 7px; border-radius: 50%; background: rgba(16,29,48,.28); box-shadow: 0 0 0 2px rgba(255,255,255,.7); transition: width .2s, background .2s; }
 .gallery-dots span.active { width: 18px; border-radius: 4px; background: var(--brand); }
-.gallery-thumbs { display: flex; gap: 10px; margin-top: 12px; overflow-x: auto; }
+.gallery-thumbs { display: flex; gap: 10px; margin-top: 12px; overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; cursor: grab; }
+.gallery-thumbs::-webkit-scrollbar { display: none; }
+.gallery-thumbs.dragging { cursor: grabbing; scroll-behavior: auto; }
+.gallery-thumbs.dragging button { cursor: grabbing; }
+.gallery-thumbs img { -webkit-user-drag: none; user-select: none; }
 .gallery-thumbs button { flex: none; width: 76px; padding: 0; border: 2px solid transparent; border-radius: 10px; overflow: hidden; background: var(--surface); cursor: pointer; }
 .gallery-thumbs button.active { border-color: var(--brand); }
 .gallery-thumbs img { aspect-ratio: 1; object-fit: cover; }

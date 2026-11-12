@@ -81,7 +81,7 @@ export function homePage({ settings, products, categories = [], bestsellers = []
     </div>
     <div class="wrap">
       <ul class="hv-strip" aria-label="Avantaje">
-        <li>${icons.truck(20)}<span><b>Livrare în 1–3 zile</b>${threshold ? html`<small>gratuită peste ${money(threshold)}</small>` : html`<small>în toată țara</small>`}</span></li>
+        <li>${icons.truck(20)}<span><b>Livrare în 1–3 zile</b>${threshold ? html`<small>gratuită peste ${money(threshold).replace(',00 ', ' ')}</small>` : html`<small>în toată țara</small>`}</span></li>
         <li>${icons.cash(20)}<span><b>Plata la livrare</b><small>fără niciun avans</small></span></li>
         <li>${icons.back(20)}<span><b>Retur ${returnDays} zile</b><small>fără explicații</small></span></li>
         <li>${icons.doc(20)}<span><b>Factură pe email</b><small>pe numele tău</small></span></li>

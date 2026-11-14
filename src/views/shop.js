@@ -471,11 +471,11 @@ export function checkoutPage({ settings, bump, loggedIn = false }) {
           <div class="pay-options">
             <label class="pay-option">
               <input type="radio" name="payment" value="ramburs" checked>
-              <span>${icons.cash(22)}<span><strong>Plata la livrare (ramburs)</strong><small>Plătești curierului când primești coletul${Number(settings.cod_fee) ? ` · taxă ${money(settings.cod_fee)}` : ''}</small></span></span>
+              <span>${icons.cash(22)}<span><strong>Plătești la livrare (ramburs)</strong><small>Plătești curierului când primești coletul${Number(settings.cod_fee) ? ` · taxă ${money(settings.cod_fee)}` : ''}</small></span></span>
             </label>
             ${cardOn ? html`<label class="pay-option">
               <input type="radio" name="payment" value="card">
-              <span>${icons.lock(22)}<span><strong>Card online</strong><small>Visa, Mastercard, Apple Pay, Google Pay – procesat securizat de Stripe</small></span></span>
+              <span>${icons.card(22)}<span><strong>Plătești acum cu cardul</strong><small>Online, securizat prin Stripe</small><span class="pay-brands"><i>Visa</i><i>Mastercard</i><i>Apple Pay</i><i>Google Pay</i></span></span></span>
             </label>` : ''}
           </div>
         </section>

@@ -26,6 +26,7 @@ export const icons = {
   moon: (s) => svg('<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>', s),
   battery: (s) => svg('<rect x="2.5" y="7" width="17" height="10" rx="2"/><path d="M22 10.5v3"/><path d="M11 9.5l-2 3h3l-2 3"/>', s),
   box: (s) => svg('<path d="m12 3 8.5 4.5v9L12 21l-8.5-4.5v-9z"/><path d="m3.5 7.5 8.5 4.5 8.5-4.5M12 12v9"/>', s),
+  card: (s) => svg('<rect x="2.5" y="5.5" width="19" height="13" rx="2"/><path d="M2.5 10h19M6 15h4"/>', s),
   lock: (s) => svg('<rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>', s),
   chat: (s) => svg('<path d="M20 12a8 8 0 0 1-11.6 7.1L4 20l1-4.2A8 8 0 1 1 20 12z"/><path d="M9 10.5c.4 1.6 2 3.2 3.6 3.6l1.2-1.2 1.7.7v1.5"/>', s),
   menu: (s) => svg('<path d="M4 7h16M4 12h16M4 17h16"/>', s),

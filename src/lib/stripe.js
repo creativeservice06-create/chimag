@@ -74,10 +74,15 @@ export async function verifyWebhook(env, payload, header) {
   return signatures.some((s) => timingSafeEqual(s, expected));
 }
 
-// Închide o pagină de plată Stripe încă deschisă (după ce clientul a anulat comanda), ca să nu mai poată fi plătită
+// Închide o pagină de plată Stripe încă deschisă (după ce clientul a anulat comanda), ca să nu mai poată fi plătită.
+// Întoarce { paid: true } dacă între timp plata chiar s-a făcut (atunci comanda NU se anulează).
 export async function expireCheckoutSession(env, sessionId) {
-  if (!sessionId || !env.STRIPE_SECRET_KEY) return;
-  await fetch(`https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(sessionId)}/expire`, {
-    method: 'POST', headers: { authorization: `Bearer ${env.STRIPE_SECRET_KEY}` },
-  }).catch(() => {});
+  if (!sessionId || !env.STRIPE_SECRET_KEY) return { paid: false };
+  const auth = { authorization: `Bearer ${env.STRIPE_SECRET_KEY}` };
+  try {
+    const res = await fetch(`https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(sessionId)}/expire`, { method: 'POST', headers: auth });
+    if (res.ok) return { paid: false };
+    const s = await (await fetch(`https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(sessionId)}`, { headers: auth })).json();
+    return { paid: s?.payment_status === 'paid' };
+  } catch { return { paid: false }; }
 }

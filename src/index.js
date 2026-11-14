@@ -356,7 +356,8 @@ async function route(request, env, ctx) {
     const order = await env.DB.prepare('SELECT * FROM orders WHERE token = ?').bind(m[1]).first();
     if (order && order.payment_method === 'card' && order.payment_status !== 'platita' && order.status === 'noua') {
       const { expireCheckoutSession } = await import('./lib/stripe.js');
-      await expireCheckoutSession(env, order.stripe_session_id);
+      const { paid } = await expireCheckoutSession(env, order.stripe_session_id);
+      if (paid) return redirect(`/multumim/${m[1]}?plata=ok`); // plata tocmai s-a făcut: nu anulăm
       await (await import('./lib/orders.js')).cancelUnpaidCardOrder(env, order.id, 'Clientul a anulat comanda (nu a mai plătit cu cardul).');
     }
     return redirect(`/multumim/${m[1]}?anulata=1`);

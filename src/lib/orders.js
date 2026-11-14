@@ -177,8 +177,18 @@ export async function setManualAwb(env, orderId, awb, courier, { ctx = null } = 
 export async function markPaid(env, orderId, sessionId) {
   const order = await getOrder(env, orderId);
   if (!order || order.payment_status === 'platita') return order;
-  await updateOrder(env, orderId, { payment_status: 'platita', stripe_session_id: sessionId || order.stripe_session_id });
+  // plasă de siguranță: dacă plata ajunge după ce comanda neplătită a fost anulată (caz foarte rar),
+  // comanda se reactivează și stocul se scade din nou — clientul a plătit, deci comanda trebuie onorată
+  const wasCancelled = order.status === 'anulata';
+  await updateOrder(env, orderId, { payment_status: 'platita', stripe_session_id: sessionId || order.stripe_session_id, ...(wasCancelled ? { status: 'noua' } : {}) });
   await addOrderEvent(env, orderId, 'Plata cu cardul a fost confirmată de Stripe.');
+  if (wasCancelled) {
+    const items = await getOrderItems(env, orderId);
+    const stmts = items.filter((i) => i.product_id).map((i) =>
+      env.DB.prepare('UPDATE products SET stock = MAX(0, stock - ?) WHERE id = ? AND track_stock = 1').bind(i.qty, i.product_id));
+    if (stmts.length) await env.DB.batch(stmts);
+    await addOrderEvent(env, orderId, 'Plata a sosit după anularea automată: comanda a fost reactivată (Nouă), iar stocul a fost scăzut din nou.');
+  }
   if (order.fulfillment_mode && order.fulfillment_mode !== 'own') {
     const { getSettings } = await import('./db.js');
     const settings = await getSettings(env);

@@ -114,10 +114,16 @@
     }
     // formularul de card: fără Apple/Google Pay dacă ele apar deja sus, altfel cu ele înăuntru
     var payMounted = false;
+    var noCountry = false;
+    var billing = { name: box.getAttribute('data-name') || undefined, address: { country: 'RO' } };
     function mountPay(walletsOnTop) {
       if (payMounted || done) return; payMounted = true;
       try {
-        var pay = checkout.createPaymentElement(walletsOnTop ? { layout: 'tabs', wallets: { applePay: 'never', googlePay: 'never' } } : { layout: 'tabs' });
+        var opts = walletsOnTop ? { layout: 'tabs', wallets: { applePay: 'never', googlePay: 'never' } } : { layout: 'tabs' };
+        // fără câmpul „Țară”: toate comenzile sunt din România, trimitem noi țara la plată
+        var pay;
+        try { opts.fields = { billingDetails: { address: { country: 'never' } } }; pay = checkout.createPaymentElement(opts); noCountry = true; }
+        catch (eF) { log('fields: ' + (eF && eF.message)); delete opts.fields; noCountry = false; pay = checkout.createPaymentElement(opts); }
         pay.on('ready', function () { if (done) return; ready = true; clearTimeout(timer); });
         pay.on('loaderror', function (ev) { log('payment loaderror: ' + JSON.stringify((ev && ev.error) || ev).slice(0, 250)); if (!ready) embedded(); });
         pay.mount('#pe-payment');
@@ -142,13 +148,21 @@
       show('');
       var old = payBtn.textContent;
       payBtn.classList.add('loading'); payBtn.textContent = 'Se procesează plata…';
-      actions.confirm().then(function (r) {
+      var go = function () {
+        if (!noCountry) return actions.confirm();
+        try { return Promise.resolve(actions.confirm({ billingAddress: billing })); }
+        catch (e) { log('confirm billing: ' + (e && e.message)); return actions.confirm(); }
+      };
+      go().then(function (r) {
         // dacă plata a reușit, Stripe ne duce singur la pagina comenzii
         if (r && r.type === 'error') show(r.error && r.error.message);
         payBtn.classList.remove('loading'); payBtn.textContent = old;
-      }).catch(function () {
-        show('Plata nu a putut fi trimisă. Încearcă din nou.');
+      }).catch(function (e) {
+        log('confirm: ' + (e && e.message));
         payBtn.classList.remove('loading'); payBtn.textContent = old;
+        // eroare de integrare (nu de card): trecem pe formularul Stripe întreg, ca clientul să poată plăti
+        if (noCountry) { embedded(); return; }
+        show('Plata nu a putut fi trimisă. Încearcă din nou.');
       });
     });
   }

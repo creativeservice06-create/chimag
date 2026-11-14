@@ -6,9 +6,12 @@ import { trackingUrlFor } from '../shipping/common.js';
 import { notifyStatus } from './notify.js';
 
 export async function createOrder(env, { customer, priced, paymentMethod, meta }) {
-  const number = await nextOrderNumber(env);
+  // comanda cu cardul e doar o „ciornă” până la plată: primește un număr provizoriu (P-…),
+  // iar numărul real CHI-… îl primește abia când e plătită (sau când clientul alege ramburs).
+  const draft = paymentMethod === 'card';
   const split = splitParcels(priced);
   const token = randomToken(16);
+  const number = draft ? `P-${token.slice(0, 10).toUpperCase()}` : await nextOrderNumber(env);
   const row = await env.DB.prepare(`INSERT INTO orders
     (number, token, status, payment_method, payment_status, customer_name, phone, email, county, city, address, postal_code, notes,
      subtotal, discount, shipping, cod_fee, total, utm_source, utm_medium, utm_campaign, fbclid, ttclid, fbp, ttp, ip, user_agent,
@@ -41,7 +44,8 @@ export async function createOrder(env, { customer, priced, paymentMethod, meta }
     stmts.push(env.DB.prepare('INSERT INTO order_events(order_id, message) VALUES (?, ?)').bind(orderId, 'Comanda se livrează integral prin Helpship.'));
   }
   if (priced.coupon?.ok) {
-    stmts.push(env.DB.prepare('UPDATE coupons SET used_count = used_count + 1 WHERE code = ?').bind(priced.coupon.code));
+    // la card, codul se consideră folosit abia la plată (vezi finalizeDraft)
+    if (!draft) stmts.push(env.DB.prepare('UPDATE coupons SET used_count = used_count + 1 WHERE code = ?').bind(priced.coupon.code));
     stmts.push(env.DB.prepare('INSERT INTO order_events(order_id, message) VALUES (?, ?)')
       .bind(orderId, `Cod de reducere folosit: ${priced.coupon.code} (${priced.coupon.label})`));
   }
@@ -174,13 +178,59 @@ export async function setManualAwb(env, orderId, awb, courier, { ctx = null } = 
   }
 }
 
+export const isDraftNumber = (n) => /^P-/.test(String(n || ''));
+
+// ciorna devine comandă adevărată: primește numărul CHI-… și codul de reducere se socotește folosit
+export async function finalizeDraft(env, order) {
+  if (!order || !isDraftNumber(order.number)) return order;
+  const number = await nextOrderNumber(env);
+  const r = await env.DB.prepare('UPDATE orders SET number = ? WHERE id = ? AND number = ?').bind(number, order.id, order.number).run();
+  if (!r.meta?.changes) return getOrder(env, order.id); // altcineva a finalizat-o deja
+  if (order.coupon_code) await env.DB.prepare('UPDATE coupons SET used_count = used_count + 1 WHERE code = ?').bind(order.coupon_code).run();
+  await addOrderEvent(env, order.id, `Numărul comenzii: ${number}`);
+  return getOrder(env, order.id);
+}
+
+// Clientul s-a întors din pagina de plată la coș/formular: ciorna dispare ca și cum n-ar fi existat.
+// Întoarce 'paid' (plata tocmai s-a făcut – nu atingem nimic), 'deleted', 'cancelled' (plasă de siguranță) sau 'none'.
+export async function discardDraft(env, order) {
+  if (!order || order.payment_method !== 'card' || order.status !== 'noua') return 'none';
+  if (order.payment_status === 'platita') return 'paid';
+  let safe = true;
+  if (order.stripe_session_id) {
+    const { expireCheckoutSession } = await import('./stripe.js');
+    const r = await expireCheckoutSession(env, order.stripe_session_id);
+    if (r.paid) return 'paid';
+    safe = !!r.closed; // ștergem doar dacă suntem siguri că pagina de plată nu mai poate primi bani
+  }
+  if (!safe || !isDraftNumber(order.number)) {
+    await cancelUnpaidCardOrder(env, order.id, 'Clientul s-a întors la coș din pagina de plată (comanda neplătită a fost anulată).');
+    return 'cancelled';
+  }
+  const claim = await env.DB.prepare("UPDATE orders SET status = 'anulata' WHERE id = ? AND status = 'noua' AND payment_status != 'platita'").bind(order.id).run();
+  if (!claim.meta?.changes) return 'none';
+  await restoreStock(env, order.id);
+  await env.DB.batch([
+    env.DB.prepare('DELETE FROM order_events WHERE order_id = ?').bind(order.id),
+    env.DB.prepare('DELETE FROM order_items WHERE order_id = ?').bind(order.id),
+    env.DB.prepare('DELETE FROM customer_events WHERE customer_id = ? AND message = ?').bind(order.customer_id || 0, `Comandă plasată: ${order.number}`),
+    env.DB.prepare('DELETE FROM orders WHERE id = ?').bind(order.id),
+  ]);
+  return 'deleted';
+}
+
+// Marchează plata o singură dată, chiar dacă webhook-ul Stripe și pagina de mulțumire ajung în același timp.
+// Întoarce comanda actualizată și claimed=true doar pentru cel care a confirmat-o primul (el trimite emailurile).
 export async function markPaid(env, orderId, sessionId) {
   const order = await getOrder(env, orderId);
   if (!order || order.payment_status === 'platita') return order;
+  const claim = await env.DB.prepare("UPDATE orders SET payment_status = 'platita' WHERE id = ? AND payment_status != 'platita'").bind(orderId).run();
+  if (!claim.meta?.changes) return getOrder(env, orderId);
+  await finalizeDraft(env, order);
   // plasă de siguranță: dacă plata ajunge după ce comanda neplătită a fost anulată (caz foarte rar),
   // comanda se reactivează și stocul se scade din nou — clientul a plătit, deci comanda trebuie onorată
   const wasCancelled = order.status === 'anulata';
-  await updateOrder(env, orderId, { payment_status: 'platita', stripe_session_id: sessionId || order.stripe_session_id, ...(wasCancelled ? { status: 'noua' } : {}) });
+  await updateOrder(env, orderId, { stripe_session_id: sessionId || order.stripe_session_id, ...(wasCancelled ? { status: 'noua' } : {}) });
   await addOrderEvent(env, orderId, 'Plata cu cardul a fost confirmată de Stripe.');
   if (wasCancelled) {
     const items = await getOrderItems(env, orderId);
@@ -194,7 +244,9 @@ export async function markPaid(env, orderId, sessionId) {
     const settings = await getSettings(env);
     if (settings.helpship_send !== 'confirmed') await (await import('./helpship.js')).sendToHelpship(env, settings, orderId).catch(() => {});
   }
-  return getOrder(env, orderId);
+  const fresh = await getOrder(env, orderId);
+  fresh.claimed = true;
+  return fresh;
 }
 
 // Ștergere definitivă (pentru comenzi de test): stocul revine, comanda se anulează la Helpship, facturile ei se șterg.

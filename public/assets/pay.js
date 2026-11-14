@@ -5,7 +5,7 @@
   var err = document.getElementById('pay-error');
   function fail(msg) {
     box.innerHTML = ''; err.hidden = false; err.textContent = msg + ' ';
-    var a = document.createElement('a'); a.href = '/multumim/' + box.getAttribute('data-token') + '?plata=anulata'; a.textContent = 'Vezi alte opțiuni de plată';
+    var a = document.createElement('a'); a.href = '/cos'; a.textContent = 'Înapoi la comandă';
     err.appendChild(a);
   }
   if (!window.Stripe) { fail('Formularul de plată nu s-a putut încărca. Reîncarcă pagina sau alege plata la livrare.'); return; }

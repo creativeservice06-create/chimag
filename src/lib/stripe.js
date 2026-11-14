@@ -69,7 +69,7 @@ export async function createCheckoutSession(env, { order, lines, shipping, codFe
     if (couponId) discounts = [{ coupon: couponId }];
     else {
       for (const k of Object.keys(line_items)) delete line_items[k];
-      line_items[0] = { quantity: 1, price_data: { currency: 'ron', unit_amount: order.total, product_data: { name: `Comanda ${order.number}` } } };
+      line_items[0] = { quantity: 1, price_data: { currency: 'ron', unit_amount: order.total, product_data: { name: /^P-/.test(order.number) ? 'Comanda chimag.ro' : `Comanda ${order.number}` } } };
     }
   }
 
@@ -115,13 +115,22 @@ export async function verifyWebhook(env, payload, header) {
 
 // Închide o pagină de plată Stripe încă deschisă (după ce clientul a anulat comanda), ca să nu mai poată fi plătită.
 // Întoarce { paid: true } dacă între timp plata chiar s-a făcut (atunci comanda NU se anulează).
+// closed=true înseamnă sigur că pe sesiunea asta nu mai poate intra nicio plată.
 export async function expireCheckoutSession(env, sessionId) {
-  if (!sessionId || !env.STRIPE_SECRET_KEY) return { paid: false };
+  if (!sessionId || !env.STRIPE_SECRET_KEY) return { paid: false, closed: !sessionId };
   const auth = { authorization: `Bearer ${env.STRIPE_SECRET_KEY}` };
   try {
     const res = await fetch(`https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(sessionId)}/expire`, { method: 'POST', headers: auth });
-    if (res.ok) return { paid: false };
+    if (res.ok) return { paid: false, closed: true };
     const s = await (await fetch(`https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(sessionId)}`, { headers: auth })).json();
-    return { paid: s?.payment_status === 'paid' };
-  } catch { return { paid: false }; }
+    return { paid: s?.payment_status === 'paid', closed: s?.status === 'expired' };
+  } catch { return { paid: false, closed: false }; }
+}
+
+export async function getCheckoutSession(env, sessionId) {
+  if (!sessionId || !env.STRIPE_SECRET_KEY) return null;
+  try {
+    const res = await fetch(`https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(sessionId)}`, { headers: { authorization: `Bearer ${env.STRIPE_SECRET_KEY}` } });
+    return res.ok ? await res.json() : null;
+  } catch { return null; }
 }

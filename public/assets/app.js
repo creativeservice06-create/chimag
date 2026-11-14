@@ -418,6 +418,34 @@
       if (saved[k] && form.elements[k] && !form.elements[k].value) form.elements[k].value = saved[k];
     });
 
+    // Clientul a ajuns la plata cu cardul și s-a întors aici: comanda neplătită dispare, coșul și datele rămân,
+    // ca și cum n-ar fi comandat nimic. (Dacă între timp a plătit, îl ducem la pagina comenzii.)
+    var pend0 = store.get('chimag_pending', null);
+    if (pend0 && pend0.notes && form.elements.notes && !form.elements.notes.value) form.elements.notes.value = pend0.notes;
+    if (pend0) { var pc = form.querySelector('[name="payment"][value="card"]'); if (pc) pc.checked = true; }
+    function dropPending() {
+      var pend = store.get('chimag_pending', null);
+      if (!pend || !pend.token) return;
+      fetch('/api/comanda/' + pend.token + '/renunta', { method: 'POST' })
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          if (j && j.paid) {
+            setCart([]); store.del('chimag_pending'); store.del('chimag_coupon'); store.del('chimag_wheel');
+            if (Date.now() - (pend.at || 0) < 60 * 60 * 1000) { location.href = j.redirect; return; }
+            refresh(); return;
+          }
+          var now = store.get('chimag_pending', null);
+          if (now && now.token === pend.token) store.del('chimag_pending');
+        })
+        .catch(function () { /* rămâne în memorie și se trimite cu comanda următoare */ });
+    }
+    dropPending();
+    // revenire cu butonul „Înapoi” al browserului (pagina vine din memoria browserului, cu butonul încă „Se trimite…”)
+    window.addEventListener('pageshow', function (ev) {
+      if (!ev.persisted) return;
+      errEl.hidden = true; submitBtn.disabled = false; refresh(); dropPending();
+    });
+
     function opts() {
       var pay = form.elements.payment;
       return { payment: pay ? (pay.value || 'ramburs') : 'ramburs', bump: !!(form.elements.bump && form.elements.bump.checked) };
@@ -547,13 +575,19 @@
       submitBtn.textContent = 'Se trimite comanda…';
       fetch('/api/comanda', {
         method: 'POST', headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ items: items(), customer: data, payment: o.payment, bump: o.bump, attribution: attribution(), coupon: store.get('chimag_coupon', '') }),
+        body: JSON.stringify({ items: items(), customer: data, payment: o.payment, bump: o.bump, attribution: attribution(), coupon: store.get('chimag_coupon', ''), replaces: (store.get('chimag_pending', null) || {}).token || '' }),
       }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
         .then(function (res) {
           if (res.j && res.j.couponError) refresh();
           if (!res.ok || !res.j.redirect) throw new Error(res.j.error || 'Comanda nu a putut fi trimisă.');
-          setCart([]);
-          if (store.get('chimag_coupon', '')) { store.del('chimag_coupon'); store.del('chimag_wheel'); }
+          var pm = /^\/plata\/([a-f0-9]{32})$/.exec(res.j.redirect);
+          if (pm && !res.j.paid) {
+            // plata cu cardul pe chimag.ro: coșul rămâne până se plătește, ca să se poată întoarce la formular
+            store.set('chimag_pending', { token: pm[1], at: Date.now(), notes: data.notes });
+          } else {
+            setCart([]); store.del('chimag_pending');
+            if (store.get('chimag_coupon', '')) { store.del('chimag_coupon'); store.del('chimag_wheel'); }
+          }
           location.href = res.j.redirect;
         })
         .catch(function (err) {
@@ -563,6 +597,15 @@
           submitBtn.textContent = oldText;
         });
     });
+  })();
+
+  /* ---------------- Comanda finalizată: golim coșul păstrat pentru plata cu cardul ---------------- */
+  (function orderDone() {
+    var el = $('[data-order-done]'); if (!el) return;
+    var pend = store.get('chimag_pending', null);
+    if (pend && pend.token === el.getAttribute('data-order-done')) {
+      setCart([]); store.del('chimag_pending'); store.del('chimag_coupon'); store.del('chimag_wheel');
+    }
   })();
 
   /* ---------------- Bară promoție (cod activ + cronometru) ---------------- */

@@ -227,9 +227,22 @@ async function route(request, env, ctx) {
   }
 
   if (method === 'GET' && (m = path.match(/^\/multumim\/([a-f0-9]{32})$/))) {
-    const order = await env.DB.prepare('SELECT * FROM orders WHERE token = ?').bind(m[1]).first();
+    let order = await env.DB.prepare('SELECT * FROM orders WHERE token = ?').bind(m[1]).first();
     if (!order) return notFound(env, request);
     const settings = await getSettings(env);
+    // clientul vine de la plată: verificăm direct la Stripe, ca să nu depindem de cât de repede ajunge webhook-ul
+    if (url.searchParams.get('plata') === 'ok' && order.payment_method === 'card' && order.payment_status !== 'platita' && order.stripe_session_id) {
+      const { getCheckoutSession } = await import('./lib/stripe.js');
+      const sess = await getCheckoutSession(env, order.stripe_session_id);
+      if (sess?.payment_status === 'paid' && String(sess.metadata?.order_id) === String(order.id)) {
+        const paidOrder = await markPaid(env, order.id, sess.id);
+        if (paidOrder?.claimed) {
+          const its = await getOrderItems(env, order.id);
+          ctx.waitUntil(Promise.allSettled([sendServerPurchase(env, settings, paidOrder, its, siteUrl(env, request)), notifyOrderPlaced(env, settings, paidOrder)]));
+        }
+        order = await env.DB.prepare('SELECT * FROM orders WHERE token = ?').bind(m[1]).first();
+      }
+    }
     const items = await getOrderItems(env, order.id);
     const { results: invoices } = await env.DB.prepare('SELECT kind, full_number, issued_on, token, total FROM invoices WHERE order_id = ? ORDER BY id').bind(order.id).all().catch(() => ({ results: [] }));
     const { results: events } = await env.DB.prepare("SELECT message, created_at FROM order_events WHERE order_id = ? AND message LIKE 'Status:%' ORDER BY id").bind(order.id).all();
@@ -238,7 +251,7 @@ async function route(request, env, ctx) {
     const { tiktokIdentity } = await import('./lib/tracking.js');
     const identify = await tiktokIdentity(order);
     return htmlResponse(layout({
-      settings, siteUrl: siteUrl(env, request), title: `Comanda ${order.number}`,
+      settings, siteUrl: siteUrl(env, request), title: /^P-/.test(order.number) ? 'Comanda ta' : `Comanda ${order.number}`,
       body: thankYouPage({ settings, order, items, payment: url.searchParams.get('plata'), byClient: url.searchParams.get('anulata') === '1', invoices: invoices || [], events: events || [], products, identify }),
     }), 200, { 'cache-control': 'no-store', 'x-robots-tag': 'noindex' });
   }
@@ -385,6 +398,14 @@ async function route(request, env, ctx) {
     return json(r);
   }
 
+  // clientul s-a întors din pagina de plată la coș: ciorna neplătită dispare (stocul revine, numărul nu se consumă)
+  if (method === 'POST' && (m = path.match(/^\/api\/comanda\/([a-f0-9]{32})\/renunta$/))) {
+    const order = await env.DB.prepare('SELECT * FROM orders WHERE token = ?').bind(m[1]).first();
+    const { discardDraft } = await import('./lib/orders.js');
+    const result = await discardDraft(env, order);
+    return json(result === 'paid' ? { paid: true, redirect: `/multumim/${m[1]}?plata=ok` } : { ok: true, result });
+  }
+
   // clientul renunță la comanda cu cardul neplătită (butonul „Anulează comanda” de pe pagina de mulțumire)
   if (method === 'POST' && (m = path.match(/^\/api\/comanda\/([a-f0-9]{32})\/anuleaza$/))) {
     const order = await env.DB.prepare('SELECT * FROM orders WHERE token = ?').bind(m[1]).first();
@@ -402,11 +423,18 @@ async function route(request, env, ctx) {
     if (!order || order.payment_status === 'platita' || order.status === 'anulata') return redirect(`/multumim/${m[1]}`);
     const settings = await getSettings(env);
     if (m[2] === 'ramburs') {
+      if (order.stripe_session_id) { // pagina de plată Stripe se închide, ca să nu se plătească de două ori
+        const { expireCheckoutSession } = await import('./lib/stripe.js');
+        const { paid } = await expireCheckoutSession(env, order.stripe_session_id);
+        if (paid) return redirect(`/multumim/${m[1]}?plata=ok`);
+      }
+      await (await import('./lib/orders.js')).finalizeDraft(env, order);
       const codFee = Number(settings.cod_fee) || 0;
       await updateOrder(env, order.id, { payment_method: 'ramburs', cod_fee: codFee, total: order.total - order.cod_fee + codFee });
       await addOrderEvent(env, order.id, 'Clientul a ales plata ramburs în loc de card.');
       const updated = await getOrder(env, order.id);
-      ctx.waitUntil(Promise.allSettled([sendServerPurchase(env, settings, updated, await getOrderItems(env, order.id), siteUrl(env, request)), notifyOrderPlaced(env, settings, updated)]));
+      ctx.waitUntil(Promise.allSettled([sendServerPurchase(env, settings, updated, await getOrderItems(env, order.id), siteUrl(env, request)), notifyOrderPlaced(env, settings, updated),
+        updated.fulfillment_mode !== 'own' && settings.helpship_send !== 'confirmed' ? sendToHelpship(env, settings, updated.id) : null]));
       return redirect(`/multumim/${m[1]}`);
     }
     // reîncercarea plății e permisă doar în primele 25 de minute (sesiunea mai ține 30), apoi comanda expiră
@@ -431,9 +459,8 @@ async function route(request, env, ctx) {
       const s = event.data.object;
       if (s.payment_status === 'paid') {
         const orderId = Number(s.metadata?.order_id);
-        const before = await getOrder(env, orderId);
-        if (before && before.payment_status !== 'platita') {
-          const order = await markPaid(env, orderId, s.id);
+        const order = await markPaid(env, orderId, s.id);
+        if (order?.claimed) {
           const settings = await getSettings(env);
           const items = await getOrderItems(env, orderId);
           ctx.waitUntil(Promise.allSettled([
@@ -470,6 +497,13 @@ async function placeOrder(request, env, ctx) {
   if (!JUDETE.includes(customer.county)) return json({ error: 'Alege județul din listă.' }, 400);
   if (customer.city.length < 2 || customer.address.length < 5) return json({ error: 'Completează localitatea și adresa.' }, 400);
   { const ep = emailProblem(customer.email); if (ep) return json({ error: ep }, 400); }
+
+  // clientul a mai fost o dată la plată și s-a întors la formular: ciorna veche dispare înainte de comanda nouă
+  if (/^[a-f0-9]{32}$/.test(String(body.replaces || ''))) {
+    const prev = await env.DB.prepare('SELECT * FROM orders WHERE token = ?').bind(body.replaces).first();
+    const { discardDraft } = await import('./lib/orders.js');
+    if ((await discardDraft(env, prev)) === 'paid') return json({ redirect: `/multumim/${body.replaces}?plata=ok`, paid: true });
+  }
 
   const settings = await getSettings(env);
   const paymentMethod = body.payment === 'card' && settings.card_enabled === '1' && env.STRIPE_SECRET_KEY ? 'card' : 'ramburs';

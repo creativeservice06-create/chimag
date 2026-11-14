@@ -529,6 +529,8 @@ function orderProgress(order, events) {
 export function thankYouPage({ settings, order, items, payment, byClient = false, invoices = [], events = [], products = new Map(), identify = null }) {
   const isCard = order.payment_method === 'card';
   const paid = order.payment_status === 'platita';
+  const draftNo = /^P-/.test(order.number); // comandă cu cardul încă neplătită: numărul real apare după plată
+  const ofOrder = draftNo ? '' : ` ${order.number}`;
   const fresh = Date.now() - Date.parse(order.created_at.replace(' ', 'T') + 'Z') < 1000 * 60 * 60 * 6;
   const purchase = {
     eventId: order.number, value: order.total / 100, currency: 'RON',
@@ -539,16 +541,16 @@ export function thankYouPage({ settings, order, items, payment, byClient = false
   // pentru card, evenimentul Purchase pleacă doar după plată
   const trackPurchase = fresh && (!isCard || paid);
 
-  return html`<div class="wrap narrow thanks" ${trackPurchase ? raw(`data-purchase='${JSON.stringify(purchase).replace(/'/g, '&#39;')}'`) : ''}>
+  return html`<div class="wrap narrow thanks" ${isCard && !paid ? '' : raw(`data-order-done="${order.token}"`)} ${trackPurchase ? raw(`data-purchase='${JSON.stringify(purchase).replace(/'/g, '&#39;')}'`) : ''}>
     ${isCard && !paid && order.status === 'anulata' ? html`
       <div class="thanks-head warn">
         <h1>${byClient ? 'Comanda a fost anulată' : 'Comanda a expirat'}</h1>
-        <p>${byClient ? `Am anulat comanda ${order.number}, la cererea ta.` : `Plata cu cardul pentru comanda ${order.number} nu a fost finalizată, așa că am anulat comanda.`} Nu ți s-a reținut niciun ban.</p>
+        <p>${byClient ? `Am anulat comanda${ofOrder}, la cererea ta.` : `Plata cu cardul pentru comanda${ofOrder} nu a fost finalizată, așa că am anulat comanda.`} Nu ți s-a reținut niciun ban.</p>
         <a class="btn btn-primary btn-lg" href="/">Comandă din nou</a>
       </div>` : isCard && !paid ? html`
       <div class="thanks-head warn">
         <h1>Plata nu a fost finalizată</h1>
-        <p>Comanda ${order.number} este salvată, dar plata cu cardul ${payment === 'anulata' ? 'a fost anulată' : 'nu a fost încă confirmată'}.</p>
+        <p>Comanda${ofOrder} este salvată, dar plata cu cardul ${payment === 'anulata' ? 'a fost anulată' : 'nu a fost încă confirmată'}.</p>
         <form method="post" action="/api/comanda/${order.token}/plata"><button class="btn btn-primary btn-lg">Încearcă din nou plata</button></form>
         <form method="post" action="/api/comanda/${order.token}/ramburs" class="mt"><button class="btn btn-ghost">Plătesc la livrare (ramburs)</button></form>
         <form method="post" action="/api/comanda/${order.token}/anuleaza" class="mt"><button class="thanks-cancel">Nu mai vreau, anulează comanda</button></form>
@@ -667,9 +669,9 @@ export { pctOff, moneyNum };
 export function paymentPage({ order, settings }) {
   return html`<div class="wrap narrow pay-page">
     <div class="pay-head">
-      <a class="pay-back" href="/multumim/${order.token}?plata=anulata">← Alte opțiuni de plată</a>
+      <a class="pay-back" href="/cos" data-pay-back="${order.token}">← Înapoi la comandă</a>
       <h1>Plată cu cardul</h1>
-      <p>Comanda <strong>${order.number}</strong> · Total de plată <strong>${money(order.total)}</strong></p>
+      <p>Total de plată <strong>${money(order.total)}</strong></p>
     </div>
     <div class="pay-box">
       <div id="stripe-checkout" data-pk="${settings.stripe_pk}" data-token="${order.token}"><p class="pay-loading">Se încarcă formularul de plată securizat…</p></div>
@@ -680,5 +682,5 @@ export function paymentPage({ order, settings }) {
     <p class="pay-secure">🔒 Plata e procesată securizat de Stripe. Datele cardului nu ajung la noi.</p>
   </div>
   <script src="https://js.stripe.com/v3/"></script>
-  <script src="/assets/pay.js?v=2" defer></script>`;
+  <script src="/assets/pay.js?v=3" defer></script>`;
 }

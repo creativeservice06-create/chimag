@@ -1698,13 +1698,13 @@ a.oi-link:hover .oi-name { color: var(--brand); }
 /* Pagina de plată cu cardul (formular Stripe încorporat) */
 .pay-page { padding-top: 28px; padding-bottom: 48px; }
 .pay-page.narrow { max-width: 1120px; } /* lat: Stripe afișează formularul pe 2 coloane (rezumat stânga, plată dreapta) */
-@media (min-width: 900px) { .pay-box { padding: 20px 24px; } }
 .pay-head { margin-bottom: 18px; }
 .pay-head h1 { margin: 6px 0 6px; }
 .pay-head p { margin: 0; color: var(--muted); }
 .pay-back { color: var(--muted); text-decoration: none; font-size: .92rem; }
 .pay-back:hover { color: var(--ink); }
-.pay-box { border: 1px solid var(--line); border-radius: var(--radius-l); background: #fff; padding: 12px; min-height: 360px; }
+.pay-box { min-height: 360px; } /* fără chenar: formularul Stripe ocupă toată lățimea */
+@media (max-width: 600px) { .pay-page { padding-left: 6px; padding-right: 6px; } .pay-head, .pay-alt, .pay-secure { padding-left: 10px; padding-right: 10px; } }
 .pay-loading { margin: 0; padding: 40px 10px; text-align: center; color: var(--muted); }
 .pay-error { margin: 0; padding: 18px; color: #b42318; text-align: center; }
 .pay-secure { margin: 14px 0 0; text-align: center; color: var(--muted); font-size: .88rem; }

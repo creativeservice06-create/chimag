@@ -28,17 +28,11 @@
   // ---------- varianta de rezervă: formularul Stripe întreg (Stripe.js v3) ----------
   function embedded() {
     if (done) return; done = true;
-    box.className = ''; box.innerHTML = '<p class="pay-loading">Se încarcă formularul de plată securizat…</p>';
-    var s = document.createElement('script');
-    s.src = 'https://js.stripe.com/v3/';
-    s.onload = function () {
-      var stripe = window.Stripe(pk, { locale: 'ro' });
-      stripe.initEmbeddedCheckout({ fetchClientSecret: function () { return secret(''); } })
-        .then(function (checkout) { box.innerHTML = ''; checkout.mount('#stripe-checkout'); })
-        .catch(function (e) { fail((e && e.message) || 'Plata nu a putut porni. Încearcă din nou sau alege plata la livrare.'); });
-    };
-    s.onerror = function () { fail('Formularul de plată nu s-a putut încărca. Reîncarcă pagina sau alege plata la livrare.'); };
-    document.head.appendChild(s);
+    log('fallback: pagina Stripe');
+    box.className = ''; box.innerHTML = '<p class="pay-loading">Te ducem pe pagina de plată securizată Stripe…</p>';
+    var f = document.querySelector('form.pay-alt');
+    if (f) { f.submit(); return; }
+    fail('Formularul de plată nu s-a putut încărca. Reîncarcă pagina sau alege plata la livrare.');
   }
 
   // ---------- varianta nouă ----------
@@ -122,8 +116,7 @@
         var opts = walletsOnTop ? { layout: 'tabs', wallets: { applePay: 'never', googlePay: 'never' } } : { layout: 'tabs' };
         // fără câmpul „Țară”: toate comenzile sunt din România, trimitem noi țara la plată
         var pay;
-        try { opts.fields = { billingDetails: { address: { country: 'never' } } }; pay = checkout.createPaymentElement(opts); noCountry = true; }
-        catch (eF) { log('fields: ' + (eF && eF.message)); delete opts.fields; noCountry = false; pay = checkout.createPaymentElement(opts); }
+        pay = checkout.createPaymentElement(opts); noCountry = false;
         pay.on('ready', function () { if (done) return; ready = true; clearTimeout(timer); });
         pay.on('loaderror', function (ev) { log('payment loaderror: ' + JSON.stringify((ev && ev.error) || ev).slice(0, 250)); if (!ready) embedded(); });
         pay.mount('#pe-payment');

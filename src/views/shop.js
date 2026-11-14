@@ -703,5 +703,5 @@ export function paymentPage({ order, settings, items = [], images = new Map() })
     </div>
   </div>
   <script src="https://js.stripe.com/endive/stripe.js"></script>
-  <script src="/assets/pay.js?v=6" defer></script>`;
+  <script src="/assets/pay.js?v=7" defer></script>`;
 }

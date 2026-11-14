@@ -1757,3 +1757,6 @@ a.oi-link:hover .oi-name { color: var(--brand); }
 .pay-secure { display: flex; align-items: center; justify-content: center; gap: 6px; }
 .pay-secure svg { flex: none; color: #0f8a4a; }
 .pay-alt[hidden] { display: none; }
+
+/* fără zoom la apăsări rapide repetate (ex. +/− în coș) pe telefon; zoom-ul cu două degete rămâne */
+button, a, input, select, label, summary, .qty, .qty-pill, .cart-items { touch-action: manipulation; }

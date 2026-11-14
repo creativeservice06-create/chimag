@@ -1692,6 +1692,8 @@ a.oi-link:hover .oi-name { color: var(--brand); }
 
 /* Pagina de plată cu cardul (formular Stripe încorporat) */
 .pay-page { padding-top: 28px; padding-bottom: 48px; }
+.pay-page.narrow { max-width: 1120px; } /* lat: Stripe afișează formularul pe 2 coloane (rezumat stânga, plată dreapta) */
+@media (min-width: 900px) { .pay-box { padding: 20px 24px; } }
 .pay-head { margin-bottom: 18px; }
 .pay-head h1 { margin: 6px 0 6px; }
 .pay-head p { margin: 0; color: var(--muted); }

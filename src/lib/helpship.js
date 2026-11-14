@@ -77,7 +77,10 @@ export function buildOrderPayload(env, order, items, countryId) {
     // Ramburs = plată manuală (încasată de curier); cardul plătit online = Checkout.
     paymentProcessing: order.payment_method === 'card' ? 'Checkout' : 'Manual',
     customerNote: order.notes || null,
-    shopOwnerNote: order.fulfillment_mode === 'mixt' ? 'Comanda are 2 colete; acesta conține doar produsele Helpship.' : null,
+    shopOwnerNote: [
+      order.payment_method === 'card' && paid ? 'PLĂTITĂ ONLINE CU CARDUL – NU SE ÎNCASEAZĂ RAMBURS (ramburs 0 lei).' : '',
+      order.fulfillment_mode === 'mixt' ? 'Comanda are 2 colete; acesta conține doar produsele Helpship.' : '',
+    ].filter(Boolean).join(' ') || null,
     mailingAddress: {
       firstName: parts[0] || '', lastName: parts.slice(1).join(' ') || parts[0] || '',
       addressLine1: order.address, city: order.city, province: order.county, zip: order.postal_code || null,

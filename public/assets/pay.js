@@ -9,6 +9,7 @@
   var token = box.getAttribute('data-token');
   var done = false; // după fallback nu mai atingem nimic din varianta nouă
 
+  function log(m) { try { navigator.sendBeacon('/api/comanda/' + token + '/jurnal', String(m).slice(0, 300)); } catch (e) { /* */ } }
   function fail(msg) {
     box.innerHTML = ''; err.hidden = false; err.textContent = msg + ' ';
     var a = document.createElement('a'); a.href = '/cos'; a.textContent = 'Înapoi la comandă';
@@ -89,23 +90,19 @@
       checkout.on('change', function (s) { if (done) return; canConfirm = !!(s && s.canConfirm); label(s); });
     } catch (e) { /* nu e obligatoriu */ }
 
-    try {
-      var pay = checkout.createPaymentElement({ layout: 'tabs', wallets: { applePay: 'never', googlePay: 'never' } });
-      pay.on('ready', function () { if (done) return; ready = true; clearTimeout(timer); });
-      pay.on('loaderror', function () { if (!ready) embedded(); });
-      pay.mount('#pe-payment');
-    } catch (e) { return embedded(); }
-
-    try {
-      var express = checkout.createExpressCheckoutElement({
-        buttonHeight: 48,
-        layout: { maxColumns: 2, maxRows: 1, overflow: 'never' },
-      });
+    // Apple Pay / Google Pay sus; dacă nu se pot afișa acolo, apar ca opțiuni în formularul de card
+    var express = null;
+    try { express = checkout.createExpressCheckoutElement({ buttonHeight: 48 }); }
+    catch (e1) { log('express opts: ' + (e1 && e1.message)); try { express = checkout.createExpressCheckoutElement(); } catch (e2) { log('express: ' + (e2 && e2.message)); express = null; } }
+    if (express) {
       express.on('ready', function (ev) {
-        var any = ev && ev.availablePaymentMethods && Object.keys(ev.availablePaymentMethods).some(function (k) { return ev.availablePaymentMethods[k]; });
+        var av = (ev && ev.availablePaymentMethods) || null;
+        var any = !!av && Object.keys(av).some(function (k) { return av[k]; });
         document.getElementById('pe-or').hidden = !any;
-        if (!any) document.getElementById('pe-express').style.display = 'none';
+        if (!any) { document.getElementById('pe-express').style.display = 'none'; log('express ready, none: ' + JSON.stringify(av)); }
+        mountPay(any);
       });
+      express.on('loaderror', function (ev) { log('express loaderror: ' + JSON.stringify((ev && ev.error) || ev).slice(0, 250)); });
       express.on('confirm', function (ev) {
         if (!actions) return;
         show('');
@@ -113,8 +110,21 @@
           if (r && r.type === 'error') show(r.error && r.error.message);
         });
       });
-      express.mount('#pe-express');
-    } catch (e) { document.getElementById('pe-express').style.display = 'none'; /* cardul merge și fără Apple/Google Pay */ }
+      try { express.mount('#pe-express'); } catch (e3) { log('express mount: ' + (e3 && e3.message)); express = null; }
+    }
+    // formularul de card: fără Apple/Google Pay dacă ele apar deja sus, altfel cu ele înăuntru
+    var payMounted = false;
+    function mountPay(walletsOnTop) {
+      if (payMounted || done) return; payMounted = true;
+      try {
+        var pay = checkout.createPaymentElement(walletsOnTop ? { layout: 'tabs', wallets: { applePay: 'never', googlePay: 'never' } } : { layout: 'tabs' });
+        pay.on('ready', function () { if (done) return; ready = true; clearTimeout(timer); });
+        pay.on('loaderror', function (ev) { log('payment loaderror: ' + JSON.stringify((ev && ev.error) || ev).slice(0, 250)); if (!ready) embedded(); });
+        pay.mount('#pe-payment');
+      } catch (e) { log('payment: ' + (e && e.message)); embedded(); }
+    }
+    if (!express) { document.getElementById('pe-express').style.display = 'none'; mountPay(false); }
+    else setTimeout(function () { if (!payMounted) { log('express slow'); mountPay(false); } }, 6000);
 
     Promise.resolve(checkout.loadActions ? checkout.loadActions() : { type: 'success', actions: checkout })
       .then(function (r) {

@@ -402,6 +402,16 @@ async function route(request, env, ctx) {
     return json(r);
   }
 
+  // jurnal tehnic de pe pagina de plată (ce răspunde Stripe în browser) – apare în istoricul comenzii din admin
+  if (method === 'POST' && (m = path.match(/^\/api\/comanda\/([a-f0-9]{32})\/jurnal$/))) {
+    const order = await env.DB.prepare('SELECT id, payment_status FROM orders WHERE token = ?').bind(m[1]).first();
+    if (order && order.payment_status !== 'platita') {
+      const n = await env.DB.prepare("SELECT COUNT(*) AS n FROM order_events WHERE order_id = ? AND message LIKE 'Plată (browser):%'").bind(order.id).first();
+      if ((n?.n || 0) < 15) await addOrderEvent(env, order.id, `Plată (browser): ${(await request.text()).slice(0, 300)}`);
+    }
+    return new Response(null, { status: 204 });
+  }
+
   // clientul s-a întors din pagina de plată la coș: ciorna neplătită dispare (stocul revine, numărul nu se consumă)
   if (method === 'POST' && (m = path.match(/^\/api\/comanda\/([a-f0-9]{32})\/renunta$/))) {
     const order = await env.DB.prepare('SELECT * FROM orders WHERE token = ?').bind(m[1]).first();

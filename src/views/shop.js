@@ -698,7 +698,7 @@ export function paymentPage({ order, settings, items = [], images = new Map() })
           <p class="pay-error" id="pay-error" hidden></p>
         </div>
         <form method="post" action="/api/comanda/${order.token}/plata?pagina=stripe" class="pay-alt"><span>Formularul nu se încarcă?</span> <button type="submit">Plătește pe pagina securizată Stripe</button></form>
-        <p class="pay-secure">🔒 Plata e procesată securizat de Stripe. Datele cardului nu ajung la noi.</p>
+        <p class="pay-secure">🔒 Plată securizată prin Stripe</p>
       </div>
     </div>
   </div>

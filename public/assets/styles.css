@@ -1701,3 +1701,5 @@ a.oi-link:hover .oi-name { color: var(--brand); }
 .pay-loading { margin: 0; padding: 40px 10px; text-align: center; color: var(--muted); }
 .pay-error { margin: 0; padding: 18px; color: #b42318; text-align: center; }
 .pay-secure { margin: 14px 0 0; text-align: center; color: var(--muted); font-size: .88rem; }
+.pay-alt { margin: 12px 0 0; text-align: center; font-size: .9rem; color: var(--muted); }
+.pay-alt button { background: none; border: 0; padding: 0; font: inherit; color: var(--ink); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }

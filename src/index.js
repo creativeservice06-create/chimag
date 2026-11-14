@@ -415,7 +415,7 @@ async function route(request, env, ctx) {
       await (await import('./lib/orders.js')).cancelUnpaidCardOrder(env, order.id);
       return redirect(`/multumim/${m[1]}`);
     }
-    if (settings.stripe_pk) return redirect(`/plata/${m[1]}`);
+    if (settings.stripe_pk && url.searchParams.get('pagina') !== 'stripe') return redirect(`/plata/${m[1]}`);
     const items = await getOrderItems(env, order.id);
     const lines = items.map((i) => ({ qty: i.qty, total: i.total, product: { title: i.title } }));
     const session = await createCheckoutSession(env, { order, lines, shipping: order.shipping, codFee: 0, siteUrl: siteUrl(env, request) });

@@ -675,8 +675,9 @@ export function paymentPage({ order, settings }) {
       <div id="stripe-checkout" data-pk="${settings.stripe_pk}" data-token="${order.token}"><p class="pay-loading">Se încarcă formularul de plată securizat…</p></div>
       <p class="pay-error" id="pay-error" hidden></p>
     </div>
+    <form method="post" action="/api/comanda/${order.token}/plata?pagina=stripe" class="pay-alt"><span>Formularul nu se încarcă?</span> <button type="submit">Plătește pe pagina securizată Stripe</button></form>
     <p class="pay-secure">🔒 Plata e procesată securizat de Stripe. Datele cardului nu ajung la noi.</p>
   </div>
   <script src="https://js.stripe.com/v3/"></script>
-  <script src="/assets/pay.js?v=1" defer></script>`;
+  <script src="/assets/pay.js?v=2" defer></script>`;
 }

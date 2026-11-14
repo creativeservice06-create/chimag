@@ -56,7 +56,11 @@ export async function createCheckoutSession(env, { order, lines, shipping, codFe
 
   const res = await fetch('https://api.stripe.com/v1/checkout/sessions', {
     method: 'POST',
-    headers: { authorization: `Bearer ${env.STRIPE_SECRET_KEY}`, 'content-type': 'application/x-www-form-urlencoded' },
+    headers: {
+      authorization: `Bearer ${env.STRIPE_SECRET_KEY}`, 'content-type': 'application/x-www-form-urlencoded',
+      // formularul încorporat folosește Stripe.js v3, compatibil cu versiunile API „acacia”; contul nou e pe o versiune mai nouă
+      ...(embedded ? { 'stripe-version': '2025-02-24.acacia' } : {}),
+    },
     body,
   });
   const data = await res.json();

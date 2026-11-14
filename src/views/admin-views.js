@@ -327,7 +327,7 @@ export function ordersView({ orders, status, q, counts, page, hasMore }) {
     return '?' + p.toString();
   };
   return html`
-  <header class="page-head"><h1>Comenzi</h1><a class="btn" href="/admin/comenzi/export.csv${qs({})}">Export CSV</a></header>
+  <header class="page-head"><h1>Comenzi</h1><div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn" href="/admin/helpship-stoc">Verificare stoc depozit</a><a class="btn" href="/admin/comenzi/export.csv${qs({})}">Export CSV</a></div></header>
   <nav class="tabs">${tabs.map(([k, v]) => html`<a href="/admin/comenzi${k ? `?status=${k}` : ''}" class="${status === k ? 'on' : ''}">${v} <small>${k ? counts[k] || 0 : counts._all || 0}</small></a>`)}</nav>
   <div class="toolbar">
     <form method="get" class="search">
@@ -1335,7 +1335,7 @@ export function hsStockView({ rows }) {
   const back = (r) => ['retur', 'refuzata'].includes(r.status);
   const cancelled = (r) => r.status === 'anulata';
   return html`<div class="page-head"><div><h1>Verificare stoc la depozit</h1>
-    <p class="muted">Toate comenzile trimise la Helpship de pe site, cu bucățile din fiecare produs. Compară totalul cu ce au recepționat ei.</p></div></div>
+    <p class="muted">Toate comenzile trimise la Helpship de pe site, cu bucățile din fiecare produs. Compară totalul cu ce au recepționat ei.</p></div><a class="btn" href="/admin/comenzi">← Înapoi la comenzi</a></div>
     ${!rows.length ? html`<section class="panel"><p class="muted">Nicio comandă trimisă la depozit.</p></section>` : ''}
     ${[...byProd.values()].map((pr) => html`<section class="panel">
       <div class="panel-head"><h2>${pr.title}${pr.sku ? html` <small class="muted">· ${pr.sku}</small>` : ''}</h2></div>

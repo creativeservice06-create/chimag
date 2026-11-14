@@ -321,7 +321,7 @@ function ordersTable(orders, selectable = true) {
 
 // ---------------- Comenzi ----------------
 export function ordersView({ orders, status, q, counts, page, hasMore }) {
-  const tabs = [['', 'Toate'], ...Object.entries(ORDER_STATUSES)];
+  const tabs = [['', 'Toate'], ...Object.entries(ORDER_STATUSES), ...(counts['card-neplatit'] || status === 'card-neplatit' ? [['card-neplatit', 'Card neplătit']] : [])];
   const qs = (extra) => {
     const p = new URLSearchParams({ ...(status ? { status } : {}), ...(q ? { q } : {}), ...extra });
     return '?' + p.toString();
@@ -329,6 +329,7 @@ export function ordersView({ orders, status, q, counts, page, hasMore }) {
   return html`
   <header class="page-head"><h1>Comenzi</h1><div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn" href="/admin/helpship-stoc">Verificare stoc depozit</a><a class="btn" href="/admin/comenzi/export.csv${qs({})}">Export CSV</a></div></header>
   <nav class="tabs">${tabs.map(([k, v]) => html`<a href="/admin/comenzi${k ? `?status=${k}` : ''}" class="${status === k ? 'on' : ''}">${v} <small>${k ? counts[k] || 0 : counts._all || 0}</small></a>`)}</nav>
+  ${status === 'card-neplatit' ? html`<p class="muted" style="margin:0 0 12px">Comenzi la care clientul a ales plata cu cardul dar n-a terminat plata. Nu sunt comenzi reale: nu pleacă la depozit și se anulează automat după 2 ore (stocul revine). Dacă clientul plătește între timp, comanda apare normal la „Nouă”.</p>` : ''}
   <div class="toolbar">
     <form method="get" class="search">
       ${status ? html`<input type="hidden" name="status" value="${status}">` : ''}

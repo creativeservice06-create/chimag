@@ -63,7 +63,7 @@ export default {
   },
 
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(Promise.allSettled([syncTracking(env), checkWheelUnlocks(env), syncHelpship(env), import('./lib/activity.js').then((m) => m.cleanupVisits(env))])
+    ctx.waitUntil(Promise.allSettled([syncTracking(env), checkWheelUnlocks(env), syncHelpship(env), import('./lib/activity.js').then((m) => m.cleanupVisits(env)), import('./lib/orders.js').then((m) => m.cancelUnpaidCardOrders(env))])
       .then(async () => { const { syncInvoices } = await import('./lib/invoices.js'); await syncInvoices(env, await getSettings(env)); }));
   },
 };
@@ -361,6 +361,12 @@ async function route(request, env, ctx) {
       await addOrderEvent(env, order.id, 'Clientul a ales plata ramburs în loc de card.');
       const updated = await getOrder(env, order.id);
       ctx.waitUntil(Promise.allSettled([sendServerPurchase(env, settings, updated, await getOrderItems(env, order.id), siteUrl(env, request)), notifyOrderPlaced(env, settings, updated)]));
+      return redirect(`/multumim/${m[1]}`);
+    }
+    // reîncercarea plății e permisă doar în primele 75 de minute (sesiunea mai ține 45), apoi comanda expiră
+    const ageMin = (Date.now() - Date.parse(String(order.created_at).replace(' ', 'T') + 'Z')) / 60000;
+    if (ageMin > 75) {
+      await (await import('./lib/orders.js')).cancelUnpaidCardOrder(env, order.id);
       return redirect(`/multumim/${m[1]}`);
     }
     const items = await getOrderItems(env, order.id);

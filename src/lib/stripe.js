@@ -46,6 +46,7 @@ export async function createCheckoutSession(env, { order, lines, shipping, codFe
     success_url: `${siteUrl}/multumim/${order.token}?plata=ok`,
     cancel_url: `${siteUrl}/multumim/${order.token}?plata=anulata`,
     client_reference_id: order.number,
+    expires_at: Math.floor(Date.now() / 1000) + 45 * 60, // după 45 min nu se mai poate plăti (comanda neplătită se anulează după 2 ore)
     customer_email: order.email || undefined,
     'metadata': { order_id: order.id, order_number: order.number },
     'payment_intent_data': { metadata: { order_number: order.number } },

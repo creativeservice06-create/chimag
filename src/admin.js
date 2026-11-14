@@ -23,7 +23,7 @@ const flashFrom = (url) => ({ ok: url.searchParams.get('ok'), err: url.searchPar
 const withFlash = (path, type, msg) => `${path}${path.includes('?') ? '&' : '?'}${type}=${encodeURIComponent(msg)}`;
 
 async function render(env, url, { title, active, body }) {
-  const n = await env.DB.prepare("SELECT COUNT(*) AS n FROM orders WHERE status = 'noua'").first();
+  const n = await env.DB.prepare("SELECT COUNT(*) AS n FROM orders WHERE status = 'noua' AND NOT (payment_method = 'card' AND payment_status != 'platita' AND status = 'noua')").first();
   const msg = await env.DB.prepare('SELECT COUNT(*) AS n FROM messages WHERE is_read = 0').first().catch(() => ({ n: 0 }));
   const ret = await env.DB.prepare("SELECT COUNT(*) AS n FROM returns WHERE status IN ('noua', 'primita')").first().catch(() => ({ n: 0 }));
   return htmlResponse(adminLayout({ title, active, body, flash: flashFrom(url), newCount: n?.n || 0, msgCount: msg?.n || 0, retCount: ret?.n || 0 }), 200, {
@@ -155,7 +155,7 @@ export async function handleAdmin(request, env, ctx, path) {
 
   // ---------- Comenzi ----------
   if (path === '/admin/comenzi' && method === 'GET') {
-    const status = ORDER_STATUSES[url.searchParams.get('status')] ? url.searchParams.get('status') : '';
+    const status = ORDER_STATUSES[url.searchParams.get('status')] || url.searchParams.get('status') === 'card-neplatit' ? url.searchParams.get('status') : '';
     const q = (url.searchParams.get('q') || '').trim();
     const page = Math.max(1, Number(url.searchParams.get('page')) || 1);
     const per = 50;
@@ -163,8 +163,9 @@ export async function handleAdmin(request, env, ctx, path) {
     const { results } = await env.DB.prepare(`SELECT * FROM orders ${where} ORDER BY id DESC LIMIT ? OFFSET ?`)
       .bind(...params, per + 1, (page - 1) * per).all();
     const counts = { _all: 0 };
-    const { results: cr } = await env.DB.prepare('SELECT status, COUNT(*) AS n FROM orders GROUP BY status').all();
+    const { results: cr } = await env.DB.prepare(`SELECT status, COUNT(*) AS n FROM orders WHERE NOT ${UNPAID_CARD} GROUP BY status`).all();
     for (const r of cr || []) { counts[r.status] = r.n; counts._all += r.n; }
+    counts['card-neplatit'] = (await env.DB.prepare(`SELECT COUNT(*) AS n FROM orders WHERE ${UNPAID_CARD}`).first())?.n || 0;
     return render(env, url, {
       title: 'Comenzi', active: 'comenzi',
       body: ordersView({ orders: (results || []).slice(0, per), status, q, counts, page, hasMore: (results || []).length > per }),
@@ -661,9 +662,12 @@ export async function handleAdmin(request, env, ctx, path) {
   return render(env, url, { title: 'Negăsit', active: '', body: '<h1>Pagina nu există</h1>' });
 }
 
+// comenzile cu cardul pentru care clientul n-a terminat plata nu sunt comenzi reale: apar doar la filtrul „Card neplătit”
+const UNPAID_CARD = "(payment_method = 'card' AND payment_status != 'platita' AND status = 'noua')";
 function orderFilter(status, q) {
   const cond = []; const params = [];
-  if (status) { cond.push('status = ?'); params.push(status); }
+  if (status === 'card-neplatit') cond.push(UNPAID_CARD);
+  else { cond.push(`NOT ${UNPAID_CARD}`); if (status) { cond.push('status = ?'); params.push(status); } }
   if (q) {
     const like = `%${q}%`;
     const digits = q.replace(/\D/g, '');
@@ -677,7 +681,7 @@ async function dashboardData(env) {
   // ce e de rezolvat acum + ultimele comenzi (cifrele pe perioadă vin din profit.js)
   const one = (sql) => env.DB.prepare(sql).first().then((r) => r?.n || 0).catch(() => 0);
   const [sc, latest, unread, hsErr, stale, today, lowStock] = await Promise.all([
-    env.DB.prepare('SELECT status, COUNT(*) AS n FROM orders GROUP BY status').all().then((r) => r.results || []),
+    env.DB.prepare(`SELECT status, COUNT(*) AS n FROM orders WHERE NOT ${UNPAID_CARD} GROUP BY status`).all().then((r) => r.results || []),
     env.DB.prepare('SELECT * FROM orders ORDER BY id DESC LIMIT 8').all().then((r) => r.results || []),
     one('SELECT COUNT(*) AS n FROM messages WHERE is_read = 0'),
     one("SELECT COUNT(*) AS n FROM orders WHERE hs_error != '' AND status IN ('noua','confirmata')"),

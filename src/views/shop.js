@@ -540,7 +540,12 @@ export function thankYouPage({ settings, order, items, payment, invoices = [], e
   const trackPurchase = fresh && (!isCard || paid);
 
   return html`<div class="wrap narrow thanks" ${trackPurchase ? raw(`data-purchase='${JSON.stringify(purchase).replace(/'/g, '&#39;')}'`) : ''}>
-    ${isCard && !paid ? html`
+    ${isCard && !paid && order.status === 'anulata' ? html`
+      <div class="thanks-head warn">
+        <h1>Comanda a expirat</h1>
+        <p>Plata cu cardul pentru comanda ${order.number} nu a fost finalizată, așa că am anulat comanda. Nu ți s-a reținut niciun ban.</p>
+        <a class="btn btn-primary btn-lg" href="/">Comandă din nou</a>
+      </div>` : isCard && !paid ? html`
       <div class="thanks-head warn">
         <h1>Plata nu a fost finalizată</h1>
         <p>Comanda ${order.number} este salvată, dar plata cu cardul ${payment === 'anulata' ? 'a fost anulată' : 'nu a fost încă confirmată'}.</p>

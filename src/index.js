@@ -205,7 +205,7 @@ async function route(request, env, ctx) {
     const identify = await tiktokIdentity(order);
     return htmlResponse(layout({
       settings, siteUrl: siteUrl(env, request), title: `Comanda ${order.number}`,
-      body: thankYouPage({ settings, order, items, payment: url.searchParams.get('plata'), invoices: invoices || [], events: events || [], products, identify }),
+      body: thankYouPage({ settings, order, items, payment: url.searchParams.get('plata'), byClient: url.searchParams.get('anulata') === '1', invoices: invoices || [], events: events || [], products, identify }),
     }), 200, { 'cache-control': 'no-store', 'x-robots-tag': 'noindex' });
   }
 
@@ -349,6 +349,17 @@ async function route(request, env, ctx) {
     if (r.error) return json({ error: r.error, wheel: r.wheel || null }, r.status || 400);
     if (r.nothing === undefined) r.wheel = await wheelState(env, settings, me);
     return json(r);
+  }
+
+  // clientul renunță la comanda cu cardul neplătită (butonul „Anulează comanda” de pe pagina de mulțumire)
+  if (method === 'POST' && (m = path.match(/^\/api\/comanda\/([a-f0-9]{32})\/anuleaza$/))) {
+    const order = await env.DB.prepare('SELECT * FROM orders WHERE token = ?').bind(m[1]).first();
+    if (order && order.payment_method === 'card' && order.payment_status !== 'platita' && order.status === 'noua') {
+      const { expireCheckoutSession } = await import('./lib/stripe.js');
+      await expireCheckoutSession(env, order.stripe_session_id);
+      await (await import('./lib/orders.js')).cancelUnpaidCardOrder(env, order.id, 'Clientul a anulat comanda (nu a mai plătit cu cardul).');
+    }
+    return redirect(`/multumim/${m[1]}?anulata=1`);
   }
 
   if (method === 'POST' && (m = path.match(/^\/api\/comanda\/([a-f0-9]{32})\/(plata|ramburs)$/))) {

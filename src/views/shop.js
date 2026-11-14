@@ -526,7 +526,7 @@ function orderProgress(order, events) {
   ${stopped ? html`<p class="progress-stop">${stopped}</p>` : ''}`;
 }
 
-export function thankYouPage({ settings, order, items, payment, invoices = [], events = [], products = new Map(), identify = null }) {
+export function thankYouPage({ settings, order, items, payment, byClient = false, invoices = [], events = [], products = new Map(), identify = null }) {
   const isCard = order.payment_method === 'card';
   const paid = order.payment_status === 'platita';
   const fresh = Date.now() - Date.parse(order.created_at.replace(' ', 'T') + 'Z') < 1000 * 60 * 60 * 6;
@@ -542,8 +542,8 @@ export function thankYouPage({ settings, order, items, payment, invoices = [], e
   return html`<div class="wrap narrow thanks" ${trackPurchase ? raw(`data-purchase='${JSON.stringify(purchase).replace(/'/g, '&#39;')}'`) : ''}>
     ${isCard && !paid && order.status === 'anulata' ? html`
       <div class="thanks-head warn">
-        <h1>Comanda a expirat</h1>
-        <p>Plata cu cardul pentru comanda ${order.number} nu a fost finalizată, așa că am anulat comanda. Nu ți s-a reținut niciun ban.</p>
+        <h1>${byClient ? 'Comanda a fost anulată' : 'Comanda a expirat'}</h1>
+        <p>${byClient ? `Am anulat comanda ${order.number}, la cererea ta.` : `Plata cu cardul pentru comanda ${order.number} nu a fost finalizată, așa că am anulat comanda.`} Nu ți s-a reținut niciun ban.</p>
         <a class="btn btn-primary btn-lg" href="/">Comandă din nou</a>
       </div>` : isCard && !paid ? html`
       <div class="thanks-head warn">
@@ -551,6 +551,7 @@ export function thankYouPage({ settings, order, items, payment, invoices = [], e
         <p>Comanda ${order.number} este salvată, dar plata cu cardul ${payment === 'anulata' ? 'a fost anulată' : 'nu a fost încă confirmată'}.</p>
         <form method="post" action="/api/comanda/${order.token}/plata"><button class="btn btn-primary btn-lg">Încearcă din nou plata</button></form>
         <form method="post" action="/api/comanda/${order.token}/ramburs" class="mt"><button class="btn btn-ghost">Plătesc la livrare (ramburs)</button></form>
+        <form method="post" action="/api/comanda/${order.token}/anuleaza" class="mt"><button class="thanks-cancel">Nu mai vreau, anulează comanda</button></form>
       </div>` : html`
       <div class="thanks-head">
         ${STOPPED[order.status] ? '' : html`<span class="thanks-icon">${icons.check(34)}</span>`}

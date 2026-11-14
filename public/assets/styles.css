@@ -1685,3 +1685,7 @@ a.oi-link:hover .oi-name { color: var(--brand); }
   .rw-track { grid-auto-columns: 100%; gap: 12px; }
   .rw-photo { height: 360px; }
 }
+
+/* pagina de mulțumire: „Nu mai vreau, anulează comanda” discret, sub ramburs */
+.thanks-cancel { background: none; border: 0; padding: 8px 4px; font: inherit; font-size: .92rem; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.thanks-cancel:hover { color: #b42318; }

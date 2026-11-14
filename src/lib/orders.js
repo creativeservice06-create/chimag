@@ -209,10 +209,10 @@ export async function deleteOrder(env, settings, orderId) {
 // Comenzile cu cardul neplătite (clientul a ieșit de pe pagina Stripe) se anulează singure după 2 ore.
 // Fiecare sesiune Stripe expiră în 45 min, iar „Încearcă din nou plata” e permisă doar în primele 75 min,
 // deci nu se poate plăti o comandă deja anulată. Fără email către client; stocul revine.
-export async function cancelUnpaidCardOrder(env, id) {
+export async function cancelUnpaidCardOrder(env, id, note = 'Plata cu cardul nu a fost finalizată: comanda a fost anulată automat.') {
   const r = await env.DB.prepare("UPDATE orders SET status = 'anulata' WHERE id = ? AND status = 'noua' AND payment_method = 'card' AND payment_status != 'platita'").bind(id).run();
   if (!r.meta?.changes) return false;
-  await addOrderEvent(env, id, 'Plata cu cardul nu a fost finalizată: comanda a fost anulată automat.');
+  await addOrderEvent(env, id, note);
   await restoreStock(env, id);
   await addOrderEvent(env, id, 'Stocul produselor a fost readăugat.');
   return true;

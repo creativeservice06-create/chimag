@@ -73,3 +73,11 @@ export async function verifyWebhook(env, payload, header) {
   const signatures = header.split(',').filter((p) => p.startsWith('v1=')).map((p) => p.slice(3));
   return signatures.some((s) => timingSafeEqual(s, expected));
 }
+
+// Închide o pagină de plată Stripe încă deschisă (după ce clientul a anulat comanda), ca să nu mai poată fi plătită
+export async function expireCheckoutSession(env, sessionId) {
+  if (!sessionId || !env.STRIPE_SECRET_KEY) return;
+  await fetch(`https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(sessionId)}/expire`, {
+    method: 'POST', headers: { authorization: `Bearer ${env.STRIPE_SECRET_KEY}` },
+  }).catch(() => {});
+}

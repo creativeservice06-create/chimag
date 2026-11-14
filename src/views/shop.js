@@ -666,19 +666,42 @@ export function notFoundPage() {
 export { pctOff, moneyNum };
 
 // Pagina de plată cu cardul pe chimag.ro: formularul Stripe (card, Apple Pay, Google Pay) încorporat în pagină
-export function paymentPage({ order, settings }) {
+export function paymentPage({ order, settings, items = [], images = new Map() }) {
+  const qtyAll = items.reduce((n, i) => n + i.qty, 0);
+  const lineDiscounts = items.reduce((n, i) => n + (i.unit_price * i.qty - i.total), 0);
   return html`<div class="wrap narrow pay-page">
     <div class="pay-head">
       <a class="pay-back" href="/cos" data-pay-back="${order.token}">← Înapoi la comandă</a>
       <h1>Plată cu cardul</h1>
-      <p>Total de plată <strong>${money(order.total)}</strong></p>
+      <p class="pay-head-total">Total de plată <strong>${money(order.total)}</strong></p>
     </div>
-    <div class="pay-box">
-      <div id="stripe-checkout" data-pk="${settings.stripe_pk}" data-token="${order.token}"><p class="pay-loading">Se încarcă formularul de plată securizat…</p></div>
-      <p class="pay-error" id="pay-error" hidden></p>
+    <div class="pay-grid">
+      ${items.length ? html`<aside class="pay-sum">
+        <h2>Comanda ta <span>${qtyAll} ${qtyAll === 1 ? 'produs' : 'produse'}</span></h2>
+        <ul class="pay-items">
+          ${items.map((i) => { const im = (images.get(i.product_id) || {}).img; return html`<li>
+            <span class="pay-thumb">${im ? html`<img src="${im}" alt="" width="96" height="96" loading="lazy">` : ''}<b>${i.qty}</b></span>
+            <span class="pay-it"><strong>${i.title}</strong><small>${i.qty} × ${money(i.unit_price)}</small></span>
+            <span class="pay-pr">${i.total < i.unit_price * i.qty ? html`<s>${money(i.unit_price * i.qty)}</s>` : ''}${money(i.total)}</span>
+          </li>`; })}
+        </ul>
+        <dl class="pay-tot">
+          <div><dt>Produse</dt><dd>${money(items.reduce((n, i) => n + i.unit_price * i.qty, 0))}</dd></div>
+          ${lineDiscounts > 0 ? html`<div class="save"><dt>Reducere pachet</dt><dd>−${money(lineDiscounts)}</dd></div>` : ''}
+          ${order.coupon_discount > 0 ? html`<div class="save"><dt>Cod ${order.coupon_code}</dt><dd>−${money(order.coupon_discount)}</dd></div>` : ''}
+          <div><dt>Transport</dt><dd>${order.shipping ? money(order.shipping) : html`<b class="free">Gratuit</b>`}</dd></div>
+          <div class="grand"><dt>Total</dt><dd>${money(order.total)}</dd></div>
+        </dl>
+      </aside>` : ''}
+      <div class="pay-main">
+        <div class="pay-box">
+          <div id="stripe-checkout" data-pk="${settings.stripe_pk}" data-token="${order.token}"><p class="pay-loading">Se încarcă formularul de plată securizat…</p></div>
+          <p class="pay-error" id="pay-error" hidden></p>
+        </div>
+        <form method="post" action="/api/comanda/${order.token}/plata?pagina=stripe" class="pay-alt"><span>Formularul nu se încarcă?</span> <button type="submit">Plătește pe pagina securizată Stripe</button></form>
+        <p class="pay-secure">🔒 Plata e procesată securizat de Stripe. Datele cardului nu ajung la noi.</p>
+      </div>
     </div>
-    <form method="post" action="/api/comanda/${order.token}/plata?pagina=stripe" class="pay-alt"><span>Formularul nu se încarcă?</span> <button type="submit">Plătește pe pagina securizată Stripe</button></form>
-    <p class="pay-secure">🔒 Plata e procesată securizat de Stripe. Datele cardului nu ajung la noi.</p>
   </div>
   <script src="https://js.stripe.com/v3/"></script>
   <script src="/assets/pay.js?v=3" defer></script>`;

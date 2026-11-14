@@ -1710,3 +1710,32 @@ a.oi-link:hover .oi-name { color: var(--brand); }
 .pay-secure { margin: 14px 0 0; text-align: center; color: var(--muted); font-size: .88rem; }
 .pay-alt { margin: 12px 0 0; text-align: center; font-size: .9rem; color: var(--muted); }
 .pay-alt button { background: none; border: 0; padding: 0; font: inherit; color: var(--ink); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+
+/* plata cu cardul pe calculator: rezumatul comenzii (al nostru) în stânga, formularul Stripe în dreapta */
+.pay-sum { display: none; }
+@media (min-width: 900px) {
+  .pay-grid { display: grid; grid-template-columns: minmax(0, 1fr) 470px; gap: 48px; align-items: start; }
+  .pay-head-total { display: none; }
+  .pay-sum { display: block; position: sticky; top: 90px; background: #fff; border: 1px solid var(--line); border-radius: var(--radius-l); padding: 26px 28px; }
+  .pay-sum h2 { display: flex; justify-content: space-between; align-items: baseline; margin: 0 0 18px; font-size: 1.25rem; }
+  .pay-sum h2 span { font-size: .9rem; font-weight: 500; color: var(--muted); }
+  .pay-items { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px; }
+  .pay-items li { display: grid; grid-template-columns: 96px minmax(0, 1fr) auto; gap: 16px; align-items: center; }
+  .pay-thumb { position: relative; width: 96px; height: 96px; border-radius: 14px; background: #f4f6fa; border: 1px solid var(--line); }
+  .pay-thumb img { width: 100%; height: 100%; object-fit: contain; border-radius: 14px; }
+  .pay-thumb b { position: absolute; top: -8px; right: -8px; min-width: 24px; height: 24px; padding: 0 6px; border-radius: 12px; background: var(--ink); color: #fff; font-size: .8rem; display: grid; place-items: center; }
+  .pay-it { display: grid; gap: 4px; }
+  .pay-it strong { font-size: 1.02rem; line-height: 1.35; }
+  .pay-it small { color: var(--muted); }
+  .pay-pr { text-align: right; font-weight: 700; white-space: nowrap; display: grid; }
+  .pay-pr s { font-weight: 400; color: var(--muted); font-size: .85rem; }
+  .pay-tot { margin: 22px 0 0; padding-top: 18px; border-top: 1px solid var(--line); display: grid; gap: 10px; }
+  .pay-tot div { display: flex; justify-content: space-between; margin: 0; }
+  .pay-tot dt { color: var(--muted); }
+  .pay-tot dd { margin: 0; font-weight: 600; }
+  .pay-tot .save dd { color: #0f8a4a; }
+  .pay-tot .free { color: #0f8a4a; }
+  .pay-tot .grand { margin-top: 6px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 1.3rem; }
+  .pay-tot .grand dt { color: var(--ink); font-weight: 700; }
+  .pay-tot .grand dd { font-weight: 800; }
+}

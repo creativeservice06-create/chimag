@@ -208,7 +208,10 @@ async function route(request, env, ctx) {
     }
     if (!isApi) {
       const { paymentPage } = await import('./views/shop.js');
-      return htmlResponse(layout({ settings, siteUrl: siteUrl(env, request), title: 'Plată cu cardul', body: paymentPage({ order, settings }) }), 200,
+      const payItems = await getOrderItems(env, order.id);
+      const { itemImages } = await import('./emails.js');
+      const payImgs = await itemImages(env, payItems).catch(() => new Map());
+      return htmlResponse(layout({ settings, siteUrl: siteUrl(env, request), title: 'Plată cu cardul', body: paymentPage({ order, settings, items: payItems, images: payImgs }) }), 200,
         { 'cache-control': 'no-store', 'x-robots-tag': 'noindex' });
     }
     try {

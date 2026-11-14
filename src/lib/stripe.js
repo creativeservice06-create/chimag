@@ -28,12 +28,6 @@ export async function createCheckoutSession(env, { order, lines, shipping, codFe
     }
   } catch { /* pozele sunt opționale */ }
   const imagesFor = (l) => { const u = imgOf.get(Number(l.product?.id || l.product_id)); return u && u.startsWith('https://') ? [u] : undefined; };
-  if (order.coupon_discount > 0) {
-    // cu reducere de cupon: un singur rând cu totalul exact al comenzii
-    line_items[0] = { quantity: 1, price_data: { currency: 'ron', unit_amount: order.total, product_data: { name: `Comanda ${order.number}` } } };
-    lines = [];
-    shipping = 0; codFee = 0; i = 1;
-  }
   for (const l of lines) {
     // Stripe nu acceptă reduceri negative pe linie; punem prețul final per bucată (rotunjit în jos).
     const unit = Math.floor(l.total / l.qty);
@@ -53,6 +47,32 @@ export async function createCheckoutSession(env, { order, lines, shipping, codFe
     };
   }
 
+  // cu cod de reducere: produsele rămân vizibile (cu poze), iar reducerea apare ca rând separat prin cupon Stripe de unică folosință.
+  // Dacă ceva nu iese la leu (sau Stripe refuză cuponul), revenim la varianta veche: un singur rând cu totalul exact.
+  let discounts;
+  if (order.coupon_discount > 0) {
+    const sumAll = Object.values(line_items).reduce((s, li) => s + li.price_data.unit_amount * li.quantity, 0);
+    const off = sumAll - order.total;
+    let couponId = '';
+    if (off > 0 && off < sumAll) {
+      try {
+        const name = `Reducere ${order.coupon_code || ''}`.trim().slice(0, 40);
+        const r = await fetch('https://api.stripe.com/v1/coupons', {
+          method: 'POST',
+          headers: { authorization: `Bearer ${env.STRIPE_SECRET_KEY}`, 'content-type': 'application/x-www-form-urlencoded' },
+          body: form({ amount_off: off, currency: 'ron', duration: 'once', max_redemptions: 1, name, redeem_by: Math.floor(Date.now() / 1000) + 2 * 3600, metadata: { order_number: order.number } }),
+        });
+        const c = await r.json();
+        if (r.ok && c.id) couponId = c.id;
+      } catch { /* revenim la un singur rând */ }
+    }
+    if (couponId) discounts = [{ coupon: couponId }];
+    else {
+      for (const k of Object.keys(line_items)) delete line_items[k];
+      line_items[0] = { quantity: 1, price_data: { currency: 'ron', unit_amount: order.total, product_data: { name: `Comanda ${order.number}` } } };
+    }
+  }
+
   const body = form({
     mode: 'payment',
     locale: 'ro',
@@ -65,6 +85,7 @@ export async function createCheckoutSession(env, { order, lines, shipping, codFe
     'metadata': { order_id: order.id, order_number: order.number },
     'payment_intent_data': { metadata: { order_number: order.number } },
     line_items,
+    discounts,
   });
 
   const res = await fetch('https://api.stripe.com/v1/checkout/sessions', {

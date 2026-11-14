@@ -471,7 +471,7 @@ export function checkoutPage({ settings, bump, loggedIn = false }) {
           <div class="pay-options">
             <label class="pay-option">
               <input type="radio" name="payment" value="ramburs" checked>
-              <span>${icons.cash(22)}<span><strong>Plătești la livrare (ramburs)</strong><small>Plătești curierului când primești coletul${Number(settings.cod_fee) ? ` · taxă ${money(settings.cod_fee)}` : ''}</small></span></span>
+              <span>${icons.bills(22)}<span><strong>Plătești la livrare (ramburs)</strong><small>Plătești curierului când primești coletul${Number(settings.cod_fee) ? ` · taxă ${money(settings.cod_fee)}` : ''}</small></span></span>
             </label>
             ${cardOn ? html`<label class="pay-option">
               <input type="radio" name="payment" value="card">

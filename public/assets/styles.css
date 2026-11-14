@@ -290,8 +290,11 @@ p { margin: 0 0 1em; }
 .pay-option > span > span { display: grid; }
 .pay-option small { color: var(--muted); }
 .pay-option .ic { color: var(--brand); }
-.pay-brands { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
-.pay-brands i { font-style: normal; font-size: .74rem; font-weight: 600; padding: 2px 7px; border: 1px solid var(--line); border-radius: 6px; background: #fff; color: var(--ink); }
+.pay-brands { display: flex; flex-wrap: nowrap; gap: 4px; margin-top: 7px; }
+.pay-brands i { font-style: normal; font-size: .74rem; font-weight: 600; padding: 2px 7px; border: 1px solid var(--line); border-radius: 6px; background: #fff; color: var(--ink); white-space: nowrap; }
+@media (max-width: 480px) { .pay-brands i { font-size: clamp(.58rem, 2.6vw, .7rem); padding: 1px 5px; } }
+.pay-option > span, .pay-option > span > span { min-width: 0; }
+@media (max-width: 350px) { .pay-brands { flex-wrap: wrap; } }
 .bump { display: flex; gap: 14px; align-items: center; padding: 16px; margin-bottom: 20px; border: 2px dashed var(--saffron); border-radius: var(--radius); background: var(--saffron-soft); cursor: pointer; }
 .bump input { width: 22px; height: 22px; accent-color: var(--brand); flex: none; }
 .bump img { border-radius: 8px; flex: none; }

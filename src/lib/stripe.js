@@ -12,7 +12,9 @@ function form(obj, prefix = '', out = new URLSearchParams()) {
   return out;
 }
 
-export async function createCheckoutSession(env, { order, lines, shipping, codFee, siteUrl, embedded = false }) {
+export async function createCheckoutSession(env, { order, lines, shipping, codFee, siteUrl, embedded = false, ui = '' }) {
+  // ui: 'elements' = formularul nostru (câmpurile Stripe așezate de noi), 'embedded' = formularul Stripe întreg, altfel pagina Stripe
+  if (!ui) ui = embedded ? 'embedded' : 'hosted';
   const line_items = {};
   let i = 0;
   // poza produsului pe pagina de plată (Stripe acceptă adrese publice https)
@@ -76,8 +78,8 @@ export async function createCheckoutSession(env, { order, lines, shipping, codFe
   const body = form({
     mode: 'payment',
     locale: 'ro',
-    ...(embedded
-      ? { ui_mode: 'embedded', return_url: `${siteUrl}/multumim/${order.token}?plata=ok` } // formularul stă pe chimag.ro
+    ...(ui !== 'hosted'
+      ? { ui_mode: ui, return_url: `${siteUrl}/multumim/${order.token}?plata=ok` } // formularul stă pe chimag.ro
       : { success_url: `${siteUrl}/multumim/${order.token}?plata=ok`, cancel_url: `${siteUrl}/multumim/${order.token}?plata=anulata` }),
     client_reference_id: order.number,
     expires_at: Math.floor(Date.now() / 1000) + 30 * 60 + 30, // minimul permis de Stripe (30 min); comanda neplătită se anulează după 1 oră
@@ -88,16 +90,23 @@ export async function createCheckoutSession(env, { order, lines, shipping, codFe
     discounts,
   });
 
-  const res = await fetch('https://api.stripe.com/v1/checkout/sessions', {
+  const send = (b) => fetch('https://api.stripe.com/v1/checkout/sessions', {
     method: 'POST',
     headers: {
       authorization: `Bearer ${env.STRIPE_SECRET_KEY}`, 'content-type': 'application/x-www-form-urlencoded',
       // formularul încorporat folosește Stripe.js v3, compatibil cu versiunile API „acacia”; contul nou e pe o versiune mai nouă
-      ...(embedded ? { 'stripe-version': '2025-02-24.acacia' } : {}),
+      ...(ui === 'embedded' ? { 'stripe-version': '2025-02-24.acacia' } : {}),
     },
-    body,
+    body: b,
   });
-  const data = await res.json();
+  let res = await send(body);
+  let data = await res.json();
+  if (!res.ok && ui === 'elements' && /ui_mode/i.test(data?.error?.message || '')) {
+    // versiunile API mai vechi numesc acest mod „custom”
+    body.set('ui_mode', 'custom');
+    res = await send(body);
+    data = await res.json();
+  }
   if (!res.ok) throw new Error(data?.error?.message || 'Eroare Stripe');
   return data; // { id, url } sau, la embedded, { id, client_secret }
 }

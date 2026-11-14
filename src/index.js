@@ -220,9 +220,10 @@ async function route(request, env, ctx) {
       if (order.stripe_session_id) { const { paid } = await expireCheckoutSession(env, order.stripe_session_id); if (paid) return back('?plata=ok'); }
       const items = await getOrderItems(env, order.id);
       const lines = items.map((i) => ({ qty: i.qty, total: i.total, product_id: i.product_id, product: { title: i.title } }));
-      const session = await createCheckoutSession(env, { order, lines, shipping: order.shipping, codFee: 0, siteUrl: siteUrl(env, request), embedded: true });
+      const ui = url.searchParams.get('ui') === 'elements' ? 'elements' : 'embedded';
+      const session = await createCheckoutSession(env, { order, lines, shipping: order.shipping, codFee: 0, siteUrl: siteUrl(env, request), ui });
       await updateOrder(env, order.id, { stripe_session_id: session.id });
-      return json({ clientSecret: session.client_secret });
+      return json({ clientSecret: session.client_secret, ui });
     } catch (e) {
       await addOrderEvent(env, order.id, `Stripe: ${e.message}`);
       return json({ error: 'Plata nu a putut porni. Încearcă din nou sau alege plata la livrare.' }, 502);

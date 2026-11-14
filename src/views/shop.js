@@ -673,7 +673,6 @@ export function paymentPage({ order, settings, items = [], images = new Map() })
     <div class="pay-head">
       <a class="pay-back" href="/cos" data-pay-back="${order.token}">← Înapoi la comandă</a>
       <h1>Plată cu cardul</h1>
-      <p class="pay-head-total">Total de plată <strong>${money(order.total)}</strong></p>
     </div>
     <div class="pay-grid">
       ${items.length ? html`<aside class="pay-sum">
@@ -703,6 +702,6 @@ export function paymentPage({ order, settings, items = [], images = new Map() })
       </div>
     </div>
   </div>
-  <script src="https://js.stripe.com/v3/"></script>
-  <script src="/assets/pay.js?v=3" defer></script>`;
+  <script src="https://js.stripe.com/endive/stripe.js"></script>
+  <script src="/assets/pay.js?v=4" defer></script>`;
 }

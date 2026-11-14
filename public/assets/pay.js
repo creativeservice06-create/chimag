@@ -1,26 +1,147 @@
-// Plata cu cardul pe chimag.ro (Stripe Embedded Checkout)
+// Plata cu cardul pe chimag.ro.
+// Varianta principală: câmpurile Stripe (Apple Pay / Google Pay + card) așezate de noi, fără rezumatul Stripe.
+// Plasă de siguranță: dacă ceva nu pornește, trecem automat pe formularul Stripe întreg (varianta de dinainte).
 (function () {
   var box = document.getElementById('stripe-checkout');
   if (!box) return;
   var err = document.getElementById('pay-error');
+  var pk = box.getAttribute('data-pk');
+  var token = box.getAttribute('data-token');
+  var done = false; // după fallback nu mai atingem nimic din varianta nouă
+
   function fail(msg) {
     box.innerHTML = ''; err.hidden = false; err.textContent = msg + ' ';
     var a = document.createElement('a'); a.href = '/cos'; a.textContent = 'Înapoi la comandă';
     err.appendChild(a);
   }
-  if (!window.Stripe) { fail('Formularul de plată nu s-a putut încărca. Reîncarcă pagina sau alege plata la livrare.'); return; }
-  var stripe = window.Stripe(box.getAttribute('data-pk'), { locale: 'ro' });
-  var token = box.getAttribute('data-token');
-  stripe.initEmbeddedCheckout({
-    fetchClientSecret: function () {
-      return fetch('/api/comanda/' + token + '/sesiune', { method: 'POST', headers: { 'content-type': 'application/json' } })
-        .then(function (r) { return r.json(); })
-        .then(function (j) {
-          if (j.redirect) { window.location.href = j.redirect; return new Promise(function () {}); }
-          if (!j.clientSecret) throw new Error(j.error || 'Plata nu a putut porni.');
-          return j.clientSecret;
-        });
+  function secret(ui) {
+    return fetch('/api/comanda/' + token + '/sesiune' + (ui ? '?ui=' + ui : ''), { method: 'POST', headers: { 'content-type': 'application/json' } })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (j.redirect) { window.location.href = j.redirect; return new Promise(function () {}); }
+        if (!j.clientSecret) throw new Error(j.error || 'Plata nu a putut porni.');
+        return j.clientSecret;
+      });
+  }
+
+  // ---------- varianta de rezervă: formularul Stripe întreg (Stripe.js v3) ----------
+  function embedded() {
+    if (done) return; done = true;
+    box.className = ''; box.innerHTML = '<p class="pay-loading">Se încarcă formularul de plată securizat…</p>';
+    var s = document.createElement('script');
+    s.src = 'https://js.stripe.com/v3/';
+    s.onload = function () {
+      var stripe = window.Stripe(pk, { locale: 'ro' });
+      stripe.initEmbeddedCheckout({ fetchClientSecret: function () { return secret(''); } })
+        .then(function (checkout) { box.innerHTML = ''; checkout.mount('#stripe-checkout'); })
+        .catch(function (e) { fail((e && e.message) || 'Plata nu a putut porni. Încearcă din nou sau alege plata la livrare.'); });
+    };
+    s.onerror = function () { fail('Formularul de plată nu s-a putut încărca. Reîncarcă pagina sau alege plata la livrare.'); };
+    document.head.appendChild(s);
+  }
+
+  // ---------- varianta nouă ----------
+  function elements() {
+    var Stripe = window.Stripe;
+    if (!Stripe) return embedded();
+    var stripe = Stripe(pk, { locale: 'ro' });
+    var init = stripe.initCheckoutElementsSdk || stripe.initCheckout;
+    if (!init) return embedded();
+
+    box.className = 'pe';
+    box.innerHTML =
+      '<div class="pe-express" id="pe-express"></div>' +
+      '<div class="pe-or" id="pe-or" hidden><span>sau plătește cu cardul</span></div>' +
+      '<div id="pe-payment"></div>' +
+      '<button type="button" class="btn btn-primary btn-lg btn-block pe-pay" id="pe-pay" disabled>Se încarcă…</button>' +
+      '<p class="pe-msg" id="pe-msg" role="alert" hidden></p>';
+    var payBtn = document.getElementById('pe-pay');
+    var msg = document.getElementById('pe-msg');
+    function show(t) { msg.textContent = t || ''; msg.hidden = !t; }
+
+    var checkout;
+    try {
+      checkout = init.call(stripe, {
+        clientSecret: secret('elements'),
+        elementsOptions: {
+          fonts: [{ cssSrc: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap' }],
+          appearance: {
+            theme: 'stripe',
+            variables: { colorPrimary: '#155ecc', colorText: '#101d30', colorTextSecondary: '#56657a', colorDanger: '#b42318', fontFamily: 'Inter, system-ui, sans-serif', borderRadius: '10px', spacingUnit: '4px' },
+          },
+        },
+      });
+    } catch (e) { return embedded(); }
+
+    // dacă în 20 de secunde formularul nu e gata, trecem pe varianta de rezervă
+    var ready = false;
+    var timer = setTimeout(function () { if (!ready) embedded(); }, 20000);
+
+    var actions = null;
+    var canConfirm = false;
+    function label(s) {
+      try {
+        var amount = s && s.total && s.total.total && s.total.total.amount;
+        if (amount) payBtn.textContent = 'Plătește ' + amount;
+      } catch (e) { /* păstrăm textul */ }
     }
-  }).then(function (checkout) { box.innerHTML = ''; checkout.mount('#stripe-checkout'); })
-    .catch(function (e) { fail((e && e.message) || 'Plata nu a putut porni. Încearcă din nou sau alege plata la livrare.'); });
+    try {
+      checkout.on('change', function (s) { if (done) return; canConfirm = !!(s && s.canConfirm); label(s); });
+    } catch (e) { /* nu e obligatoriu */ }
+
+    try {
+      var pay = checkout.createPaymentElement({ layout: 'tabs', wallets: { applePay: 'never', googlePay: 'never' } });
+      pay.on('ready', function () { if (done) return; ready = true; clearTimeout(timer); });
+      pay.on('loaderror', function () { if (!ready) embedded(); });
+      pay.mount('#pe-payment');
+    } catch (e) { return embedded(); }
+
+    try {
+      var express = checkout.createExpressCheckoutElement({
+        buttonHeight: 48,
+        layout: { maxColumns: 2, maxRows: 1, overflow: 'never' },
+      });
+      express.on('ready', function (ev) {
+        var any = ev && ev.availablePaymentMethods && Object.keys(ev.availablePaymentMethods).some(function (k) { return ev.availablePaymentMethods[k]; });
+        document.getElementById('pe-or').hidden = !any;
+        if (!any) document.getElementById('pe-express').style.display = 'none';
+      });
+      express.on('confirm', function (ev) {
+        if (!actions) return;
+        show('');
+        actions.confirm({ expressCheckoutConfirmEvent: ev }).then(function (r) {
+          if (r && r.type === 'error') show(r.error && r.error.message);
+        });
+      });
+      express.mount('#pe-express');
+    } catch (e) { document.getElementById('pe-express').style.display = 'none'; /* cardul merge și fără Apple/Google Pay */ }
+
+    Promise.resolve(checkout.loadActions ? checkout.loadActions() : { type: 'success', actions: checkout })
+      .then(function (r) {
+        if (done) return;
+        if (!r || r.type !== 'success') { embedded(); return; }
+        actions = r.actions;
+        try { label(actions.getSession ? actions.getSession() : null); } catch (e) { /* */ }
+        payBtn.disabled = false;
+        if (/Se încarcă/.test(payBtn.textContent)) payBtn.textContent = 'Plătește acum';
+      })
+      .catch(function () { embedded(); });
+
+    payBtn.addEventListener('click', function () {
+      if (!actions || payBtn.classList.contains('loading')) return;
+      show('');
+      var old = payBtn.textContent;
+      payBtn.classList.add('loading'); payBtn.textContent = 'Se procesează plata…';
+      actions.confirm().then(function (r) {
+        // dacă plata a reușit, Stripe ne duce singur la pagina comenzii
+        if (r && r.type === 'error') show(r.error && r.error.message);
+        payBtn.classList.remove('loading'); payBtn.textContent = old;
+      }).catch(function () {
+        show('Plata nu a putut fi trimisă. Încearcă din nou.');
+        payBtn.classList.remove('loading'); payBtn.textContent = old;
+      });
+    });
+  }
+
+  elements();
 })();

@@ -964,3 +964,12 @@ input[type=checkbox] { box-shadow: none; }
 #ar-loc-t:focus-visible ~ .panel-head label[for=ar-loc-t], #ar-loc-o:focus-visible ~ .panel-head label[for=ar-loc-o] { outline: 2px solid var(--brand); }
 @media (max-width: 1280px) { .ar-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 700px) { .ar-grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* Verificare stoc la depozit */
+.hs-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+.hs-kpi { display: grid; gap: 4px; padding: 14px 16px; border: 1px solid var(--line, #e6ecf4); border-radius: 12px; background: #fff; }
+.hs-kpi span { font-size: .8rem; color: var(--muted); }
+.hs-kpi b { font-size: 1.6rem; line-height: 1.1; }
+.hs-kpi small { font-size: .76rem; color: var(--muted); }
+.hs-kpi.hs-main { background: #eef5ff; border-color: #cfe0fb; }
+@media (max-width: 900px) { .hs-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

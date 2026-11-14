@@ -33,7 +33,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0, msgCount
 <title>${title} · Admin Chimag</title>
 <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/admin.css?v=29">
+<link rel="stylesheet" href="/assets/admin.css?v=30">
 <meta name="theme-color" content="#0e192a">
 <script src="/assets/admin.js?v=2" defer></script>
 </head><body>
@@ -73,7 +73,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0, msgCount
 
 export function loginView(error) {
   return html`<html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex"><title>Autentificare · Admin</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/assets/admin.css?v=29"></head>
+<meta name="robots" content="noindex"><title>Autentificare · Admin</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/assets/admin.css?v=30"></head>
 <body class="login-body"><form class="login" method="post" action="/admin/login">
   <div class="brand">${logoMark()}<span>chimag</span></div>
   <h1>Administrare</h1>
@@ -1321,4 +1321,32 @@ export function returnsView({ returns, status }) {
     <li>Trimite banii prin transfer în IBAN-ul clientului, apoi apasă <b>„Am trimis banii”</b>: clientul primește email, iar la returul complet comanda trece pe „Retur”.</li>
     <li>Termen legal: banii trebuie trimiși în cel mult 14 zile de la cerere (poți aștepta până ajunge coletul).</li></ol></section>
   ${returns.length ? returns.map((r) => returnCard(r, `/admin/retururi${status ? `?status=${status}` : ''}`)) : html`<section class="panel"><p class="muted">Nicio cerere de retur${status ? ' în această categorie' : ''}.</p></section>`}`;
+}
+
+// Verificare stoc trimis la depozit (Helpship): câte bucăți din fiecare produs au plecat spre depozit, comandă cu comandă
+export function hsStockView({ rows }) {
+  const byProd = new Map();
+  for (const r of rows) {
+    const k = r.sku || r.title;
+    if (!byProd.has(k)) byProd.set(k, { title: r.title, sku: r.sku, list: [] });
+    byProd.get(k).list.push(r);
+  }
+  const sum = (l, f) => l.filter(f).reduce((a, r) => a + r.qty, 0);
+  const back = (r) => ['retur', 'refuzata'].includes(r.status);
+  const cancelled = (r) => r.status === 'anulata';
+  return html`<div class="page-head"><div><h1>Verificare stoc la depozit</h1>
+    <p class="muted">Toate comenzile trimise la Helpship de pe site, cu bucățile din fiecare produs. Compară totalul cu ce au recepționat ei.</p></div></div>
+    ${!rows.length ? html`<section class="panel"><p class="muted">Nicio comandă trimisă la depozit.</p></section>` : ''}
+    ${[...byProd.values()].map((pr) => html`<section class="panel">
+      <div class="panel-head"><h2>${pr.title}${pr.sku ? html` <small class="muted">· ${pr.sku}</small>` : ''}</h2></div>
+      <div class="hs-kpis">
+        <div class="hs-kpi"><span>Bucăți trimise la depozit</span><b>${sum(pr.list, () => true)}</b><small>${pr.list.length} comenzi</small></div>
+        <div class="hs-kpi"><span>Din care anulate după trimitere</span><b>${sum(pr.list, cancelled)}</b><small>ar trebui să revină în stocul lor</small></div>
+        <div class="hs-kpi"><span>Retur / refuzate</span><b>${sum(pr.list, back)}</b><small>revin în stoc când ajung la depozit</small></div>
+        <div class="hs-kpi hs-main"><span>Bucăți scoase efectiv din stoc</span><b>${sum(pr.list, (r) => !cancelled(r))}</b><small>fără cele anulate</small></div>
+      </div>
+      <table class="tbl"><thead><tr><th>Comanda</th><th>Plasată</th><th>Trimisă la depozit</th><th>Status site</th><th>Status Helpship</th><th style="text-align:right">Bucăți</th></tr></thead>
+      <tbody>${pr.list.map((r) => html`<tr><td><a href="/admin/comenzi/${r.id}"><b>${r.number}</b></a></td><td>${String(r.created_at).slice(0, 16)}</td><td>${String(r.hs_sent_at || '').slice(0, 16)}</td><td>${statusChip(r.status)}</td><td>${r.hs_status || '—'}</td><td style="text-align:right"><b>${r.qty}</b></td></tr>`)}</tbody>
+      <tfoot><tr><td colspan="5"><b>Total</b></td><td style="text-align:right"><b>${sum(pr.list, () => true)}</b></td></tr></tfoot></table>
+    </section>`)}`;
 }

@@ -9,7 +9,7 @@ import { getProvider } from './shipping/providers.js';
 import { JUDETE } from './lib/judete.js';
 import {
   adminLayout, loginView, dashboardView, ordersView, orderView, labelView, productsView, productFormView, settingsView, couponsView, messagesView,
-  customersView, customerFormView, customerView, invoicesView, emailsView, realProfitView, ordersMapView, orderSource, activityView, returnsView,
+  customersView, customerFormView, customerView, invoicesView, emailsView, realProfitView, ordersMapView, orderSource, activityView, returnsView, hsStockView,
 } from './views/admin-views.js';
 import { COUPON_TYPES, CODE_TYPES, normalizeCode } from './lib/coupons.js';
 import { emailStatus, sendEmail } from './lib/email.js';
@@ -125,6 +125,13 @@ export async function handleAdmin(request, env, ctx, path) {
       return { src: label, cls, camp: v.campaign, device: v.device, os: v.os, browser: v.browser, city: v.city, country: v.country, page: cur?.label || '', pages: v.steps.length, time: fmtDur(v.secs), since: v.first_at, bought: v.bought, path: v.steps.map((x) => x.label) }; });
     return new Response(JSON.stringify({ now: d.now, today: d.today, hour: d.hour, list }), { headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
   }
+  if (path === '/admin/helpship-stoc' && method === 'GET') {
+    // doar citire: comenzile trimise la Helpship și bucățile din fiecare produs
+    const { results } = await env.DB.prepare(`SELECT o.id, o.number, o.created_at, o.status, o.hs_status, o.hs_sent_at, i.title, i.sku, i.qty
+      FROM order_items i JOIN orders o ON o.id = i.order_id WHERE o.hs_order_id != '' ORDER BY o.id`).all();
+    return render(env, url, { title: 'Verificare stoc la depozit', active: 'comenzi', body: hsStockView({ rows: results || [] }) });
+  }
+
   if (path === '/admin/harta' && method === 'GET') {
     const { roToday, roMidnightUtc } = await import('./lib/profit.js');
     const period = ['7z', '30z', 'luna', 'tot'].includes(url.searchParams.get('perioada')) ? url.searchParams.get('perioada') : '30z';

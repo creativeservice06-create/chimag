@@ -192,6 +192,40 @@ async function route(request, env, ctx) {
     return page(env, request, { settings, customer: me, title: 'Coșul tău', noindex: true, pageData: prefill ? { customer: prefill } : null, body: checkoutPage({ settings, bump: bump?.active ? bump : null, loggedIn: !!me }) });
   }
 
+  // Plata cu cardul direct pe chimag.ro (Stripe Embedded Checkout)
+  if ((m = path.match(/^\/plata\/([a-f0-9]{32})$/)) || (m = path.match(/^\/api\/comanda\/([a-f0-9]{32})\/sesiune$/))) {
+    const isApi = path.startsWith('/api/');
+    if ((isApi && method !== 'POST') || (!isApi && method !== 'GET')) return notFound(env, request);
+    const order = await env.DB.prepare('SELECT * FROM orders WHERE token = ?').bind(m[1]).first();
+    if (!order) return isApi ? json({ redirect: '/' }) : notFound(env, request);
+    const settings = await getSettings(env);
+    const back = (q = '') => (isApi ? json({ redirect: `/multumim/${m[1]}${q}` }) : redirect(`/multumim/${m[1]}${q}`));
+    if (order.payment_method !== 'card' || order.payment_status === 'platita' || order.status !== 'noua' || !settings.stripe_pk || !env.STRIPE_SECRET_KEY) return back();
+    const ageMin = (Date.now() - Date.parse(String(order.created_at).replace(' ', 'T') + 'Z')) / 60000;
+    if (ageMin > 25) { // după 25 de minute plata nu mai pornește (vezi anularea automată de la 1 oră)
+      await (await import('./lib/orders.js')).cancelUnpaidCardOrder(env, order.id);
+      return back();
+    }
+    if (!isApi) {
+      const { paymentPage } = await import('./views/shop.js');
+      return htmlResponse(layout({ settings, siteUrl: siteUrl(env, request), title: 'Plată cu cardul', body: paymentPage({ order, settings }) }), 200,
+        { 'cache-control': 'no-store', 'x-robots-tag': 'noindex' });
+    }
+    try {
+      // o singură pagină de plată activă: închidem sesiunea anterioară (dacă tocmai a fost plătită, nu mai facem alta)
+      const { expireCheckoutSession } = await import('./lib/stripe.js');
+      if (order.stripe_session_id) { const { paid } = await expireCheckoutSession(env, order.stripe_session_id); if (paid) return back('?plata=ok'); }
+      const items = await getOrderItems(env, order.id);
+      const lines = items.map((i) => ({ qty: i.qty, total: i.total, product: { title: i.title } }));
+      const session = await createCheckoutSession(env, { order, lines, shipping: order.shipping, codFee: 0, siteUrl: siteUrl(env, request), embedded: true });
+      await updateOrder(env, order.id, { stripe_session_id: session.id });
+      return json({ clientSecret: session.client_secret });
+    } catch (e) {
+      await addOrderEvent(env, order.id, `Stripe: ${e.message}`);
+      return json({ error: 'Plata nu a putut porni. Încearcă din nou sau alege plata la livrare.' }, 502);
+    }
+  }
+
   if (method === 'GET' && (m = path.match(/^\/multumim\/([a-f0-9]{32})$/))) {
     const order = await env.DB.prepare('SELECT * FROM orders WHERE token = ?').bind(m[1]).first();
     if (!order) return notFound(env, request);
@@ -381,6 +415,7 @@ async function route(request, env, ctx) {
       await (await import('./lib/orders.js')).cancelUnpaidCardOrder(env, order.id);
       return redirect(`/multumim/${m[1]}`);
     }
+    if (settings.stripe_pk) return redirect(`/plata/${m[1]}`);
     const items = await getOrderItems(env, order.id);
     const lines = items.map((i) => ({ qty: i.qty, total: i.total, product: { title: i.title } }));
     const session = await createCheckoutSession(env, { order, lines, shipping: order.shipping, codFee: 0, siteUrl: siteUrl(env, request) });
@@ -480,6 +515,7 @@ async function placeOrder(request, env, ctx) {
 
   if (paymentMethod === 'card') {
     try {
+      if (settings.stripe_pk) return json({ redirect: `/plata/${created.token}` }); // formular de plată pe chimag.ro
       const order = await getOrder(env, created.id);
       const session = await createCheckoutSession(env, { order, lines: priced.lines, shipping: priced.shipping, codFee: 0, siteUrl: base });
       await updateOrder(env, created.id, { stripe_session_id: session.id });

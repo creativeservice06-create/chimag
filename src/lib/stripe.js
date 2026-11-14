@@ -12,7 +12,7 @@ function form(obj, prefix = '', out = new URLSearchParams()) {
   return out;
 }
 
-export async function createCheckoutSession(env, { order, lines, shipping, codFee, siteUrl }) {
+export async function createCheckoutSession(env, { order, lines, shipping, codFee, siteUrl, embedded = false }) {
   const line_items = {};
   let i = 0;
   if (order.coupon_discount > 0) {
@@ -43,8 +43,9 @@ export async function createCheckoutSession(env, { order, lines, shipping, codFe
   const body = form({
     mode: 'payment',
     locale: 'ro',
-    success_url: `${siteUrl}/multumim/${order.token}?plata=ok`,
-    cancel_url: `${siteUrl}/multumim/${order.token}?plata=anulata`,
+    ...(embedded
+      ? { ui_mode: 'embedded', return_url: `${siteUrl}/multumim/${order.token}?plata=ok` } // formularul stă pe chimag.ro
+      : { success_url: `${siteUrl}/multumim/${order.token}?plata=ok`, cancel_url: `${siteUrl}/multumim/${order.token}?plata=anulata` }),
     client_reference_id: order.number,
     expires_at: Math.floor(Date.now() / 1000) + 30 * 60 + 30, // minimul permis de Stripe (30 min); comanda neplătită se anulează după 1 oră
     customer_email: order.email || undefined,
@@ -60,7 +61,7 @@ export async function createCheckoutSession(env, { order, lines, shipping, codFe
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data?.error?.message || 'Eroare Stripe');
-  return data; // { id, url }
+  return data; // { id, url } sau, la embedded, { id, client_secret }
 }
 
 // Verifică semnătura webhook-ului: header "Stripe-Signature: t=...,v1=..."

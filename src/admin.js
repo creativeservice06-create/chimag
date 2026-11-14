@@ -628,6 +628,7 @@ export async function handleAdmin(request, env, ctx, path) {
     values.auto_awb_on_confirm = form.get('auto_awb_on_confirm') ? '1' : '0';
     values.helpship_send = form.get('helpship_send') === 'confirmed' ? 'confirmed' : 'placed';
     values.card_enabled = form.get('card_enabled') ? '1' : '0';
+    { const pk = String(form.get('stripe_pk') || '').trim(); values.stripe_pk = /^pk_(live|test)_[A-Za-z0-9]{10,200}$/.test(pk) ? pk : ''; }
     // facturare
     values.inv_enabled = form.get('inv_enabled') ? '1' : '0';
     values.inv_series = String(form.get('inv_series') || 'CHI').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8) || 'CHI';

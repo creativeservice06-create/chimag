@@ -783,6 +783,7 @@ export function settingsView({ settings: s, products, secrets, siteUrl, invNext 
     <section class="panel form-grid">
       <h2 class="span2">Plăți</h2>
       <label class="check span2"><input type="checkbox" name="card_enabled" value="1" ${s.card_enabled === '1' ? 'checked' : ''}> Activează plata cu cardul (Stripe)</label>
+      <label class="span2">Cheia publică Stripe (Publishable key, opțional)<input name="stripe_pk" value="${s.stripe_pk || ''}" placeholder="pk_live_..." autocomplete="off"><small class="muted">Cu ea, formularul de plată apare direct pe chimag.ro. Fără ea, clientul e trimis pe pagina Stripe. E o cheie publică, nu secretă.</small></label>
       <p class="hint span2">Stripe: cheie secretă ${ok(secrets.stripe)} · webhook ${ok(secrets.stripeWebhook)}. Webhook-ul se setează în Stripe la adresa <code>${siteUrl}/webhooks/stripe</code>, evenimentul <code>checkout.session.completed</code>.</p>
     </section>
     <section class="panel form-grid">

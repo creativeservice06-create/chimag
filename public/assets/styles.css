@@ -1689,3 +1689,15 @@ a.oi-link:hover .oi-name { color: var(--brand); }
 /* pagina de mulțumire: „Nu mai vreau, anulează comanda” discret, sub ramburs */
 .thanks-cancel { background: none; border: 0; padding: 8px 4px; font: inherit; font-size: .92rem; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .thanks-cancel:hover { color: #b42318; }
+
+/* Pagina de plată cu cardul (formular Stripe încorporat) */
+.pay-page { padding-top: 28px; padding-bottom: 48px; }
+.pay-head { margin-bottom: 18px; }
+.pay-head h1 { margin: 6px 0 6px; }
+.pay-head p { margin: 0; color: var(--muted); }
+.pay-back { color: var(--muted); text-decoration: none; font-size: .92rem; }
+.pay-back:hover { color: var(--ink); }
+.pay-box { border: 1px solid var(--line); border-radius: var(--radius-l); background: #fff; padding: 12px; min-height: 360px; }
+.pay-loading { margin: 0; padding: 40px 10px; text-align: center; color: var(--muted); }
+.pay-error { margin: 0; padding: 18px; color: #b42318; text-align: center; }
+.pay-secure { margin: 14px 0 0; text-align: center; color: var(--muted); font-size: .88rem; }

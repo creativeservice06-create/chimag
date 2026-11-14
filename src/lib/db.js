@@ -7,7 +7,7 @@ const DEFAULTS = {
   shipping_cost: '1999', free_shipping_threshold: '14900', cod_fee: '0',
   delivery_text: 'Livrare în 24–48h prin curier', return_days: '14', announcement: '',
   bump_product_id: '', bump_discount_pct: '20', fb_pixel_id: '', tiktok_pixel_id: '',
-  shipping_provider: 'test', auto_awb_on_confirm: '0', card_enabled: '0',
+  shipping_provider: 'test', auto_awb_on_confirm: '0', card_enabled: '0', stripe_pk: '',
   sender_name: '', sender_phone: '', sender_county: '', sender_city: '', sender_address: '',
   parcel_contents: 'Produse diverse',
   contact_email: '', notify_orders: '1', accounts_enabled: '1', customer_emails: '1', whatsapp: '', facebook_url: '', instagram_url: '', tiktok_url: '',

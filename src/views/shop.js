@@ -662,3 +662,21 @@ export function notFoundPage() {
 }
 
 export { pctOff, moneyNum };
+
+// Pagina de plată cu cardul pe chimag.ro: formularul Stripe (card, Apple Pay, Google Pay) încorporat în pagină
+export function paymentPage({ order, settings }) {
+  return html`<div class="wrap narrow pay-page">
+    <div class="pay-head">
+      <a class="pay-back" href="/multumim/${order.token}?plata=anulata">← Alte opțiuni de plată</a>
+      <h1>Plată cu cardul</h1>
+      <p>Comanda <strong>${order.number}</strong> · Total de plată <strong>${money(order.total)}</strong></p>
+    </div>
+    <div class="pay-box">
+      <div id="stripe-checkout" data-pk="${settings.stripe_pk}" data-token="${order.token}"><p class="pay-loading">Se încarcă formularul de plată securizat…</p></div>
+      <p class="pay-error" id="pay-error" hidden></p>
+    </div>
+    <p class="pay-secure">🔒 Plata e procesată securizat de Stripe. Datele cardului nu ajung la noi.</p>
+  </div>
+  <script src="https://js.stripe.com/v3/"></script>
+  <script src="/assets/pay.js?v=1" defer></script>`;
+}

@@ -15,6 +15,19 @@ function form(obj, prefix = '', out = new URLSearchParams()) {
 export async function createCheckoutSession(env, { order, lines, shipping, codFee, siteUrl, embedded = false }) {
   const line_items = {};
   let i = 0;
+  // poza produsului pe pagina de plată (Stripe acceptă adrese publice https)
+  const imgOf = new Map();
+  try {
+    const ids = [...new Set(lines.map((l) => Number(l.product?.id || l.product_id)).filter(Boolean))];
+    if (ids.length) {
+      const { results } = await env.DB.prepare(`SELECT id, images FROM products WHERE id IN (${ids.map(() => '?').join(',')})`).bind(...ids).all();
+      for (const r of results || []) {
+        let first = ''; try { first = JSON.parse(r.images || '[]')[0] || ''; } catch { /* fără poză */ }
+        if (first) imgOf.set(r.id, /^https:\/\//.test(first) ? first : `${siteUrl}${first.startsWith('/') ? '' : '/'}${first}`);
+      }
+    }
+  } catch { /* pozele sunt opționale */ }
+  const imagesFor = (l) => { const u = imgOf.get(Number(l.product?.id || l.product_id)); return u && u.startsWith('https://') ? [u] : undefined; };
   if (order.coupon_discount > 0) {
     // cu reducere de cupon: un singur rând cu totalul exact al comenzii
     line_items[0] = { quantity: 1, price_data: { currency: 'ron', unit_amount: order.total, product_data: { name: `Comanda ${order.number}` } } };
@@ -26,7 +39,7 @@ export async function createCheckoutSession(env, { order, lines, shipping, codFe
     const unit = Math.floor(l.total / l.qty);
     line_items[i++] = {
       quantity: l.qty,
-      price_data: { currency: 'ron', unit_amount: unit, product_data: { name: l.product.title } },
+      price_data: { currency: 'ron', unit_amount: unit, product_data: { name: l.product.title, images: imagesFor(l) } },
     };
   }
   // corecție de rotunjire (dacă total/qty nu e întreg)

@@ -216,7 +216,7 @@ async function route(request, env, ctx) {
       const { expireCheckoutSession } = await import('./lib/stripe.js');
       if (order.stripe_session_id) { const { paid } = await expireCheckoutSession(env, order.stripe_session_id); if (paid) return back('?plata=ok'); }
       const items = await getOrderItems(env, order.id);
-      const lines = items.map((i) => ({ qty: i.qty, total: i.total, product: { title: i.title } }));
+      const lines = items.map((i) => ({ qty: i.qty, total: i.total, product_id: i.product_id, product: { title: i.title } }));
       const session = await createCheckoutSession(env, { order, lines, shipping: order.shipping, codFee: 0, siteUrl: siteUrl(env, request), embedded: true });
       await updateOrder(env, order.id, { stripe_session_id: session.id });
       return json({ clientSecret: session.client_secret });
@@ -417,7 +417,7 @@ async function route(request, env, ctx) {
     }
     if (settings.stripe_pk && url.searchParams.get('pagina') !== 'stripe') return redirect(`/plata/${m[1]}`);
     const items = await getOrderItems(env, order.id);
-    const lines = items.map((i) => ({ qty: i.qty, total: i.total, product: { title: i.title } }));
+    const lines = items.map((i) => ({ qty: i.qty, total: i.total, product_id: i.product_id, product: { title: i.title } }));
     const session = await createCheckoutSession(env, { order, lines, shipping: order.shipping, codFee: 0, siteUrl: siteUrl(env, request) });
     await updateOrder(env, order.id, { stripe_session_id: session.id });
     return redirect(session.url);

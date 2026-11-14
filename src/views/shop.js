@@ -697,11 +697,11 @@ export function paymentPage({ order, settings, items = [], images = new Map() })
           <div id="stripe-checkout" data-pk="${settings.stripe_pk}" data-token="${order.token}" data-name="${order.customer_name}"><p class="pay-loading">Se încarcă formularul de plată securizat…</p></div>
           <p class="pay-error" id="pay-error" hidden></p>
         </div>
-        <form method="post" action="/api/comanda/${order.token}/plata?pagina=stripe" class="pay-alt"><span>Formularul nu se încarcă?</span> <button type="submit">Plătește pe pagina securizată Stripe</button></form>
-        <p class="pay-secure">🔒 Plată securizată prin Stripe</p>
+        <form method="post" action="/api/comanda/${order.token}/plata?pagina=stripe" class="pay-alt" hidden><span>Formularul nu se încarcă?</span> <button type="submit">Plătește pe pagina securizată Stripe</button></form>
+        <p class="pay-secure">${icons.lock(15)}<span>Plată securizată prin Stripe · Conexiune criptată</span></p>
       </div>
     </div>
   </div>
   <script src="https://js.stripe.com/endive/stripe.js"></script>
-  <script src="/assets/pay.js?v=7" defer></script>`;
+  <script src="/assets/pay.js?v=8" defer></script>`;
 }

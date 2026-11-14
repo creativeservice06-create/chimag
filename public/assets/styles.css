@@ -1753,3 +1753,7 @@ a.oi-link:hover .oi-name { color: var(--brand); }
   .pay-tot { margin-top: 22px; padding-top: 18px; gap: 10px; }
   .pay-tot .grand { margin-top: 6px; padding-top: 14px; font-size: 1.3rem; }
 }
+
+.pay-secure { display: flex; align-items: center; justify-content: center; gap: 6px; }
+.pay-secure svg { flex: none; color: #0f8a4a; }
+.pay-alt[hidden] { display: none; }

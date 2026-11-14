@@ -11,6 +11,7 @@
 
   function log(m) { try { navigator.sendBeacon('/api/comanda/' + token + '/jurnal', String(m).slice(0, 300)); } catch (e) { /* */ } }
   function fail(msg) {
+    var fa = document.querySelector('form.pay-alt'); if (fa) fa.hidden = false;
     box.innerHTML = ''; err.hidden = false; err.textContent = msg + ' ';
     var a = document.createElement('a'); a.href = '/cos'; a.textContent = 'Înapoi la comandă';
     err.appendChild(a);
@@ -71,6 +72,8 @@
     // dacă în 20 de secunde formularul nu e gata, trecem pe varianta de rezervă
     var ready = false;
     var timer = setTimeout(function () { if (!ready) embedded(); }, 20000);
+    // linkul spre pagina Stripe apare doar dacă formularul întârzie
+    setTimeout(function () { var f = document.querySelector('form.pay-alt'); if (f && !ready) f.hidden = false; }, 8000);
 
     var actions = null;
     var canConfirm = false;

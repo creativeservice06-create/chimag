@@ -374,9 +374,9 @@ async function route(request, env, ctx) {
       ctx.waitUntil(Promise.allSettled([sendServerPurchase(env, settings, updated, await getOrderItems(env, order.id), siteUrl(env, request)), notifyOrderPlaced(env, settings, updated)]));
       return redirect(`/multumim/${m[1]}`);
     }
-    // reîncercarea plății e permisă doar în primele 75 de minute (sesiunea mai ține 45), apoi comanda expiră
+    // reîncercarea plății e permisă doar în primele 25 de minute (sesiunea mai ține 30), apoi comanda expiră
     const ageMin = (Date.now() - Date.parse(String(order.created_at).replace(' ', 'T') + 'Z')) / 60000;
-    if (ageMin > 75) {
+    if (ageMin > 25) {
       await (await import('./lib/orders.js')).cancelUnpaidCardOrder(env, order.id);
       return redirect(`/multumim/${m[1]}`);
     }

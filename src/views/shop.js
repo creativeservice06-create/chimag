@@ -260,7 +260,7 @@ export function productPage({ settings, product: p, reviews, related = [], siteU
           ${outOfStock
             ? html`<p class="stock-out">Momentan nu mai avem în stoc. Revino în curând.</p>`
             : html`
-          <button type="submit" class="btn btn-primary btn-xl btn-block" data-buy-now>Comandă acum – plătești la livrare</button>
+          <button type="submit" class="btn btn-primary btn-xl btn-block" data-buy-now>Comandă acum</button>
           <button type="button" class="btn btn-ghost btn-block" data-add-to-cart>${icons.cart(20)} Adaugă în coș</button>`}
           ${lowStock ? html`<p class="stock-low">Au mai rămas ${p.stock} bucăți în stoc.</p>` : ''}
         </form>
@@ -677,7 +677,6 @@ export function paymentPage({ order, settings }) {
       <div id="stripe-checkout" data-pk="${settings.stripe_pk}" data-token="${order.token}"><p class="pay-loading">Se încarcă formularul de plată securizat…</p></div>
       <p class="pay-error" id="pay-error" hidden></p>
     </div>
-    <p class="pay-trust"><span>🚚 Livrare în 1–3 zile</span><span>↩️ Retur 14 zile</span><span>🧾 Factură pe email</span></p>
     <form method="post" action="/api/comanda/${order.token}/plata?pagina=stripe" class="pay-alt"><span>Formularul nu se încarcă?</span> <button type="submit">Plătește pe pagina securizată Stripe</button></form>
     <p class="pay-secure">🔒 Plata e procesată securizat de Stripe. Datele cardului nu ajung la noi.</p>
   </div>

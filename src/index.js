@@ -63,7 +63,7 @@ export default {
   },
 
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(Promise.allSettled([syncTracking(env), checkWheelUnlocks(env), syncHelpship(env), import('./lib/activity.js').then((m) => m.cleanupVisits(env)), import('./lib/orders.js').then((m) => m.cancelUnpaidCardOrders(env))])
+    ctx.waitUntil(Promise.allSettled([syncTracking(env), checkWheelUnlocks(env), syncHelpship(env), import('./lib/activity.js').then((m) => m.cleanupVisits(env)), import('./lib/orders.js').then((m) => m.cancelUnpaidCardOrders(env)), import('./lib/orders.js').then((m) => m.repairPaidDrafts(env, (env.SITE_URL || 'https://chimag.ro').replace(/\/$/, '')))])
       .then(async () => { const { syncInvoices } = await import('./lib/invoices.js'); await syncInvoices(env, await getSettings(env)); }));
   },
 };
@@ -244,6 +244,17 @@ async function route(request, env, ctx) {
           const its = await getOrderItems(env, order.id);
           ctx.waitUntil(Promise.allSettled([sendServerPurchase(env, settings, paidOrder, its, siteUrl(env, request)), notifyOrderPlaced(env, settings, paidOrder)]));
         }
+        order = await env.DB.prepare('SELECT * FROM orders WHERE token = ?').bind(m[1]).first();
+      }
+    }
+    // plătită, dar confirmarea Stripe tocmai primește numărul CHI-… în paralel: așteptăm o clipă să-l afișăm corect
+    if (order.payment_status === 'platita' && /^P-/.test(order.number)) {
+      for (let i = 0; i < 8 && /^P-/.test(order.number); i++) {
+        await new Promise((r) => setTimeout(r, 250));
+        order = await env.DB.prepare('SELECT * FROM orders WHERE token = ?').bind(m[1]).first();
+      }
+      if (/^P-/.test(order.number)) { // tot provizoriu după 2 secunde: reparăm noi
+        await (await import('./lib/orders.js')).repairPaidDrafts(env, siteUrl(env, request), order.id);
         order = await env.DB.prepare('SELECT * FROM orders WHERE token = ?').bind(m[1]).first();
       }
     }

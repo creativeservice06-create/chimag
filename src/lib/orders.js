@@ -183,12 +183,21 @@ export const isDraftNumber = (n) => /^P-/.test(String(n || ''));
 // ciorna devine comandă adevărată: primește numărul CHI-… și codul de reducere se socotește folosit
 export async function finalizeDraft(env, order) {
   if (!order || !isDraftNumber(order.number)) return order;
-  const number = await nextOrderNumber(env);
-  const r = await env.DB.prepare('UPDATE orders SET number = ? WHERE id = ? AND number = ?').bind(number, order.id, order.number).run();
-  if (!r.meta?.changes) return getOrder(env, order.id); // altcineva a finalizat-o deja
+  let number = '';
+  let r = null;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    number = await nextOrderNumber(env);
+    try { r = await env.DB.prepare('UPDATE orders SET number = ? WHERE id = ? AND number = ?').bind(number, order.id, order.number).run(); break; }
+    catch (e) { // numărul e deja folosit (contor rămas în urmă): îl luăm pe următorul
+      if (!/UNIQUE/i.test(String(e?.message || e)) || attempt === 4) throw e;
+    }
+  }
+  if (!r?.meta?.changes) return getOrder(env, order.id); // altcineva a finalizat-o deja
   if (order.coupon_code) await env.DB.prepare('UPDATE coupons SET used_count = used_count + 1 WHERE code = ?').bind(order.coupon_code).run();
   await addOrderEvent(env, order.id, `Numărul comenzii: ${number}`);
-  return getOrder(env, order.id);
+  const fin = await getOrder(env, order.id);
+  if (fin) fin.finalizedNow = true;
+  return fin;
 }
 
 // Clientul s-a întors din pagina de plată la coș/formular: ciorna dispare ca și cum n-ar fi existat.
@@ -226,7 +235,8 @@ export async function markPaid(env, orderId, sessionId) {
   if (!order || order.payment_status === 'platita') return order;
   const claim = await env.DB.prepare("UPDATE orders SET payment_status = 'platita' WHERE id = ? AND payment_status != 'platita'").bind(orderId).run();
   if (!claim.meta?.changes) return getOrder(env, orderId);
-  await finalizeDraft(env, order);
+  try { await finalizeDraft(env, order); }
+  catch (e) { await addOrderEvent(env, orderId, `Numărul comenzii nu a putut fi atribuit acum: ${String(e?.message || e).slice(0, 200)}`).catch(() => {}); }
   // plasă de siguranță: dacă plata ajunge după ce comanda neplătită a fost anulată (caz foarte rar),
   // comanda se reactivează și stocul se scade din nou — clientul a plătit, deci comanda trebuie onorată
   const wasCancelled = order.status === 'anulata';
@@ -284,4 +294,30 @@ export async function cancelUnpaidCardOrders(env) {
   const { results } = await env.DB.prepare(`SELECT id FROM orders WHERE payment_method = 'card' AND payment_status != 'platita'
     AND status = 'noua' AND hs_order_id = '' AND created_at < datetime('now', '-60 minutes') LIMIT 50`).all();
   for (const { id } of results || []) await cancelUnpaidCardOrder(env, id);
+}
+
+// Plasă de siguranță: o comandă plătită care a rămas cu număr provizoriu (P-…) primește numărul CHI-…,
+// apoi pleacă emailurile, evenimentul de cumpărare și trimiterea la Helpship (ca după o plată normală).
+export async function repairPaidDrafts(env, siteUrl, onlyId = 0) {
+  const { results } = await env.DB.prepare(`SELECT id FROM orders WHERE payment_status = 'platita' AND number LIKE 'P-%' ${onlyId ? 'AND id = ?' : ''} LIMIT 10`)
+    .bind(...(onlyId ? [onlyId] : [])).all();
+  for (const { id } of results || []) {
+    try {
+      const order = await finalizeDraft(env, await getOrder(env, id));
+      if (!order || !order.finalizedNow) continue; // altcineva a terminat-o între timp (și a trimis el emailurile)
+      await addOrderEvent(env, id, 'Comanda plătită a primit numărul definitiv (reparare automată).');
+      const { getSettings } = await import('./db.js');
+      const settings = await getSettings(env);
+      const items = await getOrderItems(env, id);
+      const { notifyOrderPlaced } = await import('./notify.js');
+      const { sendServerPurchase } = await import('./tracking.js');
+      await Promise.allSettled([
+        notifyOrderPlaced(env, settings, order),
+        sendServerPurchase(env, settings, order, items, siteUrl),
+        order.fulfillment_mode !== 'own' && settings.helpship_send !== 'confirmed' ? import('./helpship.js').then((h) => h.sendToHelpship(env, settings, id)) : null,
+      ]);
+    } catch (e) {
+      await addOrderEvent(env, id, `Reparare număr eșuată: ${String(e?.message || e).slice(0, 200)}`).catch(() => {});
+    }
+  }
 }

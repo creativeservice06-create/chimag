@@ -368,6 +368,23 @@
       } else dd.textContent = 'Primești între ' + f.format(addBiz(now, 1)) + ' și ' + f.format(addBiz(now, 3));
     }
 
+    // prețul mare urmează oferta bifată (ex. 3 bucăți: 99 lei, cu 147 lei tăiat)
+    var pblock = $('.price-block');
+    if (pblock && $('input[name=qty][data-total]', form)) {
+      var pOrig = pblock.innerHTML;
+      var syncPrice = function () {
+        var r = $('input[name=qty]:checked', form);
+        var q = r ? Number(r.value) || 1 : 1;
+        if (q === 1) { pblock.innerHTML = pOrig; return; }
+        var net = Number(r.getAttribute('data-total')) || price * q, gross = price * q;
+        pblock.innerHTML = '<div class="price-now" data-price-now>' + money(net) + '</div>' +
+          (net < gross ? '<div class="price-was"><s>' + money(gross) + '</s></div><div class="price-save">Economisești ' + money(gross - net) + '</div>' : '') +
+          '<div class="price-per">' + q + ' bucăți · ' + money(Math.round(net / q)).replace(',00', '') + ' / bucată</div>';
+      };
+      $$('input[name=qty]', form).forEach(function (r) { r.addEventListener('change', syncPrice); });
+      syncPrice();
+    }
+
     // Bara „Comandă acum" lipită jos pe mobil, când butonul principal nu se vede
     var sticky = $('[data-sticky-buy]');
     var buyBtn = $('[data-buy-now]');

@@ -372,7 +372,7 @@ export function productPage({ settings, product: p, reviews, related = [], siteU
   </section>` : ''}
 
   ${outOfStock ? '' : html`<div class="sticky-buy" data-sticky-buy>
-    <a href="${bundles.length > 1 ? '#oferte' : '#cumpara'}" class="btn btn-primary">Comandă acum</a>
+    <a href="${bundles.length > 1 ? '#oferte' : '#cumpara'}" class="btn btn-primary">${bundles.length > 1 ? 'Alege oferta' : 'Comandă acum'}</a>
   </div>`}`;
 }
 

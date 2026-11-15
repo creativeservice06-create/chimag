@@ -196,6 +196,8 @@ p { margin: 0 0 1em; }
 .bundle-main { display: grid; flex: 1; }
 .bundle-save { color: var(--saffron-ink); font-weight: 700; font-size: .9rem; }
 .bundle-each { color: var(--muted); font-size: .9rem; }
+.bundle-unit { color: var(--ink); font-weight: 600; font-size: .9rem; white-space: nowrap; }
+.bundle-unit + .bundle-save { font-size: .84rem; }
 .bundle-price { display: grid; text-align: right; }
 .bundle-price strong { font: 700 1.15rem/1.1 var(--font-display); }
 .bundle-flag { position: absolute; top: -11px; right: 14px; background: var(--brand); color: #fff; font-size: .75rem; font-weight: 700; border-radius: 999px; padding: 3px 10px; }

@@ -241,7 +241,7 @@ export function productPage({ settings, product: p, reviews, related = [], siteU
                 <input type="radio" name="qty" value="${b.qty}" ${i === 0 ? 'checked' : ''} data-total="${net}">
                 <span class="bundle-main">
                   <strong>${b.qty} ${b.qty === 1 ? 'bucată' : 'bucăți'}</strong>
-                  ${Number(b.pct) > 0 ? html`<span class="bundle-save">−${fmtPct(b.pct)}% la total</span>` : html`<span class="bundle-each">preț standard</span>`}
+                  ${net < gross ? html`<span class="bundle-unit">${money(Math.round(net / b.qty)).replace(',00', '')} / bucată</span><span class="bundle-save">Economisești ${money(gross - net).replace(',00', '')}</span>` : html`<span class="bundle-each">preț standard</span>`}
                 </span>
                 <span class="bundle-price"><strong>${money(net)}</strong>${net < gross ? html`<s>${money(gross)}</s>` : ''}</span>
                 ${b.label ? html`<span class="bundle-flag">${b.label}</span>` : ''}

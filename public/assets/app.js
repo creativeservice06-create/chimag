@@ -380,6 +380,21 @@
       }).observe(buyBtn);
     }
 
+    // bara de jos arată prețul ofertei alese (ex. 3 bucăți = 99 lei), nu mereu prețul pentru 1 bucată
+    var sPrice = $('[data-sticky-price]'), sWas = $('[data-sticky-was]'), sSub = $('[data-sticky-sub]');
+    var syncSticky = function () {
+      var r = $('input[name=qty]:checked', form);
+      if (!sPrice || !r) return;
+      var q = Number(r.value) || 1, net = Number(r.getAttribute('data-total')) || price * q, gross = price * q;
+      sPrice.textContent = money(net);
+      if (sWas && q > 1) { sWas.hidden = !(net < gross); sWas.textContent = net < gross ? money(gross) : ''; }
+      if (sSub) sSub.textContent = q > 1 ? q + ' bucăți · ' + money(Math.round(net / q)).replace(',00', '') + '/buc.' : sSub.getAttribute('data-best');
+      if (sWas && q === 1) { var o = sWas.getAttribute('data-orig'); sWas.hidden = !o; sWas.textContent = o || ''; }
+    };
+    if (sWas && !sWas.hidden) sWas.setAttribute('data-orig', sWas.textContent);
+    $$('input[name=qty]', form).forEach(function (r) { r.addEventListener('change', syncSticky); });
+    syncSticky();
+
     if (PAGE.product) track('ViewContent', { value: PAGE.product.price / 100, contents: [{ id: String(PAGE.product.id), quantity: 1, price: PAGE.product.price / 100, name: PAGE.product.title }] });
   })();
 

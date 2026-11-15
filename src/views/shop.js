@@ -679,17 +679,17 @@ export function paymentPage({ order, settings, items = [], images = new Map() })
         <ul class="pay-items">
           ${items.map((i) => { const im = (images.get(i.product_id) || {}).img; return html`<li>
             <span class="pay-thumb">${im ? html`<img src="${im}" alt="" width="96" height="96" loading="lazy">` : ''}<b>${i.qty}</b></span>
-            <span class="pay-it"><strong>${i.title}</strong><small>${i.qty} × ${money(i.unit_price)}</small></span>
+            <span class="pay-it"><strong>${i.title}</strong><small>${i.qty} × ${money(Math.round(i.total / i.qty))}</small></span>
             <span class="pay-pr">${i.total < i.unit_price * i.qty ? html`<s>${money(i.unit_price * i.qty)}</s>` : ''}${money(i.total)}</span>
           </li>`; })}
         </ul>
         <dl class="pay-tot">
-          <div><dt>Produse</dt><dd>${money(items.reduce((n, i) => n + i.unit_price * i.qty, 0))}</dd></div>
-          ${lineDiscounts > 0 ? html`<div class="save"><dt>Reducere pachet</dt><dd>−${money(lineDiscounts)}</dd></div>` : ''}
+          <div><dt>Produse</dt><dd>${money(items.reduce((n, i) => n + i.total, 0))}</dd></div>
           ${order.coupon_discount > 0 ? html`<div class="save"><dt>Cod ${order.coupon_code}</dt><dd>−${money(order.coupon_discount)}</dd></div>` : ''}
           <div><dt>Transport</dt><dd>${order.shipping ? money(order.shipping) : html`<b class="free">Gratuit</b>`}</dd></div>
           <div class="grand"><dt>Total</dt><dd>${money(order.total)}</dd></div>
         </dl>
+        ${lineDiscounts + (order.coupon_discount || 0) > 0 ? html`<p class="oi-saved">Ai economisit ${money(lineDiscounts + (order.coupon_discount || 0))} la această comandă</p>` : ''}
       </aside>` : ''}
       <div class="pay-main">
         <div class="pay-box">

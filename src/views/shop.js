@@ -219,16 +219,16 @@ export function productPage({ settings, product: p, reviews, related = [], siteU
         ${p.subtitle ? html`<p class="pdp-sub">${p.subtitle}</p>` : ''}
         ${reviews.length ? html`<a href="#recenzii" class="rating-link">${stars(avg)} <span>${avg.toFixed(1)} · ${reviews.length} ${reviews.length === 1 ? 'recenzie' : 'recenzii'}</span></a>` : ''}
 
+        ${shipNote ? html`<p class="ship-note">${icons.truck(18)}<span>${raw(shipNote)}</span></p>` : ''}
+
+        ${p.benefits.length ? html`<ul class="benefits">${p.benefits.slice(0, 4).map((b) => html`<li>${icons.check(18)}<span>${b}</span></li>`)}</ul>` : ''}
+
         <div class="price-block">
           <div class="price-now" data-price-now>${money(p.price)}</div>
           ${p.compare_at_price > p.price ? html`
             <div class="price-was"><s>${money(p.compare_at_price)}</s></div>
             <div class="price-save">Economisești ${money(p.compare_at_price - p.price)}</div>` : ''}
         </div>
-
-        ${shipNote ? html`<p class="ship-note">${icons.truck(18)}<span>${raw(shipNote)}</span></p>` : ''}
-
-        ${p.benefits.length ? html`<ul class="benefits">${p.benefits.slice(0, 4).map((b) => html`<li>${icons.check(18)}<span>${b}</span></li>`)}</ul>` : ''}
 
         <form class="buy-form" data-buy-form data-product-id="${p.id}" data-product-price="${p.price}" data-product-title="${p.title}">
           ${bundles.length > 1 ? html`

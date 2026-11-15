@@ -598,17 +598,17 @@ export function thankYouPage({ settings, order, items, payment, byClient = false
       <ul class="order-items">${items.map((i) => {
         const p = products.get(i.product_id) || {};
         const inner = html`<span class="oi-img">${p.img ? html`<img src="${p.img}" alt="" width="56" height="56" loading="lazy">` : ''}</span>
-          <span class="oi-name">${i.title}<small>${i.qty} buc. × ${money(i.unit_price)}</small></span>`;
-        return html`<li>${p.slug ? html`<a class="oi-link" href="/p/${p.slug}">${inner}</a>` : html`<span class="oi-link">${inner}</span>`}<strong>${money(i.total)}</strong></li>`;
+          <span class="oi-name">${i.title}<small>${i.qty} buc. × ${money(Math.round(i.total / i.qty))}</small></span>`;
+        return html`<li>${p.slug ? html`<a class="oi-link" href="/p/${p.slug}">${inner}</a>` : html`<span class="oi-link">${inner}</span>`}<strong>${money(i.total)}${i.total < i.unit_price * i.qty ? html`<s class="oi-was">${money(i.unit_price * i.qty)}</s>` : ''}</strong></li>`;
       })}</ul>
       <dl class="totals">
-        <div><dt>Subtotal</dt><dd>${money(order.subtotal)}</dd></div>
-        ${order.discount ? html`<div class="save"><dt>Reducere pachet</dt><dd>−${money(order.discount)}</dd></div>` : ''}
+        <div><dt>Produse</dt><dd>${money(order.subtotal - (order.discount || 0))}</dd></div>
         ${order.coupon_discount ? html`<div class="save"><dt>Cod ${order.coupon_code}</dt><dd>−${money(order.coupon_discount)}</dd></div>` : ''}
         <div><dt>Transport</dt><dd>${order.shipping ? money(order.shipping) : 'Gratuit'}</dd></div>
         ${order.cod_fee ? html`<div><dt>Taxă ramburs</dt><dd>${money(order.cod_fee)}</dd></div>` : ''}
         <div class="grand"><dt>${isCard && paid ? 'Total plătit' : order.status === 'livrata' ? 'Total plătit la livrare' : ['anulata', 'refuzata', 'retur'].includes(order.status) ? 'Total comandă' : 'Total de plată la livrare'}</dt><dd>${money(order.total)}</dd></div>
       </dl>
+      ${(order.discount || 0) + (order.coupon_discount || 0) > 0 ? html`<p class="oi-saved">Ai economisit ${money((order.discount || 0) + (order.coupon_discount || 0))} la această comandă</p>` : ''}
     </section>
 
     <section class="card">

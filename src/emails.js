@@ -58,8 +58,8 @@ function itemsTable(base, items, images, admin = false) {
     const linkClose = href ? '</a>' : '';
     return `<tr>
       <td width="72" class="m-img" style="padding:10px 0;border-bottom:1px solid ${C.line};vertical-align:top;">${img ? `${linkOpen}<img src="${esc(img)}" width="64" height="64" alt="${esc(i.title)}" style="display:block;width:64px;height:64px;object-fit:cover;border-radius:10px;background:${C.bg};border:1px solid ${C.line};">${linkClose}` : ''}</td>
-      <td class="m-name" style="padding:10px 12px;border-bottom:1px solid ${C.line};font-size:15px;line-height:1.4;vertical-align:top;">${linkOpen}${esc(i.title)}${linkClose}<br><span style="color:${C.muted};font-size:13px;">${i.qty} buc. × ${money(i.unit_price)}${admin && i.fulfillment === 'helpship' ? ' · <span style="color:#8a5a00;font-weight:700;">Helpship</span>' : ''}</span></td>
-      <td align="right" class="m-price" style="padding:10px 0;border-bottom:1px solid ${C.line};font-size:15px;font-weight:700;white-space:nowrap;vertical-align:top;">${money(i.total)}</td>
+      <td class="m-name" style="padding:10px 12px;border-bottom:1px solid ${C.line};font-size:15px;line-height:1.4;vertical-align:top;">${linkOpen}${esc(i.title)}${linkClose}<br><span style="color:${C.muted};font-size:13px;">${i.qty} buc. × ${money(Math.round(i.total / i.qty))}${admin && i.fulfillment === 'helpship' ? ' · <span style="color:#8a5a00;font-weight:700;">Helpship</span>' : ''}</span></td>
+      <td align="right" class="m-price" style="padding:10px 0;border-bottom:1px solid ${C.line};font-size:15px;font-weight:700;white-space:nowrap;vertical-align:top;">${money(i.total)}${i.total < i.unit_price * i.qty ? `<br><s style="color:${C.muted};font-size:12px;font-weight:400;">${money(i.unit_price * i.qty)}</s>` : ''}</td>
     </tr>`;
   }).join('');
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="${FONT}">${rows}</table>`;
@@ -68,13 +68,13 @@ function itemsTable(base, items, images, admin = false) {
 function totalsTable(o) {
   const row = (label, value, strong) => `<tr><td style="padding:4px 0;font-size:${strong ? 17 : 14}px;color:${strong ? C.ink : C.muted};${strong ? 'font-weight:800;' : ''}">${label}</td><td align="right" style="padding:4px 0;font-size:${strong ? 18 : 14}px;${strong ? 'font-weight:800;' : ''}white-space:nowrap;">${value}</td></tr>`;
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:12px;${FONT}">
-    ${row('Subtotal', money(o.subtotal))}
-    ${o.discount ? row('Reducere pachet', '−' + money(o.discount)) : ''}
+    ${row('Produse', money(o.subtotal - (o.discount || 0)))}
     ${o.coupon_discount ? row(`Cod ${esc(o.coupon_code)}`, '−' + money(o.coupon_discount)) : ''}
     ${row('Transport', o.shipping ? money(o.shipping) : 'Gratuit')}
     ${o.cod_fee ? row('Taxă ramburs', money(o.cod_fee)) : ''}
     <tr><td colspan="2" style="border-top:1px solid ${C.line};padding-top:6px"></td></tr>
     ${row(o.payment_method === 'card' && o.payment_status === 'platita' ? 'Total plătit' : o.status === 'livrata' ? 'Total plătit la livrare' : ['anulata', 'refuzata', 'retur'].includes(o.status) ? 'Total comandă' : 'Total de plată la livrare', money(o.total), true)}
+    ${(o.discount || 0) + (o.coupon_discount || 0) > 0 ? `<tr><td colspan="2" align="center" style="padding:10px 0 0;font-size:14px;font-weight:700;color:#0f8a4a;">Ai economisit ${money((o.discount || 0) + (o.coupon_discount || 0))} la această comandă</td></tr>` : ''}
   </table>`;
 }
 

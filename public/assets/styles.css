@@ -1765,3 +1765,7 @@ button, a, input, select, label, summary, .qty, .qty-pill, .cart-items { touch-a
 
 .cart-unit { display: grid; gap: 1px; }
 .cart-unit .line-save { font-weight: 600; }
+
+.order-items strong { display: grid; justify-items: end; }
+.oi-was { font-weight: 400; font-size: .82rem; color: var(--muted); }
+.oi-saved { margin: 12px 0 0; text-align: center; font-weight: 700; color: #0f8a4a; }

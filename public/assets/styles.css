@@ -1762,3 +1762,6 @@ a.oi-link:hover .oi-name { color: var(--brand); }
 
 /* fără zoom la apăsări rapide repetate (ex. +/− în coș) pe telefon; zoom-ul cu două degete rămâne */
 button, a, input, select, label, summary, .qty, .qty-pill, .cart-items { touch-action: manipulation; }
+
+.cart-unit { display: grid; gap: 1px; }
+.cart-unit .line-save { font-weight: 600; }

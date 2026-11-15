@@ -474,16 +474,18 @@
         linesEl.innerHTML = (p.errors.length ? '<p class="form-error">' + p.errors.map(esc).join('<br>') + '</p>' : '') +
           '<ul class="cart-items">' + p.lines.map(function (l) {
             var gross = l.unitPrice * l.qty;
+            var lei = function (v) { return money(v).replace(',00', ''); };
+            var nextNet = function (ln) { return Math.round(ln.unitPrice * ln.nextTier.qty * (1 - ln.nextTier.pct / 100)); };
             var ctrl = l.isBump ? '<span class="cart-bump-tag">Ofertă la comandă</span>' :
               '<div class="qty qty-pill" data-line="' + l.id + '"><button type="button" data-d="-1" aria-label="Scade cantitatea">−</button><input value="' + l.qty + '" readonly aria-label="Cantitate"><button type="button" data-d="1" aria-label="Crește cantitatea">+</button></div>';
             return '<li class="cart-item"><a class="cart-thumb" href="/p/' + esc(l.slug) + '"><img src="' + esc(l.image) + '" alt="" width="88" height="88"></a>' +
               '<div class="cart-info"><h3><a href="/p/' + esc(l.slug) + '">' + esc(l.title) + '</a></h3>' +
               ((p.split || {}).mode === 'mixt' ? '<span class="parcel-tag">' + (l.parcel === 'helpship' ? 'Coletul 1' : 'Coletul 2') + '</span>' : '') +
-              '<p class="cart-unit">' + money(l.unitPrice) + ' / buc.' + (l.pct && !l.isBump ? ' · <span class="line-save">economisești ' + money(gross - l.total) + '</span>' : '') + '</p>' +
+              '<p class="cart-unit"><span>' + lei(Math.round(l.total / l.qty)) + ' / bucată</span>' + (l.pct && !l.isBump && gross > l.total ? '<span class="line-save">Economisești ' + lei(gross - l.total) + '</span>' : '') + '</p>' +
               '<div class="cart-row">' + ctrl + '<div class="cart-price"><strong>' + money(l.total) + '</strong>' + (l.total < gross ? '<s>' + money(gross) + '</s>' : '') + '</div></div>' +
               '</div>' +
               (l.isBump ? '' : '<button type="button" class="cart-x" data-remove="' + l.id + '" aria-label="Șterge ' + esc(l.title) + '">' + x + '</button>') +
-              (l.nextTier ? '<button type="button" class="tier-hint" data-tier="' + l.id + ':' + l.nextTier.qty + '"><span class="tier-text">Mai adaugă ' + l.nextTier.add + ' și ai <strong>−' + fmtPct(l.nextTier.pct) + '%</strong><small>' + money(l.nextTier.unit) + ' / buc. la toate</small></span><span class="tier-add">+ Adaugă</span></button>' : '') + '</li>';
+              (l.nextTier ? '<button type="button" class="tier-hint" data-tier="' + l.id + ':' + l.nextTier.qty + '"><span class="tier-text"><strong>' + l.nextTier.qty + ' buc. × ' + lei(Math.round(nextNet(l) / l.nextTier.qty)) + '</strong><small>Economisești ' + lei(l.unitPrice * l.nextTier.qty - nextNet(l)) + '</small></span><span class="tier-add">+ Adaugă</span></button>' : '') + '</li>';
           }).join('') + '</ul>';
         if (freeEl) freeEl.innerHTML = freeBar(p);
         totalsEl.innerHTML = totalsHtml(p);

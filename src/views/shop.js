@@ -187,11 +187,6 @@ export function productPage({ settings, product: p, reviews, related = [], siteU
   const off = pctOff(p);
   const avg = reviews.length ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : 0;
   const bundles = (p.bundles || []).filter((b) => Number(b.qty) >= 1).sort((a, b) => a.qty - b.qty);
-  // cel mai mic preț pe bucată dintr-un pachet (ex. 33 lei/buc. la 3 bucăți) – ca să se vadă și sus, lângă prețul principal
-  const lei = (v) => money(v).replace(',00', '');
-  const best = bundles.length > 1 ? bundles.filter((b) => b.qty > 1 && Number(b.pct) > 0)
-    .map((b) => ({ qty: b.qty, unit: Math.round(Math.round(p.price * b.qty * (1 - Number(b.pct) / 100)) / b.qty) }))
-    .sort((a, b) => a.unit - b.unit)[0] : null;
   const lowStock = p.track_stock && p.stock > 0 && p.stock <= 10;
   const outOfStock = p.track_stock && p.stock <= 0;
   const threshold = Number(settings.free_shipping_threshold) || 0;
@@ -230,7 +225,6 @@ export function productPage({ settings, product: p, reviews, related = [], siteU
             <div class="price-was"><s>${money(p.compare_at_price)}</s></div>
             <div class="price-save">Economisești ${money(p.compare_at_price - p.price)}</div>` : ''}
         </div>
-        ${best && !outOfStock ? html`<a href="#oferte" class="price-tease">sau doar <strong>${lei(best.unit)}/buc.</strong> la ${best.qty} bucăți <span aria-hidden="true">↓</span></a>` : ''}
 
         ${shipNote ? html`<p class="ship-note">${icons.truck(18)}<span>${raw(shipNote)}</span></p>` : ''}
 
@@ -378,7 +372,7 @@ export function productPage({ settings, product: p, reviews, related = [], siteU
   </section>` : ''}
 
   ${outOfStock ? '' : html`<div class="sticky-buy" data-sticky-buy>
-    <div class="sticky-info"><span class="sticky-line"><strong data-sticky-price>${money(p.price)}</strong><s data-sticky-was ${p.compare_at_price > p.price ? '' : 'hidden'}>${p.compare_at_price > p.price ? money(p.compare_at_price) : ''}</s></span>${best ? html`<small data-sticky-sub data-best="de la ${lei(best.unit)}/buc.">de la ${lei(best.unit)}/buc.</small>` : ''}</div>
+    <div class="sticky-info"><strong>${money(p.price)}</strong>${p.compare_at_price > p.price ? html`<s>${money(p.compare_at_price)}</s>` : ''}</div>
     <a href="${bundles.length > 1 ? '#oferte' : '#cumpara'}" class="btn btn-primary">Comandă acum</a>
   </div>`}`;
 }

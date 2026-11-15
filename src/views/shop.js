@@ -372,7 +372,6 @@ export function productPage({ settings, product: p, reviews, related = [], siteU
   </section>` : ''}
 
   ${outOfStock ? '' : html`<div class="sticky-buy" data-sticky-buy>
-    <div class="sticky-info"><strong>${money(p.price)}</strong>${p.compare_at_price > p.price ? html`<s>${money(p.compare_at_price)}</s>` : ''}</div>
     <a href="${bundles.length > 1 ? '#oferte' : '#cumpara'}" class="btn btn-primary">Comandă acum</a>
   </div>`}`;
 }

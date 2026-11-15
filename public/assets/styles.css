@@ -252,7 +252,8 @@ p { margin: 0 0 1em; }
   .sticky-buy.show { transform: none; }
   .sticky-info { display: flex; align-items: baseline; gap: 8px; }
   .sticky-info strong { font: 800 1.3rem/1 var(--font-display); }
-  .sticky-buy .btn { flex: 1; max-width: 220px; white-space: nowrap; }
+  .sticky-buy { justify-content: center; }
+  .sticky-buy .btn { flex: 1; max-width: 420px; min-height: 54px; font-size: 1.12rem; white-space: nowrap; }
   body.pdp-page.sticky-on .site-footer { padding-bottom: 72px; }
 }
 

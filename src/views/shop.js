@@ -219,10 +219,6 @@ export function productPage({ settings, product: p, reviews, related = [], siteU
         ${p.subtitle ? html`<p class="pdp-sub">${p.subtitle}</p>` : ''}
         ${reviews.length ? html`<a href="#recenzii" class="rating-link">${stars(avg)} <span>${avg.toFixed(1)} · ${reviews.length} ${reviews.length === 1 ? 'recenzie' : 'recenzii'}</span></a>` : ''}
 
-        ${shipNote ? html`<p class="ship-note">${icons.truck(18)}<span>${raw(shipNote)}</span></p>` : ''}
-
-        ${p.benefits.length ? html`<ul class="benefits">${p.benefits.slice(0, 4).map((b) => html`<li>${icons.check(18)}<span>${b}</span></li>`)}</ul>` : ''}
-
         <div class="price-block">
           <div class="price-now" data-price-now>${money(p.price)}</div>
           ${p.compare_at_price > p.price ? html`
@@ -265,6 +261,10 @@ export function productPage({ settings, product: p, reviews, related = [], siteU
           <button type="button" class="btn btn-ghost btn-block" data-add-to-cart>${icons.cart(20)} Adaugă în coș</button>`}
           ${lowStock ? html`<p class="stock-low">Au mai rămas ${p.stock} bucăți în stoc.</p>` : ''}
         </form>
+
+        ${shipNote && threshold && p.price >= threshold ? html`<p class="ship-note">${icons.truck(18)}<span>${raw(shipNote)}</span></p>` : ''}
+
+        ${p.benefits.length ? html`<ul class="benefits">${p.benefits.slice(0, 4).map((b) => html`<li>${icons.check(18)}<span>${b}</span></li>`)}</ul>` : ''}
 
         <ul class="assurance">
           <li>${icons.truck(22)}<strong>Livrare rapidă</strong><small>Ajunge în 1–3 zile</small></li>

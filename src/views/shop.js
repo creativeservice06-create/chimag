@@ -229,6 +229,7 @@ export function productPage({ settings, product: p, reviews, related = [], siteU
             <div class="price-was"><s>${money(p.compare_at_price)}</s></div>
             <div class="price-save">Economisești ${money(p.compare_at_price - p.price)}</div>` : ''}
         </div>
+        ${Number(settings.shipping_cost) > 0 && !(threshold && p.price >= threshold) ? html`<p class="price-ship">+ livrare ${money(Number(settings.shipping_cost))}${threshold ? html` · <span>gratuită peste ${money(threshold).replace(',00', '')}</span>` : ''}</p>` : ''}
 
         <form class="buy-form" data-buy-form data-product-id="${p.id}" data-product-price="${p.price}" data-product-title="${p.title}">
           ${bundles.length > 1 ? html`

@@ -33,7 +33,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0, msgCount
 <title>${title} · Admin Chimag</title>
 <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/admin.css?v=30">
+<link rel="stylesheet" href="/assets/admin.css?v=32">
 <meta name="theme-color" content="#0e192a">
 <script src="/assets/admin.js?v=2" defer></script>
 </head><body>
@@ -73,7 +73,7 @@ export function adminLayout({ title, active, body, flash, newCount = 0, msgCount
 
 export function loginView(error) {
   return html`<html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex"><title>Autentificare · Admin</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/assets/admin.css?v=30"></head>
+<meta name="robots" content="noindex"><title>Autentificare · Admin</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/assets/admin.css?v=32"></head>
 <body class="login-body"><form class="login" method="post" action="/admin/login">
   <div class="brand">${logoMark()}<span>chimag</span></div>
   <h1>Administrare</h1>
@@ -302,15 +302,16 @@ export function dashboardView(d) {
   </section>`;
 }
 
-function ordersTable(orders, selectable = true) {
+function ordersTable(orders, selectable = true, itemsBy = null, product = 0) {
   if (!orders.length) return html`<p class="muted">Nicio comandă aici.</p>`;
   return html`<div class="tbl-wrap"><table class="tbl orders">
-    <thead><tr>${selectable ? html`<th><input type="checkbox" data-check-all aria-label="Selectează tot"></th>` : ''}<th>Comandă</th><th>Data</th><th>Client</th><th>Localitate</th><th class="r">Total</th><th>Plată</th><th>Status</th><th>AWB</th></tr></thead>
+    <thead><tr>${selectable ? html`<th><input type="checkbox" data-check-all aria-label="Selectează tot"></th>` : ''}<th>Comandă</th><th>Data</th><th>Client</th>${itemsBy ? html`<th>Produse</th>` : ''}<th>Localitate</th><th class="r">Total</th><th>Plată</th><th>Status</th><th>AWB</th></tr></thead>
     <tbody>${orders.map((o) => html`<tr>
       ${selectable ? html`<td><input type="checkbox" name="ids" value="${o.id}" form="bulk" aria-label="Selectează ${o.number}"></td>` : ''}
       <td><a href="/admin/comenzi/${o.id}"><b>${o.number}</b></a>${o.fulfillment_mode !== 'own' ? html`<br><span class="chip ${o.hs_error ? 'st-anulata' : 'chip-hs'}" title="${o.hs_error || ''}">${o.fulfillment_mode === 'mixt' ? '2 colete · ' : ''}${o.hs_error ? 'Helpship: eroare' : o.hs_order_id ? 'Trimisă la depozit' : o.status === 'anulata' ? 'Helpship' : 'Helpship: netrimisă'}</span>` : ''}</td>
       <td class="nowrap o-date">${formatDate(o.created_at)}</td>
       <td class="o-client">${o.customer_name}<br><a class="muted" href="tel:${o.phone}">${o.phone}</a><span class="o-src">${sourceChip(o)} ${riskChip(o)}</span></td>
+      ${itemsBy ? html`<td class="o-items">${(itemsBy[o.id] || []).map((it) => html`<div class="${product && it.product_id === product ? 'oi-hit' : ''}"><b>${it.qty}×</b> ${it.title}</div>`)}</td>` : ''}
       <td class="o-loc">${o.city}<br><span class="muted">${o.county}</span></td>
       <td class="r nowrap o-total"><b>${money(o.total)}</b></td>
       <td class="o-pay">${payChip(o)}</td>
@@ -320,20 +321,24 @@ function ordersTable(orders, selectable = true) {
 }
 
 // ---------------- Comenzi ----------------
-export function ordersView({ orders, status, q, counts, page, hasMore }) {
+export function ordersView({ orders, status, q, counts, page, hasMore, itemsBy = {}, product = 0, prodList = [], productSum = null }) {
   const tabs = [['', 'Toate'], ...Object.entries(ORDER_STATUSES), ...(counts['card-neplatit'] || status === 'card-neplatit' ? [['card-neplatit', 'Card neplătit']] : [])];
   const qs = (extra) => {
-    const p = new URLSearchParams({ ...(status ? { status } : {}), ...(q ? { q } : {}), ...extra });
+    const p = new URLSearchParams({ ...(status ? { status } : {}), ...(q ? { q } : {}), ...(product ? { produs: product } : {}), ...extra });
     return '?' + p.toString();
   };
   return html`
   <header class="page-head"><h1>Comenzi</h1><div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn" href="/admin/helpship-stoc">Verificare stoc depozit</a><a class="btn" href="/admin/comenzi/export.csv${qs({})}">Export CSV</a></div></header>
-  <nav class="tabs">${tabs.map(([k, v]) => html`<a href="/admin/comenzi${k ? `?status=${k}` : ''}" class="${status === k ? 'on' : ''}">${v} <small>${k ? counts[k] || 0 : counts._all || 0}</small></a>`)}</nav>
+  <nav class="tabs">${tabs.map(([k, v]) => html`<a href="/admin/comenzi${k || product ? '?' + new URLSearchParams({ ...(k ? { status: k } : {}), ...(product ? { produs: product } : {}) }) : ''}" class="${status === k ? 'on' : ''}">${v} <small>${k ? counts[k] || 0 : counts._all || 0}</small></a>`)}</nav>
   ${status === 'card-neplatit' ? html`<p class="muted" style="margin:0 0 12px">Comenzi la care clientul a ales plata cu cardul dar n-a terminat plata. Nu sunt comenzi reale: nu pleacă la depozit și se anulează automat după aproximativ o oră (stocul revine). Dacă clientul plătește între timp, comanda apare normal la „Nouă”.</p>` : ''}
   <div class="toolbar">
     <form method="get" class="search">
       ${status ? html`<input type="hidden" name="status" value="${status}">` : ''}
       <input type="search" name="q" value="${q}" placeholder="Caută după nr. comandă, nume, telefon, AWB">
+      <select name="produs" aria-label="Filtrează după produs" onchange="this.form.submit()">
+        <option value="">Toate produsele</option>
+        ${prodList.map((pr) => html`<option value="${pr.id}" ${pr.id === product ? 'selected' : ''}>${pr.title} (${pr.n})</option>`)}
+      </select>
       <button class="btn">Caută</button>
     </form>
     <form method="post" action="/admin/comenzi/bulk" id="bulk" class="bulk" data-bulk>
@@ -350,7 +355,8 @@ export function ordersView({ orders, status, q, counts, page, hasMore }) {
       <button class="btn">Aplică</button>
     </form>
   </div>
-  ${ordersTable(orders)}
+  ${productSum ? html`<p class="prod-sum"><b>${productSum.orders}</b> ${productSum.orders === 1 ? 'comandă' : 'comenzi'} cu acest produs · <b>${productSum.qty}</b> ${productSum.qty === 1 ? 'bucată' : 'bucăți'} în total${status ? ` (doar „${status === 'card-neplatit' ? 'Card neplătit' : ORDER_STATUSES[status]}”)` : ''} · <a href="/admin/comenzi${status ? `?status=${status}` : ''}">scoate filtrul</a></p>` : ''}
+  ${ordersTable(orders, true, itemsBy, product)}
   <nav class="pager">
     ${page > 1 ? html`<a class="btn" href="${qs({ page: page - 1 })}">Pagina anterioară</a>` : ''}
     ${hasMore ? html`<a class="btn" href="${qs({ page: page + 1 })}">Pagina următoare</a>` : ''}

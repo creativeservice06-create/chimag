@@ -157,26 +157,44 @@ export async function handleAdmin(request, env, ctx, path) {
   if (path === '/admin/comenzi' && method === 'GET') {
     const status = ORDER_STATUSES[url.searchParams.get('status')] || url.searchParams.get('status') === 'card-neplatit' ? url.searchParams.get('status') : '';
     const q = (url.searchParams.get('q') || '').trim();
+    const product = Number(url.searchParams.get('produs')) || 0;
     const page = Math.max(1, Number(url.searchParams.get('page')) || 1);
     const per = 50;
-    const { where, params } = orderFilter(status, q);
+    const { where, params } = orderFilter(status, q, product);
     const { results } = await env.DB.prepare(`SELECT * FROM orders ${where} ORDER BY id DESC LIMIT ? OFFSET ?`)
       .bind(...params, per + 1, (page - 1) * per).all();
+    // produsele din fiecare comandă afișată (o singură interogare)
+    const shown = (results || []).slice(0, per);
+    const itemsBy = {};
+    if (shown.length) {
+      const ids = shown.map((o) => o.id);
+      const { results: its } = await env.DB.prepare(`SELECT order_id, product_id, title, qty FROM order_items WHERE order_id IN (${ids.map(() => '?').join(',')}) ORDER BY id`).bind(...ids).all();
+      for (const it of its || []) (itemsBy[it.order_id] ||= []).push(it);
+    }
+    // lista de produse pentru filtru + totalul pe produsul ales (pe toate paginile)
+    const { results: prodList } = await env.DB.prepare(`SELECT oi.product_id AS id, COALESCE(p.title, MAX(oi.title)) AS title, COUNT(DISTINCT oi.order_id) AS n
+      FROM order_items oi LEFT JOIN products p ON p.id = oi.product_id GROUP BY oi.product_id ORDER BY n DESC`).all();
+    let productSum = null;
+    if (product) {
+      productSum = await env.DB.prepare(`SELECT COUNT(DISTINCT oi.order_id) AS orders, COALESCE(SUM(oi.qty), 0) AS qty FROM order_items oi
+        WHERE oi.product_id = ? AND oi.order_id IN (SELECT id FROM orders ${where})`).bind(product, ...params).first();
+    }
     const counts = { _all: 0 };
     const { results: cr } = await env.DB.prepare(`SELECT status, COUNT(*) AS n FROM orders WHERE NOT ${UNPAID_CARD} GROUP BY status`).all();
     for (const r of cr || []) { counts[r.status] = r.n; counts._all += r.n; }
     counts['card-neplatit'] = (await env.DB.prepare(`SELECT COUNT(*) AS n FROM orders WHERE ${UNPAID_CARD}`).first())?.n || 0;
     return render(env, url, {
       title: 'Comenzi', active: 'comenzi',
-      body: ordersView({ orders: (results || []).slice(0, per), status, q, counts, page, hasMore: (results || []).length > per }),
+      body: ordersView({ orders: shown, status, q, counts, page, hasMore: (results || []).length > per, itemsBy, product, prodList: prodList || [], productSum }),
     });
   }
 
   if (path === '/admin/comenzi/export.csv' && method === 'GET') {
     const status = ORDER_STATUSES[url.searchParams.get('status')] ? url.searchParams.get('status') : '';
-    const { where, params } = orderFilter(status, (url.searchParams.get('q') || '').trim());
-    const { results } = await env.DB.prepare(`SELECT * FROM orders ${where} ORDER BY id DESC LIMIT 5000`).bind(...params).all();
-    const cols = ['number', 'created_at', 'status', 'payment_method', 'payment_status', 'customer_name', 'phone', 'email', 'county', 'city', 'address', 'total', 'awb', 'courier', 'utm_source', 'utm_campaign'];
+    const product = Number(url.searchParams.get('produs')) || 0;
+    const { where, params } = orderFilter(status, (url.searchParams.get('q') || '').trim(), product);
+    const { results } = await env.DB.prepare(`SELECT o.*, (SELECT GROUP_CONCAT(qty || ' x ' || title, ' | ') FROM order_items WHERE order_id = o.id) AS produse FROM orders o ${where} ORDER BY id DESC LIMIT 5000`).bind(...params).all();
+    const cols = ['number', 'produse', 'created_at', 'status', 'payment_method', 'payment_status', 'customer_name', 'phone', 'email', 'county', 'city', 'address', 'total', 'awb', 'courier', 'utm_source', 'utm_campaign'];
     const cell = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
     const lines = [cols.join(';'), ...(results || []).map((o) => cols.map((c) => cell(c === 'total' ? (o.total / 100).toFixed(2).replace('.', ',') : o[c])).join(';'))];
     return new Response('﻿' + lines.join('\r\n'), {
@@ -665,8 +683,9 @@ export async function handleAdmin(request, env, ctx, path) {
 
 // comenzile cu cardul pentru care clientul n-a terminat plata nu sunt comenzi reale: apar doar la filtrul „Card neplătit”
 const UNPAID_CARD = "(payment_method = 'card' AND payment_status != 'platita' AND status = 'noua')";
-function orderFilter(status, q) {
+function orderFilter(status, q, product = 0) {
   const cond = []; const params = [];
+  if (product) { cond.push('id IN (SELECT order_id FROM order_items WHERE product_id = ?)'); params.push(product); }
   if (status === 'card-neplatit') cond.push(UNPAID_CARD);
   else { cond.push(`NOT ${UNPAID_CARD}`); if (status) { cond.push('status = ?'); params.push(status); } }
   if (q) {

@@ -219,7 +219,6 @@ export function productPage({ settings, product: p, reviews, related = [], siteU
         ${p.subtitle ? html`<p class="pdp-sub">${p.subtitle}</p>` : ''}
         ${reviews.length ? html`<a href="#recenzii" class="rating-link">${stars(avg)} <span>${avg.toFixed(1)} · ${reviews.length} ${reviews.length === 1 ? 'recenzie' : 'recenzii'}</span></a>` : ''}
 
-        ${p.benefits.length ? html`<ul class="benefits">${p.benefits.slice(0, 4).map((b) => html`<li>${icons.check(18)}<span>${b}</span></li>`)}</ul>` : ''}
 
         <div class="price-block">
           <div class="price-now" data-price-now>${money(p.price)}</div>
@@ -274,6 +273,7 @@ export function productPage({ settings, product: p, reviews, related = [], siteU
         </ul>
 
         <div class="pdp-acc">
+          ${p.benefits.length ? html`<details open><summary>Beneficii</summary><ul class="benefits">${p.benefits.slice(0, 4).map((b) => html`<li>${icons.check(18)}<span>${b}</span></li>`)}</ul></details>` : ''}
           <details><summary>Livrare și plată</summary><div>
             <p>${settings.delivery_text}. Primești pe email numărul AWB ca să urmărești coletul.</p>
             <p>Plătești la livrare, curierului${settings.card_enabled === '1' ? ', sau online cu cardul' : ''}. Transportul costă ${money(settings.shipping_cost)}${threshold ? html`, iar peste ${money(threshold)} este gratuit` : ''}.</p>

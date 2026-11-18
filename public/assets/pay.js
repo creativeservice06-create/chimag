@@ -104,7 +104,7 @@
         if (!actions) return;
         show('');
         actions.confirm({ expressCheckoutConfirmEvent: ev }).then(function (r) {
-          if (r && r.type === 'error') show(r.error && r.error.message);
+          if (r && r.type === 'error') { show(r.error && r.error.message); log('Apple/Google Pay refuzat: ' + (r.error && r.error.message)); }
         });
       });
       try { express.mount('#pe-express'); } catch (e3) { log('express mount: ' + (e3 && e3.message)); express = null; }
@@ -120,7 +120,7 @@
         // fără câmpul „Țară”: toate comenzile sunt din România, trimitem noi țara la plată
         var pay;
         pay = checkout.createPaymentElement(opts); noCountry = false;
-        pay.on('ready', function () { if (done) return; ready = true; clearTimeout(timer); });
+        pay.on('ready', function () { if (done) return; ready = true; clearTimeout(timer); log('formularul de plată s-a încărcat'); });
         pay.on('loaderror', function (ev) { log('payment loaderror: ' + JSON.stringify((ev && ev.error) || ev).slice(0, 250)); if (!ready) embedded(); });
         pay.mount('#pe-payment');
       } catch (e) { log('payment: ' + (e && e.message)); embedded(); }
@@ -141,6 +141,7 @@
 
     payBtn.addEventListener('click', function () {
       if (!actions || payBtn.classList.contains('loading')) return;
+      log('a apăsat Plătește');
       show('');
       var old = payBtn.textContent;
       payBtn.classList.add('loading'); payBtn.textContent = 'Se procesează plata…';
@@ -151,7 +152,7 @@
       };
       go().then(function (r) {
         // dacă plata a reușit, Stripe ne duce singur la pagina comenzii
-        if (r && r.type === 'error') show(r.error && r.error.message);
+        if (r && r.type === 'error') { show(r.error && r.error.message); log('card refuzat: ' + (r.error && r.error.message)); }
         payBtn.classList.remove('loading'); payBtn.textContent = old;
       }).catch(function (e) {
         log('confirm: ' + (e && e.message));

@@ -1775,3 +1775,17 @@ button, a, input, select, label, summary, .qty, .qty-pill, .cart-items { touch-a
 
 .price-ship { margin: -12px 0 18px 4px; font-size: .9rem; color: var(--muted); }
 .price-ship span { color: #0f8a4a; font-weight: 600; }
+
+/* subsol: metode de plată */
+.pay-marks { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.pay-marks .pm-secure { display: inline-flex; align-items: center; gap: 6px; margin-right: 6px; font-size: .85rem; color: #c9d5e3; }
+.pay-marks .pm-secure svg { color: #4ade80; }
+.pay-marks .pm-secure b { color: #fff; font-weight: 700; letter-spacing: -.01em; }
+.pay-marks .pm { padding: 4px 10px; border-radius: 6px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14); font-size: .78rem; font-weight: 600; color: #e6edf5; white-space: nowrap; }
+@media (max-width: 760px) {
+  .footer-bottom { flex-direction: column; gap: 12px; }
+  .pay-marks { justify-content: center; }
+  .pay-marks .pm-secure { flex-basis: 100%; justify-content: center; margin: 0 0 2px; }
+  .pay-marks { gap: 5px; }
+  .pay-marks .pm { padding: 3px 7px; font-size: .7rem; }
+}

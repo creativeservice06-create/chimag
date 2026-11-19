@@ -3,7 +3,7 @@ import { waLink } from './pages.js';
 import { icons } from './icons.js';
 import { wheelConfig } from '../lib/coupons.js';
 
-const ASSET_V = '122';
+const ASSET_V = '123';
 
 // varianta scurtă pentru telefon, ca bara de sus să încapă pe un rând
 const shortAnnounce = (t) => String(t || '').replace(/\s+la\s+comenzile\s+(de\s+)?peste\s+/i, ' peste ').replace(/\s+pentru\s+comenzi(le)?\s+(de\s+)?peste\s+/i, ' peste ').replace(/\s+la\s+comenzi\s+(de\s+)?peste\s+/i, ' peste ');
@@ -206,6 +206,11 @@ function footer(s) {
     </nav>
   </div>
   <div class="wrap footer-bottom">
+    <div class="pay-marks" aria-label="Metode de plată acceptate">
+      ${s.card_enabled === '1' ? html`<span class="pm-secure">${raw('<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>')}Plăți securizate prin <b>Stripe</b></span>
+      <span class="pm">Visa</span><span class="pm">Mastercard</span><span class="pm">Apple Pay</span><span class="pm">Google Pay</span>` : ''}
+      <span class="pm">Ramburs</span>
+    </div>
     <p>© ${year} ${s.company_name || s.store_name}${s.company_cui ? ` · CUI ${s.company_cui}` : ''}${s.company_reg ? ` · ${s.company_reg}` : ''}${s.company_address ? ` · ${s.company_address}` : ''}</p>
   </div>
 </footer>`;

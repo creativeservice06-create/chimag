@@ -1772,6 +1772,9 @@ button, a, input, select, label, summary, .qty, .qty-pill, .cart-items { touch-a
 .oi-saved { margin: 12px 0 0; text-align: center; font-weight: 700; color: #0f8a4a; }
 
 .price-per { flex-basis: 100%; color: var(--muted); font-size: .92rem; margin-top: 2px; }
+/* când apare prețul pe bucată, blocul trece pe două rânduri (altfel textul se înghesuie în dreapta) */
+.price-block:has(.price-per) { flex-wrap: wrap !important; }
+.price-block .price-per { width: 100%; white-space: nowrap; }
 
 .price-ship { margin: -12px 0 18px 4px; font-size: .9rem; color: var(--muted); }
 .price-ship span { color: #0f8a4a; font-weight: 600; }
